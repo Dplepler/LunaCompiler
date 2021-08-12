@@ -35,6 +35,16 @@ void lexer_advance(lexer_T* lexer)
 	
 }
 
+char lexer_peak(lexer_T* lexer, unsigned int offset)
+{
+	char token = -1;
+
+	if (lexer->index + 1 < lexer->contentsLength)
+		token = lexer->contents[lexer->index + offset];
+
+	return token;
+}
+
 /*
 lexer_advance_current initializes a token with a type and a value
 Input: Lexer, type of token
@@ -71,7 +81,7 @@ Output: None
 */
 void lexer_skip_whitespace(lexer_T* lexer)
 {
-	while (lexer->c == ' ' || lexer->c == '\n' || lexer->c == '\t')
+	while (lexer->c == ' ' || lexer->c == '\n' || lexer->c == '\t' || lexer->c == 13 || lexer->c == 10)
 		lexer_advance(lexer);
 
 }
@@ -125,6 +135,7 @@ token_T* lexer_get_next_token(lexer_T* lexer)
 			case '+': token = lexer_advance_current(lexer, TOKEN_ADD); break;
 			case '/': token = lexer_advance_current(lexer, TOKEN_DIV); break;
 			case '-': token = lexer_advance_current(lexer, TOKEN_SUB); break;
+			case ',': token = lexer_advance_current(current(lexer, TOKEN_COMMA)); break;
 			case '\0': token = lexer_advance_current(lexer, TOKEN_EOF);  break;
 
 		}

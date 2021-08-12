@@ -15,11 +15,11 @@ AST* init_AST(int type)
 }
 
 /*
-Initializes an AST node of type operation so I can assign a left and right child to it
-Input: Left node, right node, type of operation
-Output: New operation node
+AST_initChildren initializes an AST node of type any type and assigns given children to it
+Input: Left node, right node, type of node
+Output: New node
 */
-AST* AST_opNode(AST* left, AST* right, int type)
+AST* AST_initChildren(AST* left, AST* right, int type)
 {
 	AST* node = init_AST(type);
 	node->leftChild = left;
@@ -27,6 +27,7 @@ AST* AST_opNode(AST* left, AST* right, int type)
 
 	return node;
 }
+
 
 /*
 printTree prints a binary tree
@@ -43,7 +44,6 @@ void printTree(AST* root)
 		printf("\n");
 
 	}
-	
 }
 
 /*
@@ -55,7 +55,6 @@ void printLevel(AST* node, int level)
 {
 	if (node && !level)
 	{
-
 		if (node->type == AST_INT)
 			printf("%d ", node->int_value);
 		else

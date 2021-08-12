@@ -19,9 +19,6 @@ char* read_file(FILE* file)
 
     printf("contents: %s\n", contents);
 
-    
-
-    
     fclose(file);
 
     return contents;
