@@ -32,10 +32,9 @@ void lexer_advance(lexer_T* lexer)
 	else
 		lexer->c = '\0';
 
-	
 }
 
-char lexer_peak(lexer_T* lexer, unsigned int offset)
+char lexer_peek(lexer_T* lexer, size_t offset)
 {
 	char token = -1;
 
@@ -58,7 +57,7 @@ token_T* lexer_advance_current(lexer_T* lexer, int type)
 	value[0] = lexer->c;
 
 	// If token is 2 characters long (e.g: <=, ==)
-	if (type == TOKEN_ELESS || type == TOKEN_EMORE || type == TOKEN_COMPARE)
+	if (type == TOKEN_ELESS || type == TOKEN_EMORE || type == TOKEN_DEQUAL)
 	{
 		value = (char*)realloc(value, VALUE_SIZE + 1);
 		lexer_advance(lexer);
@@ -81,8 +80,10 @@ Output: None
 */
 void lexer_skip_whitespace(lexer_T* lexer)
 {
-	while (lexer->c == ' ' || lexer->c == '\n' || lexer->c == '\t' || lexer->c == 13 || lexer->c == 10)
+	while (lexer->c == ' ' || lexer->c == '\n' || lexer->c == '\t')
 		lexer_advance(lexer);
+	
+		
 
 }
 
@@ -100,28 +101,28 @@ token_T* lexer_get_next_token(lexer_T* lexer)
 	if (isalpha(lexer->c))
 		token = lexer_collect_id(lexer);
 	
-	if (isdigit(lexer->c))
+	else if (isdigit(lexer->c))
 		token = lexer_collect_number(lexer);
 	else
 	{
 		switch (lexer->c)
 		{
 			case '=':
-				if (lexer->contents[lexer->index + 1] == '=')
-					token = lexer_advance_current(lexer, TOKEN_COMPARE);
+				if (lexer_peek(lexer, 1) == '=')
+					token = lexer_advance_current(lexer, TOKEN_DEQUAL);
 				else
 					token = lexer_advance_current(lexer, TOKEN_EQUALS);
 				break;
 
 			case '<':
-				if (lexer->contents[lexer->index + 1] == '=')
+				if (lexer_peek(lexer, 1) == '=')
 					token = lexer_advance_current(lexer, TOKEN_ELESS);
 				else
 					token = lexer_advance_current(lexer, TOKEN_LESS);
 				break;
 
 			case '>':
-				if (lexer->contents[lexer->index + 1] == '=')
+				if (lexer_peek(lexer, 1) == '=')
 					token = lexer_advance_current(lexer, TOKEN_ELESS);
 				else
 					token = lexer_advance_current(lexer, TOKEN_LESS);
@@ -135,9 +136,11 @@ token_T* lexer_get_next_token(lexer_T* lexer)
 			case '+': token = lexer_advance_current(lexer, TOKEN_ADD); break;
 			case '/': token = lexer_advance_current(lexer, TOKEN_DIV); break;
 			case '-': token = lexer_advance_current(lexer, TOKEN_SUB); break;
-			case ',': token = lexer_advance_current(current(lexer, TOKEN_COMMA)); break;
+			case ',': token = lexer_advance_current(lexer, TOKEN_COMMA); break;
+			case '{': token = lexer_advance_current(lexer, TOKEN_LBRACE); break;
+			case '}': token = lexer_advance_current(lexer, TOKEN_RBRACE); break;
 			case '\0': token = lexer_advance_current(lexer, TOKEN_EOF);  break;
-
+			default: printf("Unknown token: '%c'", lexer->c); exit(1);
 		}
 	}
 	
@@ -153,17 +156,17 @@ Output: Identifier token
 token_T* lexer_collect_id(lexer_T* lexer)
 {
 	char* id = (char*)malloc(sizeof(char));
-	unsigned int size = 0;
+	size_t size = 0;
 	
 	
-	while (isalpha(lexer->c))
+	while (isalpha(lexer->c) || isdigit(lexer->c))
 	{
-		id = (char*)realloc(id, size + 1);
-		id[size] = lexer->c;
-		size++;
+		id = (char*)realloc(id, ++size);
+		id[size - 1] = lexer->c;
 		lexer_advance(lexer);
 	}
 	id[size] = 0;
+
 
 	return init_token(TOKEN_ID, id);;
 }
@@ -177,7 +180,7 @@ token_T* lexer_collect_number(lexer_T* lexer)
 {
 
 	char* num = (char*)malloc(sizeof(char));
-	unsigned int size = 0;
+	size_t size = 0;
 
 	while (isdigit(lexer->c))
 	{
@@ -201,7 +204,7 @@ Output: String token
 token_T* lexer_collect_string(lexer_T* lexer)
 {
 	char* string = (char*)malloc(sizeof(char));
-	unsigned int size = 0;
+	size_t size = 0;
 
 	lexer_advance(lexer);
 	while (isalpha(lexer->c))

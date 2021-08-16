@@ -16,14 +16,13 @@ int main(int argc, char** argv)
 		if (contents)
 		{
 			lexer = init_lexer(contents);
+			/*while (lexer->index < lexer->contentsLength)
+				printf("Token: %s\n", lexer_get_next_token(lexer)->value);*/
 			parser = init_parser(lexer);
-
 			root = parser_parse(parser);
-			
+
+			free(contents);
 		}
-		  
-		
-		free(contents);
 	}
 	else
 		printf("File does not exist\n");

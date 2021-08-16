@@ -3,19 +3,19 @@
 char* read_file(FILE* file)
 {
 	char* contents = NULL;
-    unsigned int length = 0;
-    unsigned int i = 0;
+    char ch = 0;
+    size_t i = 0;
 
-    fseek(file, 0, SEEK_END);
-    length = ftell(file);
-    rewind(file);
+    contents = (char*)malloc(sizeof(char));
 
-    contents = (char*)calloc(1, length + 1);
+    while ((ch = fgetc(file)) != EOF)
+    {
+        contents = (char*)realloc(contents, ++i);
+        contents[i - 1] = ch;
+    } 
 
-    for (i = 0; i < length; i++)
-        contents[i] = fgetc(file);
-
-    contents[length] = 0;
+    contents = (char*)realloc(contents, ++i);
+    contents[i - 1] = '\0';       
 
     printf("contents: %s\n", contents);
 

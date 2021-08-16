@@ -1,9 +1,15 @@
 #include "parser.h"
 
-const char** reserved = { "int" };
+const char* reserved[RESERVED_SIZE] = { "if", "else", "while", "int", "return" };
 enum
 {
+	IF_T,
+	ELSE_T,
+	WHILE_T,
 	INT_T,
+	RETURN_T,
+
+
 }reserved_T;
 
 /*
@@ -34,7 +40,7 @@ token_T* parser_expect(parser_T* parser, int type)
 	}
 	else
 	{
-		printf("[ERROR]: Unexpected token\n");
+		printf("[ERROR]: Unexpected token\n Expected: %d, got: %d", type, parser->token->type);
 		exit(1);													// Finish with error
 	}
 
@@ -48,67 +54,127 @@ Output: Root of the abstract syntax tree
 */
 AST* parser_parse(parser_T* parser)
 {
-	AST* root =  parser_function(parser);
-	printTree(root);
+	AST* root =  parser_lib(parser);
+
+	//printf("Test: %s\n", root->function_list[0]->function_body->children[2]->name);
+	//printTree(root);
 	return root;
 }
 
 AST* parser_lib(parser_T* parser)
 {
-	AST* root = NULL;
+	AST* root = init_AST(AST_PROGRAM);
+	size_t counter = 0;
+
+	root->function_list = (AST**)malloc(sizeof(AST*));
 	do 
 	{
-		parser_function(parser);
-	} while (parser->token->type != EOF);
+		counter++;
+		root->function_list = (AST**)realloc(root->function_list, sizeof(AST*) * counter);
+		root->function_list[counter - 1] = parser_function(parser);
+	
+	} while (parser->token->type != TOKEN_EOF);
+
+	return root;
 }
 
 AST* parser_function(parser_T* parser)
 {
-	AST* node = NULL;
+	AST* node = init_AST(AST_FUNCTION);
+	size_t counter = 0;
 
-	if (parser->token->type == TOKEN_LBRACE)
+	if (parser_check_reserved(parser) == INT_T)
 	{
-		node = parser_block(parser);
+		node->function_return_type = parser->token->value;
 	}
-	else if (parser->token->type == TOKEN_ID)
+	else
 	{
-		if (!strcmp(parser->token->value, reserved[INT_T]))
-		{
+		printf("[ERROR]: Invalid return type\n");
+		exit(1);
+	}
+		
+	parser->token = parser_expect(parser, TOKEN_ID);
+	  
+	if (parser->token->type == TOKEN_ID)		// Check next token
+		node->name = parser->token->value;
+	
+	parser->token = parser_expect(parser, TOKEN_ID);
+	parser->token = parser_expect(parser, TOKEN_LPAREN);
 
-		}
-		else
-		{
-			printf("[ERROR]: ")
-		}
+	node->function_def_args = (AST**)malloc(sizeof(AST*));
+
+	while (parser->token->type != TOKEN_RPAREN)
+	{
+		counter++;
+		node->function_def_args = (AST**)realloc(node->function_def_args, sizeof(AST*) * counter);
+		node->function_def_args[counter - 1] = parser_var_dec(parser);
+
+
+		if (parser->token->type != TOKEN_RPAREN)
+			parser->token = parser_expect(parser, TOKEN_COMMA);
 	}
 
+	parser->token = parser_expect(parser, TOKEN_RPAREN);
+	
+	node->function_body = parser_block(parser);
+
+	return node;
 }
 
 AST* parser_block(parser_T* parser)
 {
+	AST* node = init_AST(AST_COMPOUND);
+	size_t counter = 0;
+
+	node->children = (AST**)malloc(sizeof(AST*));
+
 	parser->token = parser_expect(parser, TOKEN_LBRACE);
+
 	while (parser->token->type != TOKEN_RBRACE)
 	{
-
+		counter++;
+		node->children = (AST**)realloc(node->children, sizeof(AST*) * counter);
+		node->children[counter - 1] = parser_statement(parser);
 	}
 
+	parser->token = parser_expect(parser, TOKEN_RBRACE);
+		
+	return node;
 }
 
 AST* parser_statement(parser_T* parser)
 {
 	AST* node = NULL;
+	int type;
 
+	// Checking all possible statement options
 	if (parser->token->type == TOKEN_ID)
 	{
+		if ((type = parser_check_reserved(parser)) > -1)
+		{
+			switch (type)
+			{
+				case INT_T: node = parser_var_dec(parser); break;
+				case IF_T: node = parser_condition(parser); break;
+				case WHILE_T: node = parser_while(parser); break;
+				case RETURN_T: node = parser_return(parser); break;
+				
+			}
+			if (type >= INT_T)		// All of the reserved options after and including INT_T end with a semi colon
+			{
+				parser->token = parser_expect(parser, TOKEN_SEMI);
+			}
+		}
 		// Variable assignment
-		if (lexer_peak(parser->lexer, 1) == '=')
+		else if (lexer_peek(parser->lexer, 1) == '=')
 		{
 			node = parser_assignment(parser);
+			parser->token = parser_expect(parser, TOKEN_SEMI);
 		}
 		// Function call
 		else
 		{
-			node = parser_functionCall(parser);
+			node = parser_expression(parser);
 		} 
 	}
 
@@ -121,7 +187,7 @@ AST* parser_assignment(parser_T* parser)
 	AST* node = init_AST(AST_VARIABLE);
 	node->name = parser->token->value;
 
-	parser->token = lexer_get_next_token(parser->lexer);
+	parser->token = parser_expect(parser, TOKEN_ID);
 	parser->token = parser_expect(parser, TOKEN_EQUALS);
 
 	node = AST_initChildren(node, parser_expression(parser), AST_ASSIGNMENT);
@@ -132,10 +198,10 @@ AST* parser_assignment(parser_T* parser)
 AST* parser_functionCall(parser_T* parser)
 {
 	AST* node = init_AST(AST_FUNC_CALL);
-	unsigned int counter = 0;
+	size_t counter = 0;
 
 	node->name = parser->token->value;
-
+	parser->token = parser_expect(parser, TOKEN_ID);
 	parser->token = parser_expect(parser, TOKEN_LPAREN);
 
 	node->arguments = (AST**)malloc(sizeof(AST*));
@@ -146,7 +212,6 @@ AST* parser_functionCall(parser_T* parser)
 		node->arguments = (AST**)realloc(node->arguments, sizeof(AST*) * counter);
 		node->arguments[counter - 1] = parser_expression(parser);
 
-		parser->token = lexer_get_next_token(parser->lexer);
 		if (parser->token->type != TOKEN_RPAREN)
 			parser->token = parser_expect(parser, TOKEN_COMMA);
 	}
@@ -156,6 +221,36 @@ AST* parser_functionCall(parser_T* parser)
 	parser_expect(parser, TOKEN_RPAREN);
 
 	return node;
+}
+
+AST* parser_var_dec(parser_T* parser)
+{
+	AST* node = init_AST(AST_VARIABLE_DEC);
+	if (parser->token->type == TOKEN_ID)
+	{
+		switch (parser_check_reserved(parser))
+		{
+			case INT_T: node->var_type = VAR_INT; break;
+			default: printf("[ERROR]: Variable decleration missing variable type value\n");
+				exit(1);
+		}
+	
+	}
+
+	parser->token = parser_expect(parser, TOKEN_ID);
+
+	node->name = parser->token->value;
+
+	parser->token = parser_expect(parser, TOKEN_ID);
+
+	if (parser->token->type == TOKEN_EQUALS)
+	{
+		parser->token = lexer_get_next_token(parser->lexer);
+		node->value = parser_expression(parser);
+	}
+
+	return node;
+
 }
 
 /*
@@ -234,11 +329,13 @@ AST* parser_factor(parser_T* parser)
 		parser_expect(parser, TOKEN_RPAREN);		// Skip the closing parenthesis
 	}
 	// Parse the number or identifier
-	else if (parser->token->type == TOKEN_ID || parser->token->type == TOKEN_NUMBER)
+	else if (parser->token->type == TOKEN_NUMBER)
 	{
-		node = init_AST(AST_INT);							
-		node->int_value = atoi(parser->token->value);			// Copy token value into node
-		parser->token = lexer_get_next_token(parser->lexer);	// Skip number
+		node = parser_int(parser);
+	}
+	else if (parser->token->type == TOKEN_ID)
+	{
+		node = parser_id(parser);
 	}
 	else
 	{
@@ -246,6 +343,107 @@ AST* parser_factor(parser_T* parser)
 		exit(1);
 	}
 	
+	return node;
+}
+
+AST* parser_int(parser_T* parser)
+{
+	AST* node = init_AST(AST_INT);
+	node->int_value = atoi(parser->token->value);			// Copy token value into node
+	parser->token = parser_expect(parser, TOKEN_NUMBER);	// Skip number
 
 	return node;
+}
+
+AST* parser_id(parser_T* parser)
+{
+	AST* node = NULL;
+	if (lexer_peek(parser->lexer, 1) == '(')
+	{
+		node = parser_functionCall(parser);
+	}
+	else
+	{
+		node = init_AST(AST_VARIABLE);
+		node->name = parser->token->value;
+		parser->token = parser_expect(parser, TOKEN_ID);
+	}
+
+	return node;
+}
+
+AST* parser_binary_expression(parser_T* parser)
+{
+	AST* node = init_AST(AST_COMPARE);
+
+	node->leftChild = parser_expression(parser);	// Getting first expression
+
+	if (parser->token->type == TOKEN_MORE || parser->token->type == TOKEN_EMORE || parser->token->type == TOKEN_LESS || parser->token->type == TOKEN_ELESS || parser->token->type == TOKEN_DEQUAL)
+	{
+		node->rightChild = parser_expression(parser);
+		node->type_c = parser->token->type;
+	}
+	else
+	{
+		node->type_c = TOKEN_NOOP;
+	}
+
+	parser->token = parser_expect(parser, TOKEN_RPAREN);
+
+	return node;
+}
+
+AST* parser_condition(parser_T* parser)
+{
+	AST* node = init_AST(AST_IF);
+	parser->token = parser_expect(parser, TOKEN_ID);
+	parser->token = parser_expect(parser, TOKEN_LPAREN);
+
+	node->condition = parser_binary_expression(parser);
+	node->if_body = parser_block(parser);
+
+	if (parser_check_reserved(parser) == ELSE_T)
+	{
+		node->else_body = parser_block(parser);
+	}
+
+	return node;
+}
+AST* parser_while(parser_T* parser)
+{
+	AST* node = init_AST(AST_WHILE);
+	node->condition = parser_binary_expression(parser);
+	node->if_body = parser_block(parser);
+
+	return node;
+}
+AST* parser_return(parser_T* parser)
+{
+	AST* node = init_AST(AST_RETURN);
+
+	parser->token = parser_expect(parser, TOKEN_ID);
+	node->value = parser_expression(parser);
+
+	return node;
+}
+
+int parser_check_reserved(parser_T* parser)
+{
+	int type = -1;
+	unsigned int i = 0;
+	bool found = false;
+
+	if (parser->token->type == TOKEN_ID)
+	{
+		for (i = 0; i < RESERVED_SIZE && !found; i++)
+		{
+			if (!strcmp(parser->token->value, reserved[i]))
+			{
+				type = i;
+				found = true;
+			}
+		}
+	}
+	
+	return type;
 }

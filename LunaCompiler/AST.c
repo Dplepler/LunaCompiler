@@ -98,7 +98,7 @@ char* typeToString(int type)
 {
 	switch (type)
 	{
-		case AST_COMPOUND: return "COMPOUND";
+		case AST_FUNCTION: return "FUNCTION";
 		case AST_INT: return "INT";
 		case AST_ADD: return "ADDITION";
 		case AST_SUB: return "SUBSTRUCTION";

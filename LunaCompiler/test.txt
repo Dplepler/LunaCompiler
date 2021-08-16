@@ -1,2 +1,8 @@
-100 + 300 / 2 * 14 + 15
 
+int functionName(int arg1, int arg2)
+{
+	int x = 0;
+	x = 5 + 3 * 2;
+	int y = 3 + x;
+
+}
