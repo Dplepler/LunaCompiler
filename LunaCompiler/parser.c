@@ -54,9 +54,9 @@ Output: Root of the abstract syntax tree
 */
 AST* parser_parse(parser_T* parser)
 {
-	AST* root =  parser_lib(parser);
-
-	//printf("Test: %s\n", root->function_list[0]->function_body->children[2]->name);
+	AST* root =  parser_expression(parser);
+	
+	//printf("Test: %s\n", root->function_list[0]->function_body->children[1]->value);
 	//printTree(root);
 	return root;
 }
@@ -69,11 +69,12 @@ AST* parser_lib(parser_T* parser)
 	root->function_list = (AST**)malloc(sizeof(AST*));
 	do 
 	{
-		counter++;
-		root->function_list = (AST**)realloc(root->function_list, sizeof(AST*) * counter);
-		root->function_list[counter - 1] = parser_function(parser);
+		root->function_list = (AST**)realloc(root->function_list, sizeof(AST*) * ++counter);
+		root->function_list[counter--] = parser_function(parser);
 	
 	} while (parser->token->type != TOKEN_EOF);
+
+	root->size = counter;
 
 	return root;
 }
@@ -105,17 +106,15 @@ AST* parser_function(parser_T* parser)
 
 	while (parser->token->type != TOKEN_RPAREN)
 	{
-		counter++;
-		node->function_def_args = (AST**)realloc(node->function_def_args, sizeof(AST*) * counter);
-		node->function_def_args[counter - 1] = parser_var_dec(parser);
-
+		node->function_def_args = (AST**)realloc(node->function_def_args, sizeof(AST*) * ++counter);
+		node->function_def_args[counter--] = parser_var_dec(parser);
 
 		if (parser->token->type != TOKEN_RPAREN)
 			parser->token = parser_expect(parser, TOKEN_COMMA);
 	}
+	node->size = counter;
 
 	parser->token = parser_expect(parser, TOKEN_RPAREN);
-	
 	node->function_body = parser_block(parser);
 
 	return node;
@@ -132,13 +131,13 @@ AST* parser_block(parser_T* parser)
 
 	while (parser->token->type != TOKEN_RBRACE)
 	{
-		counter++;
-		node->children = (AST**)realloc(node->children, sizeof(AST*) * counter);
-		node->children[counter - 1] = parser_statement(parser);
+		node->children = (AST**)realloc(node->children, sizeof(AST*) * ++counter);
+		node->children[counter--] = parser_statement(parser);
 	}
+	node->size = counter;
 
 	parser->token = parser_expect(parser, TOKEN_RBRACE);
-		
+
 	return node;
 }
 
@@ -163,6 +162,10 @@ AST* parser_statement(parser_T* parser)
 			if (type >= INT_T)		// All of the reserved options after and including INT_T end with a semi colon
 			{
 				parser->token = parser_expect(parser, TOKEN_SEMI);
+
+				if (type == RETURN_T)
+					while (parser->token->type != TOKEN_RBRACE)					// Skipping all code after the return in the block, because it can never be reached
+						parser->token = lexer_get_next_token(parser->lexer);
 			}
 		}
 		// Variable assignment
@@ -171,7 +174,6 @@ AST* parser_statement(parser_T* parser)
 			node = parser_assignment(parser);
 			parser->token = parser_expect(parser, TOKEN_SEMI);
 		}
-		// Function call
 		else
 		{
 			node = parser_expression(parser);
@@ -208,15 +210,13 @@ AST* parser_functionCall(parser_T* parser)
 
 	while (parser->token->type != TOKEN_RPAREN)
 	{
-		counter++;
-		node->arguments = (AST**)realloc(node->arguments, sizeof(AST*) * counter);
+		node->arguments = (AST**)realloc(node->arguments, sizeof(AST*) * ++counter);
 		node->arguments[counter - 1] = parser_expression(parser);
 
 		if (parser->token->type != TOKEN_RPAREN)
 			parser->token = parser_expect(parser, TOKEN_COMMA);
 	}
-
-	node->argument_amount = counter;
+	node->size = counter;
 
 	parser_expect(parser, TOKEN_RPAREN);
 
@@ -262,22 +262,19 @@ AST* parser_expression(parser_T* parser)
 {
 	AST* node = NULL;
 
-	if (parser->token->type == TOKEN_ADD || parser->token->type == TOKEN_SUB)
-	{
+	if (parser->token->type == TOKEN_ADD)
 		parser->token = lexer_get_next_token(parser->lexer);
-	}
 
 	node = parser_term(parser);
 
 	while (parser->token->type == TOKEN_ADD || parser->token->type == TOKEN_SUB)
 	{
-
 		if (parser->token->type == TOKEN_ADD)
 		{
 			parser->token = lexer_get_next_token(parser->lexer);		// Skip Add / Minus signs
 			node = AST_initChildren(node, parser_term(parser), AST_ADD);
 		}
-		if (parser->token->type == TOKEN_SUB)
+		else if (parser->token->type == TOKEN_SUB)
 		{
 			parser->token = lexer_get_next_token(parser->lexer);		// Skip Add / Minus signs
 			node = AST_initChildren(node, parser_term(parser), AST_SUB);
@@ -303,7 +300,7 @@ AST* parser_term(parser_T* parser)
 			parser->token = lexer_get_next_token(parser->lexer);		// Skip multiplication / division signs
 			node = AST_initChildren(node, parser_factor(parser), AST_MUL);
 		}
-		if (parser->token->type == TOKEN_DIV)
+		else if (parser->token->type == TOKEN_DIV)
 		{
 			parser->token = lexer_get_next_token(parser->lexer);		// Skip multiplication / division signs
 			node = AST_initChildren(node, parser_factor(parser), AST_DIV);
@@ -321,35 +318,33 @@ AST* parser_factor(parser_T* parser)
 {
 	AST* node = NULL;
 
-	// If ( was found, parse an expression within the parenthesis
-	if (parser->token->type == TOKEN_LPAREN)
+	switch (parser->token->type)
 	{
-		parser->token = lexer_get_next_token(parser->lexer);	// Skip starting parenthesis
-		node = parser_expression(parser);			// Parse expression
-		parser_expect(parser, TOKEN_RPAREN);		// Skip the closing parenthesis
+		// If ( was found, parse an expression within the parenthesis
+		case TOKEN_LPAREN:
+			parser->token = lexer_get_next_token(parser->lexer);	// Skip starting parenthesis
+			node = parser_expression(parser);						// Parse expression
+			parser_expect(parser, TOKEN_RPAREN);					// Skip the closing parenthesis
+			break;
+
+		// Parse the number or identifier
+		case TOKEN_NUMBER: node = parser_int(parser); break;
+		case TOKEN_ID: node = parser_id(parser); break;
+		// Case for unary operators (e.g: -6, -2 etc)
+		case TOKEN_SUB: parser->token = lexer_get_next_token(parser->lexer);  node = AST_initChildren(0, parser_factor(parser), AST_SUB); break;
+
+		default: printf("[ERROR]: Syntax Error!, Token: %s was unexpected\n", parser->token->value);
+			exit(1);
+
 	}
-	// Parse the number or identifier
-	else if (parser->token->type == TOKEN_NUMBER)
-	{
-		node = parser_int(parser);
-	}
-	else if (parser->token->type == TOKEN_ID)
-	{
-		node = parser_id(parser);
-	}
-	else
-	{
-		printf("[ERROR]: Syntax Error!\n");
-		exit(1);
-	}
-	
+
 	return node;
 }
 
 AST* parser_int(parser_T* parser)
 {
 	AST* node = init_AST(AST_INT);
-	node->int_value = atoi(parser->token->value);			// Copy token value into node
+	node->int_value = parser->token->value;			// Copy token value into node
 	parser->token = parser_expect(parser, TOKEN_NUMBER);	// Skip number
 
 	return node;
@@ -380,8 +375,9 @@ AST* parser_binary_expression(parser_T* parser)
 
 	if (parser->token->type == TOKEN_MORE || parser->token->type == TOKEN_EMORE || parser->token->type == TOKEN_LESS || parser->token->type == TOKEN_ELESS || parser->token->type == TOKEN_DEQUAL)
 	{
-		node->rightChild = parser_expression(parser);
 		node->type_c = parser->token->type;
+		parser->token = lexer_get_next_token(parser->lexer);
+		node->rightChild = parser_expression(parser);
 	}
 	else
 	{

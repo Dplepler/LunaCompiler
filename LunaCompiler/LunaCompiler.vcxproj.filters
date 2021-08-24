@@ -33,6 +33,9 @@
     <ClCompile Include="AST.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="TAC.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tokens.h">
@@ -48,6 +51,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AST.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TAC.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

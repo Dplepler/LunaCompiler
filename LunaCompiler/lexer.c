@@ -123,9 +123,9 @@ token_T* lexer_get_next_token(lexer_T* lexer)
 
 			case '>':
 				if (lexer_peek(lexer, 1) == '=')
-					token = lexer_advance_current(lexer, TOKEN_ELESS);
+					token = lexer_advance_current(lexer, TOKEN_EMORE);
 				else
-					token = lexer_advance_current(lexer, TOKEN_LESS);
+					token = lexer_advance_current(lexer, TOKEN_MORE);
 				break;
 
 			case '"': token = lexer_collect_string(lexer); break;

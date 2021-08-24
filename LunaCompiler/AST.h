@@ -7,7 +7,7 @@ typedef struct AST_STRUCT
 
 	enum
 	{
-		AST_PROGRAM,
+		AST_PROGRAM = 21,		// Continue enumiration from tokens (tokens.c)
 		AST_FUNCTION,
 		AST_COMPOUND,
 		AST_INT,
@@ -49,15 +49,16 @@ typedef struct AST_STRUCT
 	struct AST_STRUCT* function_body;
 	char* function_return_type;
 
-	// Name for different types of nodes
+	// Name used for different types of nodes, (e.g a variable node would have it's node->name be the identifier)
 	char* name;
+	// Same for size
+	size_t size;
 
 	// Int node
-	int int_value;
+	char* int_value;
 
 	// Function call
 	struct AST_STRUCT** arguments;
-	int argument_amount;
 
 
 	struct AST_STRUCT* leftChild;

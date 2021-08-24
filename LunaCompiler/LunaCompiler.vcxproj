@@ -27,12 +27,14 @@
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|x64'">_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <ClCompile Include="parser.c" />
+    <ClCompile Include="TAC.c" />
     <ClCompile Include="tokens.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AST.h" />
     <ClInclude Include="io.h" />
     <ClInclude Include="parser.h" />
+    <ClInclude Include="TAC.h" />
     <ClInclude Include="tokens.h" />
     <ClInclude Include="lexer.h" />
   </ItemGroup>

@@ -1,4 +1,4 @@
-#include "parser.h"
+#include "TAC.h"
 #define SIZE 100
 
 int main(int argc, char** argv)
@@ -8,7 +8,10 @@ int main(int argc, char** argv)
 	token_T* token = NULL;
 	parser_T* parser = NULL;
 	AST* root = NULL;
+	TAC** instructions = NULL;
+
 	char* contents = NULL;
+
 	if (file = fopen(argv[1], "r"))
 	{
 		contents = read_file(file);
@@ -20,6 +23,9 @@ int main(int argc, char** argv)
 				printf("Token: %s\n", lexer_get_next_token(lexer)->value);*/
 			parser = init_parser(lexer);
 			root = parser_parse(parser);
+			instructions = traversal_visit(root);
+
+			//printTree(root);
 
 			free(contents);
 		}
