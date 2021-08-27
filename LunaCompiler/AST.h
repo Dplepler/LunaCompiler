@@ -71,9 +71,6 @@ typedef struct AST_STRUCT
 
 AST* init_AST(int type);
 AST* AST_initChildren(AST* left, AST* right, int type);
-void printTree(AST* root);
-void printLevel(AST* node, int level);
-int getLevelCount(AST* node);
 char* typeToString(int type);
 
 #endif

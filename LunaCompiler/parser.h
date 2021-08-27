@@ -1,13 +1,16 @@
 #ifndef PARSER_H
 #define PARSER_H
 #include "lexer.h"
+#include "symbolTable.h"
 
 #define RESERVED_SIZE 5
+
  
 typedef struct PARSER_STRUCT
 {
 	lexer_T* lexer;
 	token_T* token;
+	table_T* table;
 
 }parser_T;
 

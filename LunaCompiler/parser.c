@@ -1,6 +1,7 @@
 #include "parser.h"
 
 const char* reserved[RESERVED_SIZE] = { "if", "else", "while", "int", "return" };
+
 enum
 {
 	IF_T,
@@ -8,7 +9,6 @@ enum
 	WHILE_T,
 	INT_T,
 	RETURN_T,
-
 
 }reserved_T;
 
@@ -22,6 +22,8 @@ parser_T* init_parser(lexer_T* lexer)
 	parser_T* parser = (parser_T*)malloc(sizeof(parser_T));
 	parser->lexer = lexer;
 	parser->token = lexer_get_next_token(parser->lexer);
+
+	parser->table = init_table(NULL);
 
 	return parser;
 }
@@ -40,7 +42,10 @@ token_T* parser_expect(parser_T* parser, int type)
 	}
 	else
 	{
-		printf("[ERROR]: Unexpected token\n Expected: %d, got: %d", type, parser->token->type);
+		if (parser->token->type == TOKEN_ID)
+			printf("[ERROR]: Missing token %s, got: %s", typeToString(type), parser->token->value);
+		else
+			printf("[ERROR]: Missing token %s, got: %s", typeToString(type), typeToString(parser->token->type));
 		exit(1);													// Finish with error
 	}
 
@@ -54,7 +59,7 @@ Output: Root of the abstract syntax tree
 */
 AST* parser_parse(parser_T* parser)
 {
-	AST* root =  parser_expression(parser);
+	AST* root =  parser_lib(parser);
 	
 	//printf("Test: %s\n", root->function_list[0]->function_body->children[1]->value);
 	//printTree(root);
@@ -70,7 +75,7 @@ AST* parser_lib(parser_T* parser)
 	do 
 	{
 		root->function_list = (AST**)realloc(root->function_list, sizeof(AST*) * ++counter);
-		root->function_list[counter--] = parser_function(parser);
+		root->function_list[counter - 1] = parser_function(parser);
 	
 	} while (parser->token->type != TOKEN_EOF);
 
@@ -96,13 +101,15 @@ AST* parser_function(parser_T* parser)
 		
 	parser->token = parser_expect(parser, TOKEN_ID);
 	  
-	if (parser->token->type == TOKEN_ID)		// Check next token
+	if (parser->token->type == TOKEN_ID)		// Give node the function name if it exists
 		node->name = parser->token->value;
 	
 	parser->token = parser_expect(parser, TOKEN_ID);
 	parser->token = parser_expect(parser, TOKEN_LPAREN);
 
 	node->function_def_args = (AST**)malloc(sizeof(AST*));
+
+	parser->table = table_add_table(parser->table);
 
 	while (parser->token->type != TOKEN_RPAREN)
 	{
@@ -132,7 +139,7 @@ AST* parser_block(parser_T* parser)
 	while (parser->token->type != TOKEN_RBRACE)
 	{
 		node->children = (AST**)realloc(node->children, sizeof(AST*) * ++counter);
-		node->children[counter--] = parser_statement(parser);
+		node->children[counter - 1] = parser_statement(parser);
 	}
 	node->size = counter;
 
@@ -146,8 +153,16 @@ AST* parser_statement(parser_T* parser)
 	AST* node = NULL;
 	int type;
 
+	if (parser->token->type == TOKEN_LBRACE)
+	{
+		parser->table = table_add_table(parser->table);
+
+		node = parser_block(parser);
+
+		parser->table = parser->table->prev;				// Exit current table and move to parent table
+	}
 	// Checking all possible statement options
-	if (parser->token->type == TOKEN_ID)
+	else if (parser->token->type == TOKEN_ID)
 	{
 		if ((type = parser_check_reserved(parser)) > -1)
 		{
@@ -180,19 +195,37 @@ AST* parser_statement(parser_T* parser)
 		} 
 	}
 
-
 	return node;
 }
 
 AST* parser_assignment(parser_T* parser)
 {
-	AST* node = init_AST(AST_VARIABLE);
+	AST* node = init_AST(AST_VARIABLE);		// First make a variable node
+	AST* reset = NULL;
+
 	node->name = parser->token->value;
 
 	parser->token = parser_expect(parser, TOKEN_ID);
-	parser->token = parser_expect(parser, TOKEN_EQUALS);
 
-	node = AST_initChildren(node, parser_expression(parser), AST_ASSIGNMENT);
+	if (!table_search_entry(parser->table, node->name))
+	{
+		printf("Variable %s was not declared in the current scope\n", node->name);
+		exit(1);
+	}
+
+	// Now assign that variable to be the left child of an assignment node, including an expression
+	if (parser->token->type == TOKEN_EQUALS)
+	{
+		parser->token = lexer_get_next_token(parser->lexer);
+		node = AST_initChildren(node, parser_expression(parser), AST_ASSIGNMENT);
+	}
+	// If variable was written without an assignment, reset it
+	else
+	{
+		reset = init_AST(AST_INT);
+		reset->int_value = "0";
+		node = AST_initChildren(node, reset, AST_ASSIGNMENT);		
+	}
 
 	return node;
 }
@@ -234,20 +267,14 @@ AST* parser_var_dec(parser_T* parser)
 			default: printf("[ERROR]: Variable decleration missing variable type value\n");
 				exit(1);
 		}
-	
 	}
 
 	parser->token = parser_expect(parser, TOKEN_ID);
 
 	node->name = parser->token->value;
+	table_add_entry(parser->table, node->name, node->var_type);
 
-	parser->token = parser_expect(parser, TOKEN_ID);
-
-	if (parser->token->type == TOKEN_EQUALS)
-	{
-		parser->token = lexer_get_next_token(parser->lexer);
-		node->value = parser_expression(parser);
-	}
+	node->value = parser_assignment(parser);
 
 	return node;
 
@@ -337,7 +364,6 @@ AST* parser_factor(parser_T* parser)
 			exit(1);
 
 	}
-
 	return node;
 }
 
@@ -381,6 +407,9 @@ AST* parser_binary_expression(parser_T* parser)
 	}
 	else
 	{
+		node->value = node->leftChild;		// If there's one expression we switch it from left child to value field
+		node->leftChild = NULL;
+
 		node->type_c = TOKEN_NOOP;
 	}
 

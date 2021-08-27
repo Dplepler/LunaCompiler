@@ -8,7 +8,9 @@ int main(int argc, char** argv)
 	token_T* token = NULL;
 	parser_T* parser = NULL;
 	AST* root = NULL;
-	TAC** instructions = NULL;
+	TAC_list* instructions = NULL;
+
+	unsigned int i = 0;
 
 	char* contents = NULL;
 
@@ -25,7 +27,15 @@ int main(int argc, char** argv)
 			root = parser_parse(parser);
 			instructions = traversal_visit(root);
 
-			//printTree(root);
+			for (i = 0; i < instructions->size; i++)
+			{
+				if (instructions->instructions[i]->op)
+					printf("Operation: %s, ", typeToString(instructions->instructions[i]->op));
+				printf("Arg1: %s (%p), ", (char*)instructions->instructions[i]->arg1, (TAC*)instructions->instructions[i]->arg1);
+				if ((char*)instructions->instructions[i]->arg2)
+					printf("Arg2: %s (%p), ", (char*)instructions->instructions[i]->arg2, (TAC*)instructions->instructions[i]->arg2);
+				printf("Address: %p\n", (char*)instructions->instructions[i]);
+			}
 
 			free(contents);
 		}
