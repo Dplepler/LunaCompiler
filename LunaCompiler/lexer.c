@@ -1,5 +1,8 @@
 #include "lexer.h"
 
+size_t tokens_size = 0;
+token_T** tokens = NULL;
+
 /*
 init_lexer initializes the lexer with the source code (contents)
 Input: Source code
@@ -7,13 +10,14 @@ Output: Lexer
 */
 lexer_T* init_lexer(char* contents)
 {
-	lexer_T* lexer = (lexer_T*)calloc(1, sizeof(lexer));
+	lexer_T* lexer = calloc(1, sizeof(lexer));
 	//lexer->list = init_token_list();
 
 	lexer->contents = contents;
 	lexer->contentsLength = strlen(contents);
-	lexer->index = 0;
 	lexer->c = contents[lexer->index];
+
+	tokens = calloc(1, sizeof(token_T));
 
 	return lexer;
 }
@@ -53,20 +57,20 @@ Output: Initialized token
 token_T* lexer_advance_current(lexer_T* lexer, int type)
 {
 	token_T* token = NULL;
-	char* value = (char*)malloc(VALUE_SIZE);
+	char* value = malloc(VALUE_SIZE);
 	
 	value[0] = lexer->c;
 
 	// If token is 2 characters long (e.g: <=, ==)
 	if (type == TOKEN_ELESS || type == TOKEN_EMORE || type == TOKEN_DEQUAL)
 	{
-		value = (char*)realloc(value, VALUE_SIZE + 1);
+		value = realloc(value, VALUE_SIZE + 1);
 		lexer_advance(lexer);
 		value[1] = lexer->c;
-		value[2] = 0;
+		value[2] = '\0';
 	}
 	else
-		value[1] = 0;
+		value[1] = '\0';
 	
 	token = init_token(type, value);
 	lexer_advance(lexer);
@@ -81,8 +85,14 @@ Output: None
 */
 void lexer_skip_whitespace(lexer_T* lexer)
 {
+	// Skipping Whitespace
 	while (lexer->c == ' ' || lexer->c == '\n' || lexer->c == '\t')
 		lexer_advance(lexer);
+
+	// Skipping comments
+	if (lexer->c == '>')		
+		while (lexer->c != '\n')
+			lexer_advance(lexer);
 	
 }
 
@@ -138,11 +148,11 @@ token_T* lexer_get_next_token(lexer_T* lexer)
 			case '{': token = lexer_advance_current(lexer, TOKEN_LBRACE); break;
 			case '}': token = lexer_advance_current(lexer, TOKEN_RBRACE); break;
 			case '\0': token = lexer_advance_current(lexer, TOKEN_EOF);  break;
-			default: printf("Unknown token: '%c'", lexer->c); exit(1);
+			default: printf("Unknown lexeme: '%c'", lexer->c); exit(1);
 		}
 	}
 	
-	//token_list_push(lexer->list, token);
+	lexer_token_list_push(token);
 	return token;
 }
 
@@ -153,18 +163,18 @@ Output: Identifier token
 */
 token_T* lexer_collect_id(lexer_T* lexer)
 {
-	char* id = (char*)malloc(sizeof(char));
+	char* id = calloc(1, sizeof(char));
 	size_t size = 0;
-	
 	
 	while (isalpha(lexer->c) || isdigit(lexer->c))
 	{
-		id = (char*)realloc(id, ++size);
+		id = realloc(id, ++size);
 		id[size - 1] = lexer->c;
 		lexer_advance(lexer);
 	}
 
-	id[size] = 0;
+	id = realloc(id, size + 1);
+	id[size] = '\0';
 
 	return init_token(TOKEN_ID, id);
 }
@@ -177,21 +187,19 @@ Output: Number token
 token_T* lexer_collect_number(lexer_T* lexer)
 {
 
-	char* num = (char*)malloc(sizeof(char));
+	char* num = calloc(1, sizeof(char));
 	size_t size = 0;
 
 	while (isdigit(lexer->c))
 	{
-		num = (char*)realloc(num, size + 1);
-		num[size] = lexer->c;
-		size++;
+		num = realloc(num, ++size);
+		num[size - 1] = lexer->c;
 		lexer_advance(lexer);
 	}
-	
-	num[size] = 0;
+	num = realloc(num, size + 1);
+	num[size] = '\0';
 
 	return init_token(TOKEN_NUMBER, num);
-
 }
 
 /*
@@ -201,21 +209,37 @@ Output: String token
 */
 token_T* lexer_collect_string(lexer_T* lexer)
 {
-	char* string = (char*)malloc(sizeof(char));
+	char* string = calloc(1, sizeof(char));
 	size_t size = 0;
 
 	lexer_advance(lexer);
 	while (isalpha(lexer->c))
 	{
-		string = (char*)realloc(string, size + 1);
+		string = realloc(string, ++size);
 		string[size] = lexer->c;  
-		size++;
 		lexer_advance(lexer);
 	}
-
-	string[size] = 0;
+	string = realloc(string, size + 1);
+	string[size] = '\0';
 
 	lexer_advance(lexer);
 
 	return init_token(TOKEN_STRING, string);
+}
+
+void lexer_token_list_push(token_T* token)
+{
+	tokens = realloc(tokens, sizeof(token_T*) * ++tokens_size);
+	tokens[tokens_size - 1] = token;
+}
+
+void lexer_free_tokens()
+{
+	unsigned int i = 0;
+
+	for (i = 0; i < tokens_size; i++)
+	{
+		free(tokens[i]->value);
+		free(tokens[i]);
+	}
 }

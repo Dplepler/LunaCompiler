@@ -76,5 +76,6 @@ typedef struct AST_STRUCT
 AST* init_AST(int type);
 AST* AST_initChildren(AST* left, AST* right, int type);
 char* typeToString(int type);
+void AST_free_AST(AST* node);
 
 #endif

@@ -128,8 +128,6 @@ AST* parser_block(parser_T* parser)
 	AST* node = init_AST(AST_COMPOUND);
 	size_t counter = 0;
 
-	
-
 	node->children = calloc(1, sizeof(AST*));
 	parser->token = parser_expect(parser, TOKEN_LBRACE);
 
@@ -386,7 +384,6 @@ AST* parser_id(parser_T* parser)
 	if (lexer_peek(parser->lexer, 0) == '(')
 	{
 		node = parser_func_call(parser);
-		printf("Test: %s\n", node->name);
 	}
 	else
 	{
@@ -426,8 +423,12 @@ AST* parser_binary_expression(parser_T* parser)
 AST* parser_condition(parser_T* parser)
 {
 	AST* node = init_AST(AST_IF);
+	node->name = parser->token->value;
+
 	parser->token = parser_expect(parser, TOKEN_ID);
 	parser->token = parser_expect(parser, TOKEN_LPAREN);
+
+	
 
 	node->condition = parser_binary_expression(parser);
 	node->if_body = parser_statement(parser);

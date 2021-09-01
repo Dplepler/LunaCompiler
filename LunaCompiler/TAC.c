@@ -15,7 +15,7 @@ void list_push(TAC_list* list, TAC* instruction)
 		list->head = instruction;
 
 	list->last->next = instruction;
-	list->last = instruction;
+	list->last = instruction;    
 
 	list->size++;
 }
@@ -209,4 +209,18 @@ void traversal_statements(AST* node, TAC_list* list)
 		traversal_build_instruction(node->children[i], list);
 	}
 
+}
+
+void traversal_free_array(TAC_list* list)
+{
+	TAC* triple = list->head;
+	TAC* prev = NULL;
+
+	while (triple)
+	{
+		prev = triple;
+		triple = triple->next;
+		free(prev);
+
+	}
 }

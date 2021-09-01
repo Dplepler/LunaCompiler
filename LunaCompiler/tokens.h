@@ -34,17 +34,10 @@ typedef struct TOKEN_STRUCT
 
 } token_T;
 
-typedef struct TOKEN_LIST
-{
-	token_T** tokens;
-	size_t size;
-
-}token_list;
 
 
 token_T* init_token(int type, char* value);
-token_list* init_token_list();
-void token_list_push(token_list* list, token_T* token);
+
 
 
 #endif

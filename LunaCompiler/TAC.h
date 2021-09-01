@@ -30,6 +30,7 @@ void traversal_if(AST* node, TAC_list* list);
 void* traversal_build_instruction(AST* node, TAC_list* list);
 void traversal_statements(AST* node, TAC_list* list);
 void list_push(TAC_list* list, TAC* instruction);
+void traversal_free_array(TAC_list* list);
 
 
 #endif

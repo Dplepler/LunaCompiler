@@ -90,3 +90,76 @@ char* typeToString(int type)
 
 	}
 }
+
+void AST_free_AST(AST* node)
+{
+	unsigned int i = 0;
+
+	if (node->type == AST_ADD || node->type == AST_SUB || node->type == AST_MUL || node->type == AST_DIV
+		|| node->type == AST_COMPARE || node->type == AST_ASSIGNMENT)
+	{
+		if (node->value)
+		{
+			AST_free_AST(node->value);
+		}
+		else
+		{
+			AST_free_AST(node->leftChild);
+			AST_free_AST(node->rightChild);
+		}
+
+		free(node);
+	}
+	else if (node->type == AST_INT || node->type == AST_VARIABLE)
+	{
+		free(node);
+	}
+	else if (node->type == AST_IF || node->type == AST_WHILE)
+	{
+		AST_free_AST(node->if_body);
+		AST_free_AST(node->condition);
+		if (node->else_body)
+			AST_free_AST(node->else_body);
+		free(node);
+	}
+	else if (node->type == AST_VARIABLE_DEC || node->type == AST_RETURN)
+	{
+		free(node->value);
+		free(node);
+	}
+	else
+	{
+		switch (node->type)
+		{
+		case AST_PROGRAM:
+			for (i = 0; i < node->size; i++)
+				AST_free_AST(node->function_list[i]);
+			free(node->function_list);
+			free(node);
+			break;
+
+		case AST_FUNCTION:
+			for (i = 0; i < node->size; i++)
+				AST_free_AST(node->function_def_args[i]);
+			free(node->function_def_args);
+			AST_free_AST(node->function_body);
+			free(node);
+			break;
+
+		case AST_COMPOUND:
+			for (i = 0; i < node->size; i++)
+				AST_free_AST(node->children[i]);
+			free(node->children);
+			free(node);
+			break;
+
+		case AST_FUNC_CALL:
+			for (i = 0; i < node->size; i++)
+				AST_free_AST(node->arguments[i]);
+			free(node->arguments);
+			free(node);
+			break;
+
+		}
+	}
+}
