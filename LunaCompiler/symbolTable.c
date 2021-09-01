@@ -22,12 +22,12 @@ table_T* init_table(table_T* prev)
 
 void table_add_entry(table_T* table, char* name, int type)
 {
-	table->entries = (entry_T**)realloc(table->entries, sizeof(entry_T*) * ++table->entry_size);
+	table->entries = realloc(table->entries, sizeof(entry_T*) * ++table->entry_size);
 	table->entries[table->entry_size - 1] = init_entry(name, type);
 }
 table_T* table_add_table(table_T* table)
 {	
-	table->nestedScopes = (table_T**)realloc(table->nestedScopes, sizeof(table_T*) * ++table->nested_size);
+	table->nestedScopes = realloc(table->nestedScopes, sizeof(table_T*) * ++table->nested_size);
 	table->nestedScopes[table->nested_size - 1] = init_table(table);
 
 	return table->nestedScopes[table->nested_size - 1];
@@ -54,16 +54,15 @@ void table_print_table(table_T* table, int level)
 {
 	unsigned int i = 0;
 
-	if (!table)
-		return 0;
-
-	for (i = 0; i < table->entry_size; i++)
+	if (table)
 	{
-		printf("[Level]: %d, [Entry]: %s\n", level, table->entries[i]->name);
+		for (i = 0; i < table->entry_size; i++)
+		{
+			printf("[Level]: %d, [Entry]: %s\n", level, table->entries[i]->name);
+		}
+		for (i = 0; i < table->nested_size; i++)
+		{
+			table_print_table(table->nestedScopes[i], level + 1);
+		}
 	}
-	for (i = 0; i < table->nested_size; i++)
-	{
-		table_print_table(table->nestedScopes[i], level + 1);
-	}
-
 }

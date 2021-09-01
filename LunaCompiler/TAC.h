@@ -7,12 +7,15 @@ typedef struct TAC_STRUCT
 	int op;
 	void* arg1;
 	void* arg2;
+	
+	struct TAC_STRUCT* next;
 
 }TAC;
 
 typedef struct INSTRUCTIONS_STRUCT
 {
-	TAC** instructions;
+	TAC* head;
+	TAC* last;
 	size_t size;
 
 }TAC_list;
@@ -23,6 +26,7 @@ TAC* traversal_binop(AST* node, TAC_list* list);
 TAC* traversal_function_call(AST* node, TAC_list* list);
 TAC* traversal_func_dec(AST* node, TAC_list* list);
 TAC* traversal_assignment(AST* node, TAC_list* list);
+void traversal_if(AST* node, TAC_list* list);
 void* traversal_build_instruction(AST* node, TAC_list* list);
 void traversal_statements(AST* node, TAC_list* list);
 void list_push(TAC_list* list, TAC* instruction);

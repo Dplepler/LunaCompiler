@@ -3,13 +3,16 @@
 #include "AST.h"
 #define VALUE_SIZE 2
 
+
+
 typedef struct LEXER_STRUCT
 {
-
 	size_t index;
 	size_t contentsLength;
 	char* contents;
 	char c;
+
+	//token_list* list;
 
 }lexer_T;
 

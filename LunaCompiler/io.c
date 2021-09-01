@@ -6,7 +6,7 @@ char* read_file(FILE* file)
     char ch = 0;
     size_t i = 0;
 
-    contents = (char*)malloc(sizeof(char));
+    contents = (char*)calloc(1, sizeof(char));
 
     while ((ch = fgetc(file)) != EOF)
     {
@@ -17,7 +17,7 @@ char* read_file(FILE* file)
     contents = (char*)realloc(contents, ++i);
     contents[i - 1] = '\0';       
 
-    printf("contents: %s\n", contents);
+    printf("contents:%s\n", contents);
 
     fclose(file);
 

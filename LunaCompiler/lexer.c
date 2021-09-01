@@ -7,7 +7,9 @@ Output: Lexer
 */
 lexer_T* init_lexer(char* contents)
 {
-	lexer_T* lexer = malloc(sizeof(lexer));
+	lexer_T* lexer = (lexer_T*)calloc(1, sizeof(lexer));
+	//lexer->list = init_token_list();
+
 	lexer->contents = contents;
 	lexer->contentsLength = strlen(contents);
 	lexer->index = 0;
@@ -23,7 +25,6 @@ Output: None
 */
 void lexer_advance(lexer_T* lexer)
 {	
-	
 	if (lexer->index < lexer->contentsLength)
 	{
 		lexer->index++;
@@ -83,8 +84,6 @@ void lexer_skip_whitespace(lexer_T* lexer)
 	while (lexer->c == ' ' || lexer->c == '\n' || lexer->c == '\t')
 		lexer_advance(lexer);
 	
-		
-
 }
 
 /*
@@ -100,7 +99,6 @@ token_T* lexer_get_next_token(lexer_T* lexer)
 
 	if (isalpha(lexer->c))
 		token = lexer_collect_id(lexer);
-	
 	else if (isdigit(lexer->c))
 		token = lexer_collect_number(lexer);
 	else
@@ -144,7 +142,7 @@ token_T* lexer_get_next_token(lexer_T* lexer)
 		}
 	}
 	
-
+	//token_list_push(lexer->list, token);
 	return token;
 }
 
@@ -165,10 +163,10 @@ token_T* lexer_collect_id(lexer_T* lexer)
 		id[size - 1] = lexer->c;
 		lexer_advance(lexer);
 	}
+
 	id[size] = 0;
 
-
-	return init_token(TOKEN_ID, id);;
+	return init_token(TOKEN_ID, id);
 }
  
 /*

@@ -23,7 +23,7 @@ AST* parser_block(parser_T* parser);
 AST* parser_var_dec(parser_T* parser);
 AST* parser_statement(parser_T* parser);
 AST* parser_assignment(parser_T* parser);
-AST* parser_functionCall(parser_T* parser);
+AST* parser_func_call(parser_T* parser);
 AST* parser_expression(parser_T* parser);
 AST* parser_term(parser_T* parser);
 AST* parser_factor(parser_T* parser);

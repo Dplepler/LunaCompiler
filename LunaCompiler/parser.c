@@ -19,12 +19,12 @@ Output: Parser
 */
 parser_T* init_parser(lexer_T* lexer)
 {
-	parser_T* parser = (parser_T*)malloc(sizeof(parser_T));
+	parser_T* parser = calloc(1, sizeof(parser_T));
 	parser->lexer = lexer;
 	parser->token = lexer_get_next_token(parser->lexer);
 
 	parser->table = init_table(NULL);
-
+	
 	return parser;
 }
 
@@ -35,7 +35,6 @@ Output: The next token
 */
 token_T* parser_expect(parser_T* parser, int type)
 {
-
 	if (parser->token->type == type)
 	{
 		parser->token = lexer_get_next_token(parser->lexer);		// If everything is okay, get and return the next token
@@ -60,9 +59,6 @@ Output: Root of the abstract syntax tree
 AST* parser_parse(parser_T* parser)
 {
 	AST* root =  parser_lib(parser);
-	
-	//printf("Test: %s\n", root->function_list[0]->function_body->children[1]->value);
-	//printTree(root);
 	return root;
 }
 
@@ -71,10 +67,10 @@ AST* parser_lib(parser_T* parser)
 	AST* root = init_AST(AST_PROGRAM);
 	size_t counter = 0;
 
-	root->function_list = (AST**)malloc(sizeof(AST*));
+	root->function_list = calloc(1, sizeof(AST*));
 	do 
 	{
-		root->function_list = (AST**)realloc(root->function_list, sizeof(AST*) * ++counter);
+		root->function_list = realloc(root->function_list, sizeof(AST*) * ++counter);
 		root->function_list[counter - 1] = parser_function(parser);
 	
 	} while (parser->token->type != TOKEN_EOF);
@@ -95,7 +91,7 @@ AST* parser_function(parser_T* parser)
 	}
 	else
 	{
-		printf("[ERROR]: Invalid return type\n");
+		printf("[ERROR]: Bad function declaration\n");
 		exit(1);
 	}
 		
@@ -107,14 +103,14 @@ AST* parser_function(parser_T* parser)
 	parser->token = parser_expect(parser, TOKEN_ID);
 	parser->token = parser_expect(parser, TOKEN_LPAREN);
 
-	node->function_def_args = (AST**)malloc(sizeof(AST*));
+	node->function_def_args = calloc(1, sizeof(AST*));
 
 	parser->table = table_add_table(parser->table);
 
 	while (parser->token->type != TOKEN_RPAREN)
 	{
-		node->function_def_args = (AST**)realloc(node->function_def_args, sizeof(AST*) * ++counter);
-		node->function_def_args[counter--] = parser_var_dec(parser);
+		node->function_def_args = realloc(node->function_def_args, sizeof(AST*) * ++counter);
+		node->function_def_args[counter - 1] = parser_var_dec(parser);
 
 		if (parser->token->type != TOKEN_RPAREN)
 			parser->token = parser_expect(parser, TOKEN_COMMA);
@@ -132,13 +128,14 @@ AST* parser_block(parser_T* parser)
 	AST* node = init_AST(AST_COMPOUND);
 	size_t counter = 0;
 
-	node->children = (AST**)malloc(sizeof(AST*));
+	
 
+	node->children = calloc(1, sizeof(AST*));
 	parser->token = parser_expect(parser, TOKEN_LBRACE);
 
 	while (parser->token->type != TOKEN_RBRACE)
 	{
-		node->children = (AST**)realloc(node->children, sizeof(AST*) * ++counter);
+		node->children = realloc(node->children, sizeof(AST*) * ++counter);
 		node->children[counter - 1] = parser_statement(parser);
 	}
 	node->size = counter;
@@ -151,18 +148,10 @@ AST* parser_block(parser_T* parser)
 AST* parser_statement(parser_T* parser)
 {
 	AST* node = NULL;
-	int type;
+	int type = 0;
 
-	if (parser->token->type == TOKEN_LBRACE)
-	{
-		parser->table = table_add_table(parser->table);
-
-		node = parser_block(parser);
-
-		parser->table = parser->table->prev;				// Exit current table and move to parent table
-	}
 	// Checking all possible statement options
-	else if (parser->token->type == TOKEN_ID)
+	if (parser->token->type == TOKEN_ID)
 	{
 		if ((type = parser_check_reserved(parser)) > -1)
 		{
@@ -189,11 +178,23 @@ AST* parser_statement(parser_T* parser)
 			node = parser_assignment(parser);
 			parser->token = parser_expect(parser, TOKEN_SEMI);
 		}
+		else if (lexer_peek(parser->lexer, 0) == '(')
+		{
+			node = parser_func_call(parser);
+			parser->token = parser_expect(parser, TOKEN_SEMI);
+		}
 		else
 		{
 			node = parser_expression(parser);
 		} 
 	}
+	else if (parser->token->type == TOKEN_LBRACE)
+	{
+		parser->table = table_add_table(parser->table);
+		node = parser_block(parser);
+		parser->table = parser->table->prev;				// Exit current table and move to parent table
+	}
+
 
 	return node;
 }
@@ -230,7 +231,7 @@ AST* parser_assignment(parser_T* parser)
 	return node;
 }
 
-AST* parser_functionCall(parser_T* parser)
+AST* parser_func_call(parser_T* parser)
 {
 	AST* node = init_AST(AST_FUNC_CALL);
 	size_t counter = 0;
@@ -239,15 +240,16 @@ AST* parser_functionCall(parser_T* parser)
 	parser->token = parser_expect(parser, TOKEN_ID);
 	parser->token = parser_expect(parser, TOKEN_LPAREN);
 
-	node->arguments = (AST**)malloc(sizeof(AST*));
+	node->arguments = calloc(1, sizeof(AST*));
 
 	while (parser->token->type != TOKEN_RPAREN)
 	{
-		node->arguments = (AST**)realloc(node->arguments, sizeof(AST*) * ++counter);
+		node->arguments = realloc(node->arguments, sizeof(AST*) * ++counter);
 		node->arguments[counter - 1] = parser_expression(parser);
 
 		if (parser->token->type != TOKEN_RPAREN)
 			parser->token = parser_expect(parser, TOKEN_COMMA);
+
 	}
 	node->size = counter;
 
@@ -259,6 +261,7 @@ AST* parser_functionCall(parser_T* parser)
 AST* parser_var_dec(parser_T* parser)
 {
 	AST* node = init_AST(AST_VARIABLE_DEC);
+
 	if (parser->token->type == TOKEN_ID)
 	{
 		switch (parser_check_reserved(parser))
@@ -379,9 +382,11 @@ AST* parser_int(parser_T* parser)
 AST* parser_id(parser_T* parser)
 {
 	AST* node = NULL;
-	if (lexer_peek(parser->lexer, 1) == '(')
+
+	if (lexer_peek(parser->lexer, 0) == '(')
 	{
-		node = parser_functionCall(parser);
+		node = parser_func_call(parser);
+		printf("Test: %s\n", node->name);
 	}
 	else
 	{
@@ -425,11 +430,12 @@ AST* parser_condition(parser_T* parser)
 	parser->token = parser_expect(parser, TOKEN_LPAREN);
 
 	node->condition = parser_binary_expression(parser);
-	node->if_body = parser_block(parser);
+	node->if_body = parser_statement(parser);
 
 	if (parser_check_reserved(parser) == ELSE_T)
 	{
-		node->else_body = parser_block(parser);
+		parser->token = lexer_get_next_token(parser->lexer);
+		node->else_body = parser_statement(parser);
 	}
 
 	return node;

@@ -34,6 +34,7 @@
   <ItemGroup>
     <ClInclude Include="AST.h" />
     <ClInclude Include="io.h" />
+    <ClInclude Include="main.h" />
     <ClInclude Include="parser.h" />
     <ClInclude Include="symbolTable.h" />
     <ClInclude Include="TAC.h" />

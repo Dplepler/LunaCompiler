@@ -76,7 +76,11 @@ char* typeToString(int type)
 		case AST_VARIABLE_DEC: return "Declaration";
 		case AST_VARIABLE: return "Variable";
 		case AST_FUNC_CALL: return "Function Call";
+		case AST_PARAM: return "Param";
 		case AST_IF: return "If";
+		case AST_IFZ: return "If false";
+		case AST_LABEL: return "Label";
+		case AST_GOTO: return "Goto";
 		case AST_WHILE: return "While";
 		case AST_COMPARE: return "Comparsion";
 		case AST_RETURN: return "Return";

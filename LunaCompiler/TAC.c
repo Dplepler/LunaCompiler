@@ -2,16 +2,22 @@
 
 TAC_list* init_tac_list()
 {
-	TAC_list* list = (TAC_list*)calloc(1, sizeof(TAC_list));
-	list->instructions = (TAC**)calloc(1, sizeof(TAC*));
+	TAC_list* list = calloc(1, sizeof(TAC_list));
+	list->head = calloc(1, sizeof(TAC));
+	list->last = calloc(1, sizeof(TAC));
 
 	return list;
 }
 
 void list_push(TAC_list* list, TAC* instruction)
 {
-	list->instructions = (TAC**)realloc(list->instructions, sizeof(TAC*) * ++list->size);
-	list->instructions[list->size - 1] = instruction;
+	if (!list->size)
+		list->head = instruction;
+
+	list->last->next = instruction;
+	list->last = instruction;
+
+	list->size++;
 }
 
 TAC_list* traversal_visit(AST* node)
@@ -20,7 +26,6 @@ TAC_list* traversal_visit(AST* node)
 
 	traversal_build_instruction(node, list);
 	
-
 	return list;
 }
 
@@ -31,7 +36,8 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 
 	if (node)
 	{
-		if (node->type == AST_ADD || node->type == AST_SUB || node->type == AST_MUL || node->type == AST_DIV)
+		if (node->type == AST_ADD || node->type == AST_SUB || node->type == AST_MUL || node->type == AST_DIV ||
+			node->type == AST_COMPARE)
 		{
 			instruction = traversal_binop(node, list);
 		}
@@ -50,6 +56,7 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 				case AST_FUNC_CALL: instruction = traversal_function_call(node, list); break;
 				case AST_INT: instruction = (char*)node->int_value; break;
 				case AST_VARIABLE: instruction = (char*)node->name; break;
+				case AST_IF: traversal_if(node, list); break;
 					
 			}
 		}
@@ -62,11 +69,13 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 
 TAC* traversal_func_dec(AST* node, TAC_list* list)
 {
-	TAC* instruction = (TAC*)calloc(1, sizeof(TAC));
+	TAC* instruction = calloc(1, sizeof(TAC));
 
 	// In this triple, arg1 will be the function name and arg2 will be the function return type
 	instruction->arg1 = (char*)node->name;
 	instruction->arg2 = (char*)node->function_return_type;
+
+	instruction->op = node->type;
 
 	list_push(list, instruction);
 
@@ -79,9 +88,12 @@ Output: A triple
 */
 TAC* traversal_binop(AST* node, TAC_list* list)
 {
-	TAC* instruction = (TAC*)calloc(1, sizeof(TAC));
+	TAC* instruction = calloc(1, sizeof(TAC));
 
-	instruction->op = node->type;
+	if (node->type == AST_COMPARE)
+		instruction->op = node->type_c;
+	else
+		instruction->op = node->type;
 	
 	instruction->arg1 = traversal_build_instruction(node->leftChild, list);
 	instruction->arg2 = traversal_build_instruction(node->rightChild, list);
@@ -93,7 +105,7 @@ TAC* traversal_binop(AST* node, TAC_list* list)
 
 TAC* traversal_assignment(AST* node, TAC_list* list)
 {
-	TAC* instruction = (TAC*)calloc(1, sizeof(TAC));
+	TAC* instruction = calloc(1, sizeof(TAC));
 
 	instruction->op = node->type;
 
@@ -107,27 +119,84 @@ TAC* traversal_assignment(AST* node, TAC_list* list)
 
 TAC* traversal_function_call(AST* node, TAC_list* list)
 {
+	TAC* instruction = NULL;
 	unsigned int i = 0;
-	TAC* instruction = NULL; 
+	size_t counter = 0;
+	size_t size = 0;
 
 	// Push params for function call
 	for (i = 0; i < node->size; i++)
 	{
-		instruction = (TAC*)calloc(1, sizeof(TAC));
+		instruction = calloc(1, sizeof(TAC));
 		instruction->arg1 = (char*)node->arguments[i]->name;
+		instruction->op = AST_PARAM;
 		list_push(list, instruction);
 	}
+	
+	instruction = calloc(1, sizeof(TAC));
 
-	instruction = (TAC*)calloc(1, sizeof(TAC));
-	printf("Node type: %s\n", typeToString(node->type));
 	instruction->op = node->type;
-	instruction->arg1 = node->name;
-	instruction->arg2 = node->size;
+	instruction->arg1 = (char*)node->name;
+
+	counter = node->size;
+	while (counter)
+	{
+		counter /= 10;
+		size++;
+	}
+	instruction->arg2 = (char*)calloc(1, size);
+	_itoa(node->size, instruction->arg2, 10);
 
 	list_push(list, instruction);
 
 	return instruction;
 
+}
+
+void traversal_if(AST* node, TAC_list* list)
+{
+	TAC* instruction = calloc(1, sizeof(TAC));
+	TAC* gotoInstruction = NULL;
+	TAC* label = NULL;
+
+	unsigned int i = 0;
+
+	instruction->op = AST_IFZ;		// If false (If zero)
+
+	if (node->condition->type_c == TOKEN_NOOP)		// If there's no relation operation (<, >, <= etc)
+		instruction->arg1 = traversal_build_instruction(node->condition->value, list);
+	else
+		instruction->arg1 = traversal_binop(node->condition, list);
+
+	list_push(list, instruction);
+	
+	for (i = 0; i < node->if_body->size; i++)
+		traversal_build_instruction(node->if_body->children[i], list);
+
+	
+	label = calloc(1, sizeof(TAC));
+	
+	label->op = AST_LABEL;
+	
+	if (node->else_body)
+	{
+		gotoInstruction = calloc(1, sizeof(TAC));
+
+		gotoInstruction->op = AST_GOTO;
+		list_push(list, gotoInstruction);
+
+		instruction->arg2 = traversal_build_instruction(node->else_body->children[0], list);		// Assign the goto of if to the start of the else
+		for (i = 1; i < node->else_body->size; i++)
+			traversal_build_instruction(node->else_body->children[i], list);
+
+		list_push(list, label);
+		gotoInstruction->arg1 = label;
+	}
+	else
+	{
+		list_push(list, label);
+		instruction->arg2 = label;
+	}	
 }
 
 void traversal_statements(AST* node, TAC_list* list)

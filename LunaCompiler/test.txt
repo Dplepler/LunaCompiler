@@ -1,4 +1,16 @@
+
 int foo(int arg1, int arg2)
 {
-	int x = 3 * 5 / 2 + 1;
+	int x;
+	foo(x);
+	if (x)
+	{
+		int x = 3 * 5 / 2 + 1;
+	}
+	else
+	{
+		int y;
+		y = 5;
+	}
+	int z = y;
 }
