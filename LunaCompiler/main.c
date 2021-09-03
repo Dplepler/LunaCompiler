@@ -33,6 +33,8 @@ int main(int argc, char** argv)
 
 			triple = instructions->head;
 
+			table_print_table(parser->table, 0);
+
 			for (i = 0; i < instructions->size; i++)
 			{
 				if (triple->op)

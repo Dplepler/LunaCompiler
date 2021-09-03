@@ -1,5 +1,21 @@
 
-int foo(int arg1, int arg2)
+int globalVar;
+
+int foo(int x, int y)
 {
-	int x;
+	return x * y;
+}
+
+int main ()
+{
+	int x = 2;
+	int z;
+	
+	
+	while (z < 10000)
+	{
+		z = foo(x, x);
+		x = z;
+	}
+	
 }

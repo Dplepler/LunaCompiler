@@ -80,11 +80,11 @@ AST* parser_lib(parser_T* parser)
 			root->function_list[funcCounter - 1] = node;
 		}
 		else
-		{
+		{	
 			root->children = realloc(root->children, sizeof(AST*) * ++globalCounter);
 			root->children[globalCounter - 1] = node;
 		}
-	
+
 	} while (parser->token->type != TOKEN_EOF);
 
 	root->functionsSize = funcCounter;
@@ -133,6 +133,8 @@ AST* parser_function(parser_T* parser)
 
 	parser->token = parser_expect(parser, TOKEN_RPAREN);
 	node->function_body = parser_block(parser);
+
+	parser->table = parser->table->prev;
 
 	return node;
 }

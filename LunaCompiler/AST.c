@@ -131,49 +131,52 @@ void AST_free_AST(AST* node)
 	{
 		switch (node->type)
 		{
-		case AST_PROGRAM:
-			for (i = 0; i < node->size; i++)
-				AST_free_AST(node->function_list[i]);
-			if (node->function_list)
-				free(node->function_list);
+			case AST_PROGRAM:
+				// Freeing Functions
+				for (i = 0; i < node->functionsSize; i++)
+					AST_free_AST(node->function_list[i]);
+				// Freeing global variables
+				for (i = 0; i < node->size; i++)
+					AST_free_AST(node->children[i]);
 
-			free(node);
-			break;
+				if (node->function_list)
+					free(node->function_list);
+				if (node->children)
+					free(node->children);
+				free(node);
+				break;
 
-		case AST_FUNCTION:
-			// Freeing Functions
-			for (i = 0; i < node->functionsSize; i++)
-				AST_free_AST(node->function_def_args[i]);
-			// Freeing global variables
-			for (i = 0; i < node->size; i++)
-				AST_free_AST(node->children[i]);
+			case AST_FUNCTION:
+				// Freeing Functions
+				for (i = 0; i < node->size; i++)
+					AST_free_AST(node->function_def_args[i]);
 
-			if (node->function_def_args)
-				free(node->function_def_args);
-			if (node->children)
-				free(node->children);
-			if (node->function_body)
-				AST_free_AST(node->function_body);
+				if (node->function_def_args)
+					free(node->function_def_args);
+				if (node->function_body)
+					AST_free_AST(node->function_body);
+				
+					
 
-			free(node);
-			break;
+				free(node);
+				break;
 
-		case AST_COMPOUND:
-			for (i = 0; i < node->size; i++)
-				AST_free_AST(node->children[i]);
-			if (node->children)
-				free(node->children);
-			free(node);
-			break;
+			case AST_COMPOUND:
+				for (i = 0; i < node->size; i++)
+					AST_free_AST(node->children[i]);
+				if (node->children)
+					free(node->children);
+				free(node);
+				break;
 
-		case AST_FUNC_CALL:
-			for (i = 0; i < node->size; i++)
-				AST_free_AST(node->arguments[i]);
-			if (node->arguments)
-				free(node->arguments);
+			case AST_FUNC_CALL:
+				for (i = 0; i < node->size; i++)
+					AST_free_AST(node->arguments[i]);
+				if (node->arguments)
+					free(node->arguments);
 
-			free(node);
-			break;
+				free(node);
+				break;
 
 		}
 	}

@@ -47,7 +47,7 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 				case AST_PROGRAM: 
 					for (i = 0; i < node->size; i++)	// Loop through global variables
 						instruction = traversal_build_instruction(node->children[i], list);
-
+					
 					for (i = 0; i < node->functionsSize; i++)		// Loop through functions
 						instruction = traversal_build_instruction(node->function_list[i], list);
 					break;

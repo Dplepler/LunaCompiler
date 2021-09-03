@@ -91,6 +91,7 @@ void table_free_table(table_T* table)
 		{
 			free(table->entries[i]);
 		}
+
 		free(table->entries);
 		free(table->nestedScopes);
 		free(table);
