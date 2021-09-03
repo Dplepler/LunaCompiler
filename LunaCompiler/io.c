@@ -1,20 +1,21 @@
 #include "io.h"
 
+
 char* read_file(FILE* file)
 {
 	char* contents = NULL;
     char ch = 0;
     size_t i = 0;
 
-    contents = (char*)calloc(1, sizeof(char));
+    contents = calloc(1, sizeof(char));
 
     while ((ch = fgetc(file)) != EOF)
     {
-        contents = (char*)realloc(contents, ++i);
+        contents = realloc(contents, ++i);
         contents[i - 1] = ch;
     } 
 
-    contents = (char*)realloc(contents, ++i);
+    contents = realloc(contents, ++i);
     contents[i - 1] = '\0';       
 
     printf("contents:%s\n", contents);

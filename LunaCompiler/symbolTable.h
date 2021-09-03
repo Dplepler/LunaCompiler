@@ -22,8 +22,8 @@ typedef struct STRUCT_SYMBOL_TABLE
 	struct STRUCT_SYMBOL_TABLE** nestedScopes;
 	struct STRUCT_SYMBOL_TABLE* prev;
 	
-	size_t entry_size;
-	size_t nested_size;
+	size_t entrySize;
+	size_t nestedSize;
 
 }table_T;
 
@@ -33,5 +33,6 @@ table_T* init_table(table_T* prev);
 table_T* table_add_table(table_T* table);
 entry_T* table_search_entry(table_T* table, char* name);
 void table_print_table(table_T* table, int level);
+void table_free_table(table_T* table);
 
 #endif

@@ -1,6 +1,6 @@
 #include "lexer.h"
 
-size_t tokens_size = 0;
+size_t tokensSize = 0;
 token_T** tokens = NULL;
 
 /*
@@ -10,14 +10,13 @@ Output: Lexer
 */
 lexer_T* init_lexer(char* contents)
 {
-	lexer_T* lexer = calloc(1, sizeof(lexer));
-	//lexer->list = init_token_list();
+	lexer_T* lexer = calloc(1, sizeof(lexer_T));
 
 	lexer->contents = contents;
 	lexer->contentsLength = strlen(contents);
 	lexer->c = contents[lexer->index];
 
-	tokens = calloc(1, sizeof(token_T));
+	tokens = calloc(1, sizeof(token_T*));
 
 	return lexer;
 }
@@ -30,10 +29,7 @@ Output: None
 void lexer_advance(lexer_T* lexer)
 {	
 	if (lexer->index < lexer->contentsLength)
-	{
-		lexer->index++;
-		lexer->c = lexer->contents[lexer->index];
-	}
+		lexer->c = lexer->contents[++lexer->index];
 	else
 		lexer->c = '\0';
 
@@ -45,6 +41,26 @@ char lexer_peek(lexer_T* lexer, size_t offset)
 
 	if (lexer->index + 1 < lexer->contentsLength)
 		token = lexer->contents[lexer->index + offset];
+
+	return token;
+}
+
+/*
+lexer_token_peeks returns the next token without advancing
+Input: Lexer
+Output: Next token
+*/
+token_T* lexer_token_peek(lexer_T* lexer, unsigned int offset)
+{
+	unsigned int saveLoc = lexer->index;
+	unsigned int i = 0;
+	token_T* token = NULL;
+
+	for (i = 0; i < offset; i++)
+		token = lexer_get_next_token(lexer);
+
+	lexer->index = saveLoc;		// Return previous index
+	lexer->c = lexer->contents[lexer->index];
 
 	return token;
 }
@@ -85,15 +101,15 @@ Output: None
 */
 void lexer_skip_whitespace(lexer_T* lexer)
 {
+	// Skipping comments
+	if (lexer->c == '~')
+		while (lexer->c != '\n')
+			lexer_advance(lexer);
+
 	// Skipping Whitespace
 	while (lexer->c == ' ' || lexer->c == '\n' || lexer->c == '\t')
 		lexer_advance(lexer);
 
-	// Skipping comments
-	if (lexer->c == '>')		
-		while (lexer->c != '\n')
-			lexer_advance(lexer);
-	
 }
 
 /*
@@ -229,17 +245,19 @@ token_T* lexer_collect_string(lexer_T* lexer)
 
 void lexer_token_list_push(token_T* token)
 {
-	tokens = realloc(tokens, sizeof(token_T*) * ++tokens_size);
-	tokens[tokens_size - 1] = token;
+	tokens = realloc(tokens, sizeof(token_T*) * ++tokensSize);
+	tokens[tokensSize - 1] = token;
 }
 
 void lexer_free_tokens()
 {
 	unsigned int i = 0;
 
-	for (i = 0; i < tokens_size; i++)
+	for (i = 0; i < tokensSize; i++)
 	{
 		free(tokens[i]->value);
 		free(tokens[i]);
 	}
+
+	free(tokens);
 }

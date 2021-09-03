@@ -22,16 +22,20 @@ table_T* init_table(table_T* prev)
 
 void table_add_entry(table_T* table, char* name, int type)
 {
-	table->entries = realloc(table->entries, sizeof(entry_T*) * ++table->entry_size);
-	table->entries[table->entry_size - 1] = init_entry(name, type);
+	if (table->entrySize)
+		table->entries = realloc(table->entries, sizeof(entry_T*) * ++table->entrySize);
+	else
+		table->entrySize++;
+
+	table->entries[table->entrySize - 1] = init_entry(name, type);
 }
 
 table_T* table_add_table(table_T* table)
 {	
-	table->nestedScopes = realloc(table->nestedScopes, sizeof(table_T*) * ++table->nested_size);
-	table->nestedScopes[table->nested_size - 1] = init_table(table);
+	table->nestedScopes = realloc(table->nestedScopes, sizeof(table_T*) * ++table->nestedSize);
+	table->nestedScopes[table->nestedSize - 1] = init_table(table);
 
-	return table->nestedScopes[table->nested_size - 1];
+	return table->nestedScopes[table->nestedSize - 1];
 }
 
 entry_T* table_search_entry(table_T* table, char* name)
@@ -39,7 +43,7 @@ entry_T* table_search_entry(table_T* table, char* name)
 	unsigned int i = 0;
 	entry_T* entry = NULL;
 
-	for (i = 0; i < table->entry_size && !entry; i++)
+	for (i = 0; i < table->entrySize && !entry; i++)
 	{
 		if (!strcmp(table->entries[i]->name, name))
 			entry = table->entries[i];
@@ -57,13 +61,39 @@ void table_print_table(table_T* table, int level)
 
 	if (table)
 	{
-		for (i = 0; i < table->entry_size; i++)
+		for (i = 0; i < table->entrySize; i++)
 		{
 			printf("[Level]: %d, [Entry]: %s\n", level, table->entries[i]->name);
 		}
-		for (i = 0; i < table->nested_size; i++)
+		for (i = 0; i < table->nestedSize; i++)
 		{
 			table_print_table(table->nestedScopes[i], level + 1);
 		}
 	}
+}
+
+/*
+table_free_table is a postorder tree traversal that frees all nodes of the symbol table
+Input: Root of table tree
+Output: None
+*/
+void table_free_table(table_T* table)
+{
+	unsigned int i = 0;
+
+	if (table)
+	{
+		for (i = 0; i < table->nestedSize; i++)
+		{
+			table_free_table(table->nestedScopes[i]);
+		}
+		for (i = 0; i < table->entrySize; i++)
+		{
+			free(table->entries[i]);
+		}
+		free(table->entries);
+		free(table->nestedScopes);
+		free(table);
+	}
+
 }

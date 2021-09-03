@@ -3,8 +3,6 @@
 TAC_list* init_tac_list()
 {
 	TAC_list* list = calloc(1, sizeof(TAC_list));
-	list->head = calloc(1, sizeof(TAC));
-	list->last = calloc(1, sizeof(TAC));
 
 	return list;
 }
@@ -13,8 +11,9 @@ void list_push(TAC_list* list, TAC* instruction)
 {
 	if (!list->size)
 		list->head = instruction;
+	else
+		list->last->next = instruction;
 
-	list->last->next = instruction;
 	list->last = instruction;    
 
 	list->size++;
@@ -46,7 +45,10 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 			switch (node->type)
 			{
 				case AST_PROGRAM: 
-					for (i = 0; i < node->size; i++)		// Loop through functions
+					for (i = 0; i < node->size; i++)	// Loop through global variables
+						instruction = traversal_build_instruction(node->children[i], list);
+
+					for (i = 0; i < node->functionsSize; i++)		// Loop through functions
 						instruction = traversal_build_instruction(node->function_list[i], list);
 					break;
 				case AST_FUNCTION: instruction = traversal_func_dec(node, list); traversal_statements(node->function_body, list); break;
@@ -57,6 +59,8 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 				case AST_INT: instruction = (char*)node->int_value; break;
 				case AST_VARIABLE: instruction = (char*)node->name; break;
 				case AST_IF: traversal_if(node, list); break;
+				case AST_WHILE: traversal_while(node, list); break;
+				case AST_RETURN: traversal_return(node, list); break;
 					
 			}
 		}
@@ -144,7 +148,7 @@ TAC* traversal_function_call(AST* node, TAC_list* list)
 		counter /= 10;
 		size++;
 	}
-	instruction->arg2 = (char*)calloc(1, size);
+	instruction->arg2 = calloc(1, ++size);
 	_itoa(node->size, instruction->arg2, 10);
 
 	list_push(list, instruction);
@@ -153,28 +157,32 @@ TAC* traversal_function_call(AST* node, TAC_list* list)
 
 }
 
-void traversal_if(AST* node, TAC_list* list)
+TAC* traversal_condition(AST* node, TAC_list* list)
 {
 	TAC* instruction = calloc(1, sizeof(TAC));
-	TAC* gotoInstruction = NULL;
-	TAC* label = NULL;
-
-	unsigned int i = 0;
 
 	instruction->op = AST_IFZ;		// If false (If zero)
 
-	if (node->condition->type_c == TOKEN_NOOP)		// If there's no relation operation (<, >, <= etc)
-		instruction->arg1 = traversal_build_instruction(node->condition->value, list);
+	if (node->type_c == TOKEN_NOOP)		// If there's no relation operation (<, >, <= etc)
+		instruction->arg1 = traversal_build_instruction(node->value, list);
 	else
-		instruction->arg1 = traversal_binop(node->condition, list);
+		instruction->arg1 = traversal_binop(node, list);
 
 	list_push(list, instruction);
+
+	return instruction;
+}
+
+void traversal_if(AST* node, TAC_list* list)
+{
+	TAC* instruction = traversal_condition(node->condition, list);
+	TAC* label = calloc(1, sizeof(TAC));
+	TAC* gotoInstruction = NULL;
+
+	unsigned int i = 0;
 	
 	for (i = 0; i < node->if_body->size; i++)
 		traversal_build_instruction(node->if_body->children[i], list);
-
-	
-	label = calloc(1, sizeof(TAC));
 	
 	label->op = AST_LABEL;
 	
@@ -199,6 +207,38 @@ void traversal_if(AST* node, TAC_list* list)
 	}	
 }
 
+void traversal_while(AST* node, TAC_list* list)
+{
+	TAC* condition = traversal_condition(node->condition, list);		// Create a condition
+	TAC* gotoInstruction = calloc(1, sizeof(TAC));
+	TAC* lable = calloc(1, sizeof(TAC));
+	
+	traversal_statements(node->if_body, list);		// Travel through the body of the while loop and create instructions
+
+	// Jump to the start of the loop including the condition
+	gotoInstruction->op = AST_GOTO;
+	gotoInstruction->arg1 = condition->arg1;	
+	list_push(list, gotoInstruction);
+
+	lable->op = AST_LABEL;
+	list_push(list, lable);
+
+	condition->arg2 = lable;
+
+}
+
+TAC* traversal_return(AST* node, TAC_list* list)
+{
+	TAC* instruction = calloc(1, sizeof(TAC));
+
+	instruction->op = AST_RETURN;
+	instruction->arg1 = traversal_build_instruction(node->value, list);
+
+	list_push(list, instruction);
+
+	return instruction;
+}
+
 void traversal_statements(AST* node, TAC_list* list)
 {
 	unsigned int i = 0;
@@ -216,11 +256,15 @@ void traversal_free_array(TAC_list* list)
 	TAC* triple = list->head;
 	TAC* prev = NULL;
 
-	while (triple)
+	while (triple->next)
 	{
+		if (triple->op == AST_FUNC_CALL)
+			free(triple->arg2);
+
 		prev = triple;
 		triple = triple->next;
 		free(prev);
-
 	}
+	free(list->last);
+	free(list);
 }

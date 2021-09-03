@@ -1,5 +1,9 @@
+
 #include "TAC.h"
 #define SIZE 100
+
+
+
 
 int main(int argc, char** argv)
 {
@@ -33,31 +37,28 @@ int main(int argc, char** argv)
 			{
 				if (triple->op)
 					printf("Operation: %s, ", typeToString(triple->op));
-				printf("Arg1: %s (%p), ", (char*)triple->arg1, (TAC*)triple->arg1);
-				if ((char*)triple->arg2)
-					printf("Arg2: %s (%p), ", (char*)triple->arg2, (TAC*)triple->arg2);
-				printf("Address: %p\n", (char*)triple);
+				if (triple->arg1)
+					printf("Arg1: %s (%p), ", triple->arg1, triple->arg1);
+				if (triple->arg2)
+					printf("Arg2: %s (%p), ", triple->arg2, triple->arg2);
+				printf("Address: %p\n", triple);
 
 				triple = triple->next;
 			}
 
-			table_print_table(parser->table, 0);
-
-			AST_free_AST(root);
 			lexer_free_tokens();
+			AST_free_AST(root);
 			traversal_free_array(instructions);
-
+			table_free_table(parser->table);
 			free(contents);
-			
+			free(lexer);
+			free(parser);
+
 		}
 	}
 	else
 		printf("File does not exist\n");
 	
-	printf("test \n\n");
+	_CrtDumpMemoryLeaks();
 	return 0;
 }
-
-
-
-

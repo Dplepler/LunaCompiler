@@ -52,6 +52,8 @@ typedef struct AST_STRUCT
 	struct AST_STRUCT** function_def_args;
 	struct AST_STRUCT* function_body;
 	char* function_return_type;
+	size_t functionsSize;
+
 
 	// Name used for different types of nodes, (e.g a variable node would have it's node->name be the identifier)
 	char* name;

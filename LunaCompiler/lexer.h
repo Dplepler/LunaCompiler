@@ -18,6 +18,7 @@ void lexer_advance(lexer_T* lexer);
 void lexer_skip_whitespace(lexer_T* lexer);
 char lexer_peek(lexer_T* lexer, size_t offset);
 lexer_T* init_lexer(char* contents);
+token_T* lexer_token_peek(lexer_T* lexer, unsigned int offset);
 token_T* lexer_get_next_token(lexer_T* lexer);
 token_T* lexer_collect_id(lexer_T* lexer);
 token_T* lexer_collect_number(lexer_T* lexer);

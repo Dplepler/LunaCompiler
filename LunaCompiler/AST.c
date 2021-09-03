@@ -124,7 +124,7 @@ void AST_free_AST(AST* node)
 	}
 	else if (node->type == AST_VARIABLE_DEC || node->type == AST_RETURN)
 	{
-		free(node->value);
+		AST_free_AST(node->value);
 		free(node);
 	}
 	else
@@ -134,29 +134,44 @@ void AST_free_AST(AST* node)
 		case AST_PROGRAM:
 			for (i = 0; i < node->size; i++)
 				AST_free_AST(node->function_list[i]);
-			free(node->function_list);
+			if (node->function_list)
+				free(node->function_list);
+
 			free(node);
 			break;
 
 		case AST_FUNCTION:
-			for (i = 0; i < node->size; i++)
+			// Freeing Functions
+			for (i = 0; i < node->functionsSize; i++)
 				AST_free_AST(node->function_def_args[i]);
-			free(node->function_def_args);
-			AST_free_AST(node->function_body);
+			// Freeing global variables
+			for (i = 0; i < node->size; i++)
+				AST_free_AST(node->children[i]);
+
+			if (node->function_def_args)
+				free(node->function_def_args);
+			if (node->children)
+				free(node->children);
+			if (node->function_body)
+				AST_free_AST(node->function_body);
+
 			free(node);
 			break;
 
 		case AST_COMPOUND:
 			for (i = 0; i < node->size; i++)
 				AST_free_AST(node->children[i]);
-			free(node->children);
+			if (node->children)
+				free(node->children);
 			free(node);
 			break;
 
 		case AST_FUNC_CALL:
 			for (i = 0; i < node->size; i++)
 				AST_free_AST(node->arguments[i]);
-			free(node->arguments);
+			if (node->arguments)
+				free(node->arguments);
+
 			free(node);
 			break;
 

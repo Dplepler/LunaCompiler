@@ -65,17 +65,30 @@ AST* parser_parse(parser_T* parser)
 AST* parser_lib(parser_T* parser)
 {
 	AST* root = init_AST(AST_PROGRAM);
-	size_t counter = 0;
+	AST* node = NULL;
+	size_t funcCounter = 0;
+	size_t globalCounter = 0;
 
 	root->function_list = calloc(1, sizeof(AST*));
+
 	do 
 	{
-		root->function_list = realloc(root->function_list, sizeof(AST*) * ++counter);
-		root->function_list[counter - 1] = parser_function(parser);
+		node = parser_statement(parser);
+		if (node->type == AST_FUNCTION)
+		{
+			root->function_list = realloc(root->function_list, sizeof(AST*) * ++funcCounter);
+			root->function_list[funcCounter - 1] = node;
+		}
+		else
+		{
+			root->children = realloc(root->children, sizeof(AST*) * ++globalCounter);
+			root->children[globalCounter - 1] = node;
+		}
 	
 	} while (parser->token->type != TOKEN_EOF);
 
-	root->size = counter;
+	root->functionsSize = funcCounter;
+	root->size = globalCounter;
 
 	return root;
 }
@@ -109,6 +122,7 @@ AST* parser_function(parser_T* parser)
 
 	while (parser->token->type != TOKEN_RPAREN)
 	{
+		
 		node->function_def_args = realloc(node->function_def_args, sizeof(AST*) * ++counter);
 		node->function_def_args[counter - 1] = parser_var_dec(parser);
 
@@ -155,28 +169,38 @@ AST* parser_statement(parser_T* parser)
 		{
 			switch (type)
 			{
-				case INT_T: node = parser_var_dec(parser); break;
+				case INT_T: 
+					if (lexer_token_peek(parser->lexer, 2)->type == TOKEN_LPAREN)
+						node = parser_function(parser);
+					else
+						node = parser_var_dec(parser); 
+					break;
+
 				case IF_T: node = parser_condition(parser); break;
 				case WHILE_T: node = parser_while(parser); break;
 				case RETURN_T: node = parser_return(parser); break;
-				
-			}
-			if (type >= INT_T)		// All of the reserved options after and including INT_T end with a semi colon
-			{
-				parser->token = parser_expect(parser, TOKEN_SEMI);
 
-				if (type == RETURN_T)
-					while (parser->token->type != TOKEN_RBRACE)					// Skipping all code after the return in the block, because it can never be reached
-						parser->token = lexer_get_next_token(parser->lexer);
 			}
+			if (node)
+			{
+				if (node->type == AST_VARIABLE_DEC || node->type == AST_RETURN)
+				{
+					parser->token = parser_expect(parser, TOKEN_SEMI);
+
+					if (type == RETURN_T)
+						while (parser->token->type != TOKEN_RBRACE)					// Skipping all code after the return in the block, because it can never be reached
+							parser->token = lexer_get_next_token(parser->lexer);
+				}
+			}
+				
 		}
 		// Variable assignment
-		else if (lexer_peek(parser->lexer, 1) == '=')
+		else if (lexer_token_peek(parser->lexer, 1)->type == TOKEN_EQUALS)
 		{
 			node = parser_assignment(parser);
 			parser->token = parser_expect(parser, TOKEN_SEMI);
 		}
-		else if (lexer_peek(parser->lexer, 0) == '(')
+		else if (lexer_token_peek(parser->lexer, 1)->type == TOKEN_LPAREN)
 		{
 			node = parser_func_call(parser);
 			parser->token = parser_expect(parser, TOKEN_SEMI);
@@ -192,6 +216,7 @@ AST* parser_statement(parser_T* parser)
 		node = parser_block(parser);
 		parser->table = parser->table->prev;				// Exit current table and move to parent table
 	}
+
 
 
 	return node;
@@ -289,7 +314,6 @@ Output: AST node
 AST* parser_expression(parser_T* parser)
 {
 	AST* node = NULL;
-
 	if (parser->token->type == TOKEN_ADD)
 		parser->token = lexer_get_next_token(parser->lexer);
 
@@ -381,7 +405,7 @@ AST* parser_id(parser_T* parser)
 {
 	AST* node = NULL;
 
-	if (lexer_peek(parser->lexer, 0) == '(')
+	if (lexer_token_peek(parser->lexer, 1)->type == TOKEN_LPAREN)
 	{
 		node = parser_func_call(parser);
 	}
@@ -399,6 +423,8 @@ AST* parser_binary_expression(parser_T* parser)
 {
 	AST* node = init_AST(AST_COMPARE);
 
+	parser->token = parser_expect(parser, TOKEN_LPAREN);
+
 	node->leftChild = parser_expression(parser);	// Getting first expression
 
 	if (parser->token->type == TOKEN_MORE || parser->token->type == TOKEN_EMORE || parser->token->type == TOKEN_LESS || parser->token->type == TOKEN_ELESS || parser->token->type == TOKEN_DEQUAL)
@@ -414,7 +440,6 @@ AST* parser_binary_expression(parser_T* parser)
 
 		node->type_c = TOKEN_NOOP;
 	}
-
 	parser->token = parser_expect(parser, TOKEN_RPAREN);
 
 	return node;
@@ -425,10 +450,7 @@ AST* parser_condition(parser_T* parser)
 	AST* node = init_AST(AST_IF);
 	node->name = parser->token->value;
 
-	parser->token = parser_expect(parser, TOKEN_ID);
-	parser->token = parser_expect(parser, TOKEN_LPAREN);
-
-	
+	parser->token = parser_expect(parser, TOKEN_ID);	
 
 	node->condition = parser_binary_expression(parser);
 	node->if_body = parser_statement(parser);
@@ -444,9 +466,12 @@ AST* parser_condition(parser_T* parser)
 AST* parser_while(parser_T* parser)
 {
 	AST* node = init_AST(AST_WHILE);
-	node->condition = parser_binary_expression(parser);
-	node->if_body = parser_block(parser);
+	parser->token = lexer_get_next_token(parser->lexer);
 
+	node->condition = parser_binary_expression(parser);
+
+	node->if_body = parser_block(parser);
+	
 	return node;
 }
 AST* parser_return(parser_T* parser)
