@@ -1,21 +1,24 @@
 
 int globalVar;
 
-int foo(int x, int y)
+int foo(int x, int y) 		~ Comment comment blah blah blah
 {
-	return x * y;
+
+	5 + 3 + y;
+	int z;
+	
 }
 
 int main ()
 {
-	int x = 2;
+	int x;
 	int z;
+	int y;
 	
-	
-	while (z < 10000)
+	while (z + 5 < x * 2)
 	{
-		z = foo(x, x);
-		x = z;
+		y = y + 1;
 	}
 	
 }
+

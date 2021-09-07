@@ -8,6 +8,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
+#include <setjmp.h>
+
 
 char* read_file(FILE* file);
 void myFgets(char str[], int n);

@@ -15,7 +15,11 @@ int main(int argc, char** argv)
 	TAC* triple = NULL;
 	TAC_list* instructions = NULL;
 
+	char* test = "Hello";
+
 	unsigned int i = 0;
+
+	instructions = init_tac_list();
 
 	char* contents = NULL;
 
@@ -31,7 +35,7 @@ int main(int argc, char** argv)
 			root = parser_parse(parser);
 			instructions = traversal_visit(root);
 
-			triple = instructions->head;
+			triple = instructions->head;			
 
 			table_print_table(parser->table, 0);
 
@@ -44,11 +48,11 @@ int main(int argc, char** argv)
 				if (triple->arg2)
 					printf("Arg2: %s (%p), ", triple->arg2, triple->arg2);
 				printf("Address: %p\n", triple);
-
+				
 				triple = triple->next;
 			}
 
-			lexer_free_tokens();
+			lexer_free_tokens(lexer);
 			AST_free_AST(root);
 			traversal_free_array(instructions);
 			table_free_table(parser->table);

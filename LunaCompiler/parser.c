@@ -98,14 +98,11 @@ AST* parser_function(parser_T* parser)
 	AST* node = init_AST(AST_FUNCTION);
 	size_t counter = 0;
 
-	if (parser_check_reserved(parser) == INT_T)
+	switch (parser_check_reserved(parser))
 	{
-		node->function_return_type = parser->token->value;
-	}
-	else
-	{
-		printf("[ERROR]: Bad function declaration\n");
-		exit(1);
+		case INT_T: node->var_type = DATA_INT; break;
+		default: printf("[ERROR]: Bad function declaration\n"); 
+			exit(1);
 	}
 		
 	parser->token = parser_expect(parser, TOKEN_ID);
@@ -117,6 +114,8 @@ AST* parser_function(parser_T* parser)
 	parser->token = parser_expect(parser, TOKEN_LPAREN);
 
 	node->function_def_args = calloc(1, sizeof(AST*));
+
+	table_add_entry(parser->table, node->name, node->var_type);
 
 	parser->table = table_add_table(parser->table);
 
@@ -218,6 +217,15 @@ AST* parser_statement(parser_T* parser)
 		node = parser_block(parser);
 		parser->table = parser->table->prev;				// Exit current table and move to parent table
 	}
+	else if (parser->token->type == TOKEN_NUMBER)
+	{
+		node = parser_expression(parser);
+		parser->token = parser_expect(parser, TOKEN_SEMI);
+	}
+	else
+	{
+		printf("[ERROR]: Invalid syntax\n"); exit(1);
+	}
 
 
 
@@ -226,18 +234,8 @@ AST* parser_statement(parser_T* parser)
 
 AST* parser_assignment(parser_T* parser)
 {
-	AST* node = init_AST(AST_VARIABLE);		// First make a variable node
+	AST* node = parser_id(parser);		// First make a variable node
 	AST* reset = NULL;
-
-	node->name = parser->token->value;
-
-	parser->token = parser_expect(parser, TOKEN_ID);
-
-	if (!table_search_entry(parser->table, node->name))
-	{
-		printf("Variable %s was not declared in the current scope\n", node->name);
-		exit(1);
-	}
 
 	// Now assign that variable to be the left child of an assignment node, including an expression
 	if (parser->token->type == TOKEN_EQUALS)
@@ -291,7 +289,7 @@ AST* parser_var_dec(parser_T* parser)
 	{
 		switch (parser_check_reserved(parser))
 		{
-			case INT_T: node->var_type = VAR_INT; break;
+			case INT_T: node->var_type = DATA_INT; break;
 			default: printf("[ERROR]: Variable decleration missing variable type value\n");
 				exit(1);
 		}
@@ -416,6 +414,12 @@ AST* parser_id(parser_T* parser)
 		node = init_AST(AST_VARIABLE);
 		node->name = parser->token->value;
 		parser->token = parser_expect(parser, TOKEN_ID);
+
+		if (!table_search_entry(parser->table, node->name))
+		{
+			printf("Variable %s was not declared in the current scope\n", node->name);
+			exit(1);
+		}
 	}
 
 	return node;

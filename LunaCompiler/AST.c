@@ -85,8 +85,8 @@ char* typeToString(int type)
 		case AST_COMPARE: return "Comparsion";
 		case AST_RETURN: return "Return";
 
-		
-		
+		// Types
+		case DATA_INT: return "Int";
 
 	}
 }

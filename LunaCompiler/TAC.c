@@ -77,7 +77,8 @@ TAC* traversal_func_dec(AST* node, TAC_list* list)
 
 	// In this triple, arg1 will be the function name and arg2 will be the function return type
 	instruction->arg1 = (char*)node->name;
-	instruction->arg2 = (char*)node->function_return_type;
+	instruction->arg2 = typeToString(node->var_type);
+	
 
 	instruction->op = node->type;
 
@@ -85,6 +86,7 @@ TAC* traversal_func_dec(AST* node, TAC_list* list)
 
 	return instruction;
 }
+
 /*
 traversal_binop handles binary operations between two expressions
 Input: An AST node, Triple list
@@ -114,6 +116,7 @@ TAC* traversal_assignment(AST* node, TAC_list* list)
 	instruction->op = node->type;
 
 	instruction->arg1 = node->leftChild->name;
+
 	instruction->arg2 = traversal_build_instruction(node->rightChild, list);
 
 	list_push(list, instruction);
@@ -127,6 +130,7 @@ TAC* traversal_function_call(AST* node, TAC_list* list)
 	unsigned int i = 0;
 	size_t counter = 0;
 	size_t size = 0;
+	
 
 	// Push params for function call
 	for (i = 0; i < node->size; i++)
@@ -250,6 +254,8 @@ void traversal_statements(AST* node, TAC_list* list)
 	}
 
 }
+
+
 
 void traversal_free_array(TAC_list* list)
 {

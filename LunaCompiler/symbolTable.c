@@ -6,7 +6,17 @@ entry_T* init_entry(char* name, int type)
 	entry->name = name;
 	entry->dtype = type;
 
+	entry->addressDesc = calloc(1, sizeof(void*));
+
+	push_address(entry, entry->name);
+
 	return entry;
+}
+
+void push_address(entry_T* entry, void* location)
+{
+	entry->addressDesc = realloc(entry->addressDesc, sizeof(location) * ++entry->size);
+	entry->addressDesc[entry->size - 1] = location;
 }
 
 table_T* init_table(table_T* prev)
@@ -58,12 +68,18 @@ entry_T* table_search_entry(table_T* table, char* name)
 void table_print_table(table_T* table, int level)
 {
 	unsigned int i = 0;
+	unsigned int i2 = 0;
 
 	if (table)
 	{
 		for (i = 0; i < table->entrySize; i++)
 		{
 			printf("[Level]: %d, [Entry]: %s\n", level, table->entries[i]->name);
+			printf("Address descriptors\n");
+			for (i2 = 0; i2 < table->entries[i]->size; i2++)
+			{
+				printf("%s\n", table->entries[i]->addressDesc[i2]);
+			}
 		}
 		for (i = 0; i < table->nestedSize; i++)
 		{
@@ -89,6 +105,7 @@ void table_free_table(table_T* table)
 		}
 		for (i = 0; i < table->entrySize; i++)
 		{
+			free(table->entries[i]->addressDesc);
 			free(table->entries[i]);
 		}
 

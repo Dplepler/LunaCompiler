@@ -5,6 +5,9 @@
 
 typedef struct LEXER_STRUCT
 {
+	token_T** tokens;
+	size_t tokensSize;
+
 	size_t index;
 	size_t contentsLength;
 
@@ -23,9 +26,8 @@ token_T* lexer_get_next_token(lexer_T* lexer);
 token_T* lexer_collect_id(lexer_T* lexer);
 token_T* lexer_collect_number(lexer_T* lexer);
 token_T* lexer_collect_string(lexer_T* lexer);
-
-void lexer_token_list_push(token_T* token);
-void lexer_free_tokens();
+void lexer_token_list_push(lexer_T* lexer, token_T* token);
+void lexer_free_tokens(lexer_T* lexer);
 
 
 #endif

@@ -1,7 +1,6 @@
 #ifndef PARSER_H
 #define PARSER_H
 #include "lexer.h"
-#include "symbolTable.h"
 
 #define RESERVED_SIZE 5
 

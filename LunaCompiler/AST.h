@@ -1,6 +1,7 @@
 #ifndef AST_H
 #define AST_H
 #include "tokens.h"
+#include "symbolTable.h"
 
 typedef struct AST_STRUCT
 {
@@ -41,17 +42,13 @@ typedef struct AST_STRUCT
 
 
 	// Variable decleration
-	enum
-	{
-		VAR_INT,
-
-	} var_type;
+	dtype var_type;
 
 	// Functions
 	struct AST_STRUCT** function_list;
 	struct AST_STRUCT** function_def_args;
 	struct AST_STRUCT* function_body;
-	char* function_return_type;
+
 	size_t functionsSize;
 
 

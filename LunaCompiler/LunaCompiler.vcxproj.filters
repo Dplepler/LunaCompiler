@@ -39,6 +39,9 @@
     <ClCompile Include="symbolTable.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="codeGen.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="tokens.h">
@@ -60,6 +63,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="symbolTable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="codeGen.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
