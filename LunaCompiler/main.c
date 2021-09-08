@@ -15,7 +15,6 @@ int main(int argc, char** argv)
 	TAC* triple = NULL;
 	TAC_list* instructions = NULL;
 
-	char* test = "Hello";
 
 	unsigned int i = 0;
 
