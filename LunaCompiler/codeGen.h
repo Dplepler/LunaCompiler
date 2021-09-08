@@ -28,7 +28,7 @@ typedef struct REGISTER_STRUCT
 	char** regDesc;		// Register descriptor: Stores variables that have their value in the current register
 	size_t size;		// Size of register descriptors
 
-}register_T;
+} register_T;
 
 typedef struct REGISTER_LIST_STRUCT
 {
@@ -36,14 +36,13 @@ typedef struct REGISTER_LIST_STRUCT
 	TAC* instruction;
 	table_T* table;
 
-}register_list;
+} register_list;
 
-register_list* init_registers();
+register_list* init_registers(table_T* table, TAC* head);
 
 void push_descriptor(register_T* reg, char* descriptor);
 void free_registers(register_list* registers_list);
-void write_asm();
-void generate_asm(register_list* registerList);
+void write_asm(table_T* table, TAC* head);
 void generate_spill(register_list* registerList, register_T* r);
 
 register_T* generate_check_variable_in_reg(register_list* registerList, char* var);
@@ -52,6 +51,7 @@ register_T* generate_find_lowest_values(register_list* registerList);
 register_T* generate_find_used_reg(register_list* registerList);
 register_T* generate_check_variable_usabilty(register_list* registerList, register_T* r);
 
+char* generate_asm(register_list* registerList);
 char* generate_get_register(register_list* registerList, void* arg);
 char* generate_get_register_name(register_T* r);
 

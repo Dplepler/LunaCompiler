@@ -1,8 +1,6 @@
 #include "codeGen.h"
 
-
-
-register_list* init_registers()
+register_list* init_registers(table_T* table, TAC* head)
 {
 	register_list* registerList = calloc(1, sizeof(register_list));
 	registerList->registers = calloc(1, sizeof(register_T*));
@@ -15,6 +13,9 @@ register_list* init_registers()
 		registerList->registers[i]->reg = i;		// Assigning each register it's name
 	}  
 	  
+	registerList->table = table;
+	registerList->instruction = head;
+
 	return registerList;
 }
 
@@ -23,6 +24,36 @@ void push_descriptor(register_T* reg, char* descriptor)
 	reg->regDesc = realloc(reg->regDesc, sizeof(char*) * ++reg->size);
 	reg->regDesc[reg->size - 1] = descriptor;
 }
+
+void write_asm(table_T* table, TAC* head)
+{
+	register_list* registerList = init_registers(table, head);
+	while (registerList->instruction)
+	{
+		generate_asm(registerList);
+		registerList->instruction = registerList->instruction->next;
+	}
+}
+
+char* generate_asm(register_list* registerList)
+{
+	const char* binopTemplate = "%s %s, %s";
+	char* arg1 = NULL;
+	char* arg2 = NULL;
+	char* result = NULL;
+
+	char* asm = NULL;
+
+	if (registerList->instruction->op == AST_ADD || registerList->instruction->op == AST_SUB || registerList->instruction->op == AST_MUL || registerList->instruction->op == AST_DIV)
+	{
+		arg1 = generate_get_register(registerList, registerList->instruction->arg1);
+
+
+		asm = calloc(1, strlen(arg1) + strlen(arg2) + 4);	// Size will equal both arguments 
+	}
+}
+
+
 
 /*
 generate_check_variable_in_reg checks if a variable exists in any general purpose register, and if so it returns the register
@@ -66,34 +97,6 @@ register_T* generate_find_free_reg(register_list* registerList)
 	return reg;
 }
 
-void write_asm()
-{
-	register_list* registerList = init_registers();
-	while (registerList->instruction)
-	{
-		generate_asm(registerList);
-		registerList->instruction = registerList->instruction->next;
-	}
-}
-
-void generate_asm(register_list* registerList)
-{
-	const char* binopTemplate = "%s %s, %s";
-	char* arg1 = NULL;
-	char* arg2 = NULL;
-	char* result = NULL;
-
-	char* asm = NULL;
-
-	if (registerList->instruction->op == AST_ADD || registerList->instruction->op == AST_SUB || registerList->instruction->op == AST_MUL || registerList->instruction->op == AST_DIV)
-	{
-		arg1 = generate_get_register(registerList, registerList->instruction->arg1);
-		
-
-		asm = calloc(1, strlen(arg1) + strlen(arg2) + 4);	// Size will equal both arguments 
-	}
-}
-
 char* generate_get_register(register_list* registerList, void* arg)
 {
 	entry_T* entry = NULL;
@@ -125,7 +128,7 @@ char* generate_get_register(register_list* registerList, void* arg)
 }
 
 /*
-generate_find_lowest_values finds and returns the register with the lowerst amount of values it stores
+generate_find_lowest_values finds and returns the register with the lowest amount of values it stores
 Input: Register list
 Output: Register with lowest variables
 */
@@ -151,35 +154,32 @@ register_T* generate_find_used_reg(register_list* registerList)
 	unsigned int i2 = 0;
 	register_T* reg = NULL;
 
-	// Going through all the variables in all the registers and searching
+	// Going through all the variables in all the registers and searching to see if there's a register
+	// that has all it's values stores somewhere else as well, if so, we can use that register
 	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
-		for (i2 = 0; i2 < registerList->registers[i]->size; i2++)
+		reg = registerList->registers[i];
+
+		for (i2 = 0; i2 < registerList->registers[i]->size && reg; i2++)
 		{
-			if (!table_search_entry(registerList->table, registerList->registers[i]->regDesc[i2])->size > 1)
-			{
-				reg = registerList->registers[i];
-			}
-			else
+			if (table_search_entry(registerList->table, registerList->registers[i]->regDesc[i2])->size <= 1)
 			{
 				reg = NULL;
-				break;
 			}
 		}
 	}
+	// Check that the variable the program is assigning to doesn't equal both operands
+	// And if it doesn't, we can use a register that contains the variable
 	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
 		if (registerList->instruction->next && registerList->instruction->next->op == AST_ASSIGNMENT)
 		{
-			// Check that the variable the program is assigning to doesn't equal both operands
-			// And if it doesn't, we can use a register that contains the variable
 			if (strcmp(registerList->instruction->next->arg1, registerList->instruction->arg1)
 				&& strcmp(registerList->instruction->next->arg1, registerList->instruction->arg2)
 				&& registerList->registers[i]->size == 1)
 			{
 				reg = registerList->registers[i];
 			}
-				
 		}
 	}
 	
@@ -204,17 +204,17 @@ register_T* generate_check_variable_usabilty(register_list* registerList, regist
 	TAC* triple = registerList->instruction->next;
 	unsigned int i = 0;
 
-	for (i = 0; i < r->size && !reg; i++)
+	reg = r;
+
+	for (i = 0; i < r->size && reg; i++)
 	{
-		while (triple)
+		// Loop through instructions until the end of the block to see if we can use a register that holds
+		// a value that will not be used
+		while (triple && reg)
 		{
 			if (triple->op != AST_ASSIGNMENT && (!strcmp(triple->arg1, r->regDesc[i]) || !strcmp(triple->arg2, r->regDesc[i])))
 			{
 				reg = NULL;
-			}
-			else
-			{
-				reg = r;
 			}
 
 			triple = triple->next;
@@ -231,14 +231,12 @@ void generate_spill(register_list* registerList, register_T* r)
 	unsigned int i = 0;
 
 	// For each value, allocate a buffer the size of a MOV instruction + register size (2) + variable size
-	// And store the value of the variable in itself
+	// and store the value of the variable in itself
 	for (i = 0; i < r->size; i++)
 	{
 		asm = calloc(1, strlen(r->regDesc[i]) + CHAR_SIZE_OF_REG + strlen(spillTemplate) - 3);
-		sprintf(asm, spillTemplate, r->regDesc, generate_get_register_name(r));
+		sprintf(asm, spillTemplate, r->regDesc[i], generate_get_register_name(r));
 	}
-	
-
 }
 
 

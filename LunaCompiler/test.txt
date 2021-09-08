@@ -4,9 +4,9 @@ int globalVar;
 int foo(int x, int y) 		~ Comment comment blah blah blah
 {
 
-	5 + 3 + y;
-	int z;
+	int z = 5 + 3 + y;
 	
+	return x + z;
 }
 
 int main ()
