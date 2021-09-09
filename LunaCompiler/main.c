@@ -12,13 +12,9 @@ int main(int argc, char** argv)
 	token_T* token = NULL;
 	parser_T* parser = NULL;
 	AST* root = NULL;
-	TAC* triple = NULL;
 	TAC_list* instructions = NULL;
 
-
 	unsigned int i = 0;
-
-	instructions = init_tac_list();
 
 	char* contents = NULL;
 
@@ -33,23 +29,12 @@ int main(int argc, char** argv)
 			parser = init_parser(lexer);
 			root = parser_parse(parser);
 			instructions = traversal_visit(root);
-
-			triple = instructions->head;			
+		
 
 			table_print_table(parser->table, 0);
 
-			for (i = 0; i < instructions->size; i++)
-			{
-				if (triple->op)
-					printf("Operation: %s, ", typeToString(triple->op));
-				if (triple->arg1)
-					printf("Arg1: %s (%p), ", triple->arg1, triple->arg1);
-				if (triple->arg2)
-					printf("Arg2: %s (%p), ", triple->arg2, triple->arg2);
-				printf("Address: %p\n", triple);
-				
-				triple = triple->next;
-			}
+			traversal_print_instructions(instructions);
+
 
 			lexer_free_tokens(lexer);
 			AST_free_AST(root);

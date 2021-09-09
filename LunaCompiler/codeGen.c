@@ -19,10 +19,20 @@ register_list* init_registers(table_T* table, TAC* head)
 	return registerList;
 }
 
-void push_descriptor(register_T* reg, char* descriptor)
+reg_d* init_descriptor(void* value, int type)
 {
-	reg->regDesc = realloc(reg->regDesc, sizeof(char*) * ++reg->size);
-	reg->regDesc[reg->size - 1] = descriptor;
+	reg_d* descriptor = calloc(1, sizeof(reg_d));
+
+	descriptor->regDesc = value;
+	descriptor->type = type;
+
+	return descriptor;
+}
+
+void push_descriptor(register_T* reg, reg_d* descriptor)
+{
+	reg->regDescList = realloc(reg->regDescList, sizeof(reg_d*) * ++reg->size);
+	reg->regDescList[reg->size - 1] = descriptor;
 }
 
 void write_asm(table_T* table, TAC* head)
@@ -37,30 +47,61 @@ void write_asm(table_T* table, TAC* head)
 
 char* generate_asm(register_list* registerList)
 {
-	const char* binopTemplate = "%s %s, %s";
+	register_T* reg = NULL;
+
+	const char* template = "%s %s, %s";
+	
+	char* op = NULL;
 	char* arg1 = NULL;
 	char* arg2 = NULL;
-	char* result = NULL;
-
 	char* asm = NULL;
 
-	if (registerList->instruction->op == AST_ADD || registerList->instruction->op == AST_SUB || registerList->instruction->op == AST_MUL || registerList->instruction->op == AST_DIV)
+	op = typeToString(registerList->instruction->op);
+
+	if (registerList->instruction->op == AST_ADD || registerList->instruction->op == AST_SUB || registerList->instruction->op == AST_MUL || registerList->instruction->op == AST_DIV
+		|| registerList->instruction->op == AST_ASSIGNMENT)
 	{
-		arg1 = generate_get_register(registerList, registerList->instruction->arg1);
+		reg = generate_get_register(registerList, registerList->instruction->arg1);
+		arg1 = generate_assign_reg(reg, registerList->instruction->arg1->arg);
+		reg = generate_get_register(registerList, registerList->instruction->arg2);
+		arg2 = generate_assign_reg(reg, registerList->instruction->arg2->arg);
 
 
-		asm = calloc(1, strlen(arg1) + strlen(arg2) + 4);	// Size will equal both arguments 
+
+		asm = calloc(1, strlen(arg1) + strlen(arg2) + strlen(op) + ASM_INSTRUCTION_SIZE + 1);	// Size of the entire line of code
+		sprintf(asm, template, op, arg1, arg2);
 	}
+	
+
 }
 
+/*
+generate_assign_reg returns a valid register / const number string depending on the given register
+Input: A register, an argument to return if register is null
+Output: A string that can either represent the given register or the given value, depending on if the register is null or not
+*/
+char* generate_assign_reg(register_T* r, void* argument)
+{
+	char* arg = NULL;
+	
+	if (r)
+	{
+		arg = generate_get_register_name(r);
+	}
+	else
+	{
+		arg = argument;
+	}
 
+	return arg;
+}
 
 /*
 generate_check_variable_in_reg checks if a variable exists in any general purpose register, and if so it returns the register
 Input: Register list, variable to search
 Output: First register to contain the variable, NULL if none of them do
 */
-register_T* generate_check_variable_in_reg(register_list* registerList, char* var)
+register_T* generate_check_variable_in_reg(register_list* registerList, void* var)
 {
 	unsigned int i = 0;
 	unsigned int i2 = 0;
@@ -68,15 +109,14 @@ register_T* generate_check_variable_in_reg(register_list* registerList, char* va
 
 	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
-		for (i2 = 0; i2 < registerList->registers[i]->size && !reg; i2++)
+		for (i2 = 0; i2 < registerList->registers[i]->size; i2++)
 		{
-			if (!strcmp(registerList->registers[i]->regDesc[i2], var))
+			if (registerList->registers[i]->regDescList[i2]->regDesc == var)
 			{
 				reg = registerList->registers[i];
+				break;
 			}
-				
 		}
-
 	}
 
 	return reg;
@@ -97,13 +137,13 @@ register_T* generate_find_free_reg(register_list* registerList)
 	return reg;
 }
 
-char* generate_get_register(register_list* registerList, void* arg)
+register_T* generate_get_register(register_list* registerList, arg_T* arg)
 {
 	entry_T* entry = NULL;
 	register_T* reg = NULL;
-	char* val = NULL;
+	reg_d* descriptor = NULL;
 
-	if (table_search_entry(registerList->table, arg)) // Check to see if arg is a variable
+	if (table_search_entry(registerList->table, arg->arg) || arg->type == TAC_P)	// Check if arg is a variable or a TAC struct (temp)
 	{
 		reg = generate_check_variable_in_reg(registerList, arg);	// Check if variable is in a register
 		if (!reg)
@@ -115,16 +155,11 @@ char* generate_get_register(register_list* registerList, void* arg)
 			reg = generate_find_used_reg(registerList);		// Check if there's a register that can be used despite being occupied
 		}
 
-		val = generate_get_register_name(reg);
-	}	
-	// If value is not a variable, it is a constant number
-	else
-	{
-		val = arg;
+		descriptor = init_descriptor(arg->arg, arg->type);
+		push_descriptor(reg, descriptor);			// Push the value that is now being held in the register, to the register
 	}
 
-
-	return val;
+	return reg;
 }
 
 /*
@@ -162,24 +197,24 @@ register_T* generate_find_used_reg(register_list* registerList)
 
 		for (i2 = 0; i2 < registerList->registers[i]->size && reg; i2++)
 		{
-			if (table_search_entry(registerList->table, registerList->registers[i]->regDesc[i2])->size <= 1)
+			// If there's a temporary in the register, we cannot use the register
+			if (registerList->registers[i]->regDescList[i2]->type == DESC_ADDRESS)
+			{
+				reg = NULL;
+			}
+			else if (table_search_entry(registerList->table, registerList->registers[i]->regDescList[i2]->regDesc)->size <= 1)
 			{
 				reg = NULL;
 			}
 		}
 	}
 	// Check that the variable the program is assigning to doesn't equal both operands
-	// And if it doesn't, we can use a register that contains the variable
+	// and if it doesn't, we can use a register that contains the variable
 	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
 		if (registerList->instruction->next && registerList->instruction->next->op == AST_ASSIGNMENT)
 		{
-			if (strcmp(registerList->instruction->next->arg1, registerList->instruction->arg1)
-				&& strcmp(registerList->instruction->next->arg1, registerList->instruction->arg2)
-				&& registerList->registers[i]->size == 1)
-			{
-				reg = registerList->registers[i];
-			}
+			reg = generate_check_useless_value(registerList, registerList->registers[i]);
 		}
 	}
 	
@@ -198,6 +233,27 @@ register_T* generate_find_used_reg(register_list* registerList)
 	return reg;
 }
 
+register_T* generate_check_useless_value(register_list* registerList, register_T* r)
+{
+	register_T* reg = NULL;
+	unsigned int i = 0;
+
+	reg = r;
+
+	for (i = 0; i < r->size && reg; i++)
+	{
+		if (registerList->instruction->next->arg1->arg == registerList->instruction->arg1->arg
+			|| registerList->instruction->next->arg1->arg == registerList->instruction->arg2->arg
+			|| registerList->instruction->next->arg1->arg != r->regDescList[i]->regDesc)
+		{
+			reg = NULL;
+		}
+	}
+
+	return reg;
+}
+
+
 register_T* generate_check_variable_usabilty(register_list* registerList, register_T* r)
 {
 	register_T* reg = NULL;
@@ -212,7 +268,7 @@ register_T* generate_check_variable_usabilty(register_list* registerList, regist
 		// a value that will not be used
 		while (triple && reg)
 		{
-			if (triple->op != AST_ASSIGNMENT && (!strcmp(triple->arg1, r->regDesc[i]) || !strcmp(triple->arg2, r->regDesc[i])))
+			if (triple->op != AST_ASSIGNMENT && (triple->arg1->arg == r->regDescList[i]->regDesc || triple->arg2 == r->regDescList[i]->regDesc))
 			{
 				reg = NULL;
 			}
@@ -234,8 +290,8 @@ void generate_spill(register_list* registerList, register_T* r)
 	// and store the value of the variable in itself
 	for (i = 0; i < r->size; i++)
 	{
-		asm = calloc(1, strlen(r->regDesc[i]) + CHAR_SIZE_OF_REG + strlen(spillTemplate) - 3);
-		sprintf(asm, spillTemplate, r->regDesc[i], generate_get_register_name(r));
+		asm = calloc(1, strlen(r->regDescList[i]) + CHAR_SIZE_OF_REG + strlen(spillTemplate) - 3);
+		sprintf(asm, spillTemplate, r->regDescList[i], generate_get_register_name(r));
 	}
 }
 
@@ -267,7 +323,11 @@ void free_registers(register_list* registerList)
 	unsigned int i = 0;
 
 	for (i = 0; i < REG_AMOUNT; i++)
+	{
 		free(registerList->registers[i]);
+		free(registerList->registers[i]->regDescList);
+	}
+		
 
 	free(registerList->registers);
 	free(registerList);
