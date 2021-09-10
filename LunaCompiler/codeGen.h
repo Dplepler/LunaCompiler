@@ -8,19 +8,6 @@
 #define GENERAL_REG_AMOUNT 4
 #define REG_AMOUNT 11
 
-typedef struct REGISTER_DESCRIPTOR
-{
-	void* regDesc;
-	enum
-	{
-		DESC_ADDRESS,
-		DESC_VAR,
-		DESC_NUM,
-
-	} type;
-
-} reg_d;
-
 typedef struct REGISTER_STRUCT_STRUCT
 {
 	enum
@@ -39,7 +26,7 @@ typedef struct REGISTER_STRUCT_STRUCT
 
 	} reg;
 
-	reg_d** regDescList;	// Register descriptors: Stores variables and addresses that have their value in the current register
+	arg_T** regDescList;	// Register descriptors: Stores variables and addresses that have their value in the current register
 	size_t size;		// Size of register descriptors
 
 } register_T;
@@ -54,9 +41,7 @@ typedef struct REGISTER_LIST_STRUCT
 
 register_list* init_registers(table_T* table, TAC* head);
 
-reg_d* init_descriptor(void* value, int type);
-
-void push_descriptor(register_T* reg, reg_d* descriptor);
+void descriptor_push(register_T* reg, arg_T* descriptor);
 void free_registers(register_list* registers_list);
 void write_asm(table_T* table, TAC* head);
 void generate_spill(register_list* registerList, register_T* r);

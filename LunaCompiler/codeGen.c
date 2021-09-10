@@ -9,7 +9,6 @@ register_list* init_registers(table_T* table, TAC* head)
 	for (i = 0; i < REG_AMOUNT; i++)
 	{
 		registerList->registers[i] = calloc(1, sizeof(register_T));
-		//registers_list[i]->regDesc = calloc(1, sizeof(char*));
 		registerList->registers[i]->reg = i;		// Assigning each register it's name
 	}  
 	  
@@ -19,28 +18,36 @@ register_list* init_registers(table_T* table, TAC* head)
 	return registerList;
 }
 
-reg_d* init_descriptor(void* value, int type)
+void descriptor_push(register_T* reg, arg_T* descriptor)
 {
-	reg_d* descriptor = calloc(1, sizeof(reg_d));
-
-	descriptor->regDesc = value;
-	descriptor->type = type;
-
-	return descriptor;
-}
-
-void push_descriptor(register_T* reg, reg_d* descriptor)
-{
-	reg->regDescList = realloc(reg->regDescList, sizeof(reg_d*) * ++reg->size);
+	reg->regDescList = realloc(reg->regDescList, sizeof(arg_T*) * ++reg->size);
 	reg->regDescList[reg->size - 1] = descriptor;
 }
 
 void write_asm(table_T* table, TAC* head)
 {
 	register_list* registerList = init_registers(table, head);
+	size_t tableIndex = 0;
+
 	while (registerList->instruction)
 	{
-		generate_asm(registerList);
+		// If we reached the start of a new block, go to the fitting symbol table for that block
+		if (registerList->instruction->op == TOKEN_LBRACE)
+		{
+			registerList->table = registerList->table->nestedScopes[tableIndex];
+			tableIndex++;
+		}
+		// If we're done with a block, reset the index of the table and go to the previous one
+		else if (registerList->instruction->op == TOKEN_RBRACE)
+		{
+			registerList->table = registerList->table->prev;
+			tableIndex = 0;
+		}
+		else
+		{
+			generate_asm(registerList);
+		}
+
 		registerList->instruction = registerList->instruction->next;
 	}
 }
@@ -49,7 +56,7 @@ char* generate_asm(register_list* registerList)
 {
 	register_T* reg = NULL;
 
-	const char* template = "%s %s, %s";
+	const char* blankTemplate = "%s %s, %s";
 	
 	char* op = NULL;
 	char* arg1 = NULL;
@@ -58,21 +65,32 @@ char* generate_asm(register_list* registerList)
 
 	op = typeToString(registerList->instruction->op);
 
-	if (registerList->instruction->op == AST_ADD || registerList->instruction->op == AST_SUB || registerList->instruction->op == AST_MUL || registerList->instruction->op == AST_DIV
-		|| registerList->instruction->op == AST_ASSIGNMENT)
+	if (registerList->instruction->op == AST_ADD || registerList->instruction->op == AST_SUB || registerList->instruction->op == AST_MUL || registerList->instruction->op == AST_DIV)
 	{
 		reg = generate_get_register(registerList, registerList->instruction->arg1);
-		arg1 = generate_assign_reg(reg, registerList->instruction->arg1->arg);
+		arg1 = generate_assign_reg(reg, registerList->instruction->arg1->value);
+
+	
+		printf("ASM: MOV %s, %s\n", generate_get_register_name(reg), registerList->instruction->arg1->value);
+		
+		
+
+
 		reg = generate_get_register(registerList, registerList->instruction->arg2);
-		arg2 = generate_assign_reg(reg, registerList->instruction->arg2->arg);
+		arg2 = generate_assign_reg(reg, registerList->instruction->arg2->value);
 
 
 
 		asm = calloc(1, strlen(arg1) + strlen(arg2) + strlen(op) + ASM_INSTRUCTION_SIZE + 1);	// Size of the entire line of code
-		sprintf(asm, template, op, arg1, arg2);
+		sprintf(asm, blankTemplate, op, arg1, arg2);
+	}
+	else if (registerList->instruction->op == AST_ASSIGNMENT)
+	{
+		reg = generate_get_register(registerList, registerList->instruction->arg2);
+		descriptor_push(reg, registerList->instruction->arg1);
 	}
 	
-
+	return asm;
 }
 
 /*
@@ -111,7 +129,8 @@ register_T* generate_check_variable_in_reg(register_list* registerList, void* va
 	{
 		for (i2 = 0; i2 < registerList->registers[i]->size; i2++)
 		{
-			if (registerList->registers[i]->regDescList[i2]->regDesc == var)
+			//printf("Register [%s] = %s, var = %s\n", generate_get_register_name(registerList->registers[i]), registerList->registers[i]->regDescList[i2]->value, var);
+			if (registerList->registers[i]->regDescList[i2]->value == var)
 			{
 				reg = registerList->registers[i];
 				break;
@@ -140,23 +159,20 @@ register_T* generate_find_free_reg(register_list* registerList)
 register_T* generate_get_register(register_list* registerList, arg_T* arg)
 {
 	entry_T* entry = NULL;
-	register_T* reg = NULL;
-	reg_d* descriptor = NULL;
-
-	if (table_search_entry(registerList->table, arg->arg) || arg->type == TAC_P)	// Check if arg is a variable or a TAC struct (temp)
+	register_T* reg = NULL;	
+	
+	reg = generate_check_variable_in_reg(registerList, arg->value);	// Check if variable is in a register
+	if (!reg)
 	{
-		reg = generate_check_variable_in_reg(registerList, arg);	// Check if variable is in a register
-		if (!reg)
-		{
-			reg = generate_find_free_reg(registerList);
-		}
+		reg = generate_find_free_reg(registerList);
+
 		if (!reg)
 		{
 			reg = generate_find_used_reg(registerList);		// Check if there's a register that can be used despite being occupied
 		}
 
-		descriptor = init_descriptor(arg->arg, arg->type);
-		push_descriptor(reg, descriptor);			// Push the value that is now being held in the register, to the register
+		// Push the new variable descriptor onto the register
+		descriptor_push(reg, arg);
 	}
 
 	return reg;
@@ -198,11 +214,11 @@ register_T* generate_find_used_reg(register_list* registerList)
 		for (i2 = 0; i2 < registerList->registers[i]->size && reg; i2++)
 		{
 			// If there's a temporary in the register, we cannot use the register
-			if (registerList->registers[i]->regDescList[i2]->type == DESC_ADDRESS)
+			if (registerList->registers[i]->regDescList[i2]->type == TAC_P)
 			{
 				reg = NULL;
 			}
-			else if (table_search_entry(registerList->table, registerList->registers[i]->regDescList[i2]->regDesc)->size <= 1)
+			else if (table_search_entry(registerList->table, registerList->registers[i]->regDescList[i2]->value)->size <= 1)
 			{
 				reg = NULL;
 			}
@@ -230,6 +246,15 @@ register_T* generate_find_used_reg(register_list* registerList)
 		generate_spill(registerList, reg);
 	}
 
+	// Now that the variable is in a new register, we need to free the previous values stored in it and reset the size
+	if (reg->regDescList)
+	{
+		free(reg->regDescList);
+		reg->regDescList = NULL;
+		reg->size = 0;
+	}
+	
+
 	return reg;
 }
 
@@ -242,9 +267,9 @@ register_T* generate_check_useless_value(register_list* registerList, register_T
 
 	for (i = 0; i < r->size && reg; i++)
 	{
-		if (registerList->instruction->next->arg1->arg == registerList->instruction->arg1->arg
-			|| registerList->instruction->next->arg1->arg == registerList->instruction->arg2->arg
-			|| registerList->instruction->next->arg1->arg != r->regDescList[i]->regDesc)
+		if (registerList->instruction->next->arg1->value == registerList->instruction->arg1->value
+			|| registerList->instruction->next->arg1->value == registerList->instruction->arg2->value
+			|| registerList->instruction->next->arg1->value != r->regDescList[i]->value)
 		{
 			reg = NULL;
 		}
@@ -266,11 +291,18 @@ register_T* generate_check_variable_usabilty(register_list* registerList, regist
 	{
 		// Loop through instructions until the end of the block to see if we can use a register that holds
 		// a value that will not be used
-		while (triple && reg)
+		while (triple->op != TOKEN_RBRACE && reg)
 		{
-			if (triple->op != AST_ASSIGNMENT && (triple->arg1->arg == r->regDescList[i]->regDesc || triple->arg2 == r->regDescList[i]->regDesc))
+			if (triple->op != AST_ASSIGNMENT)
 			{
-				reg = NULL;
+				// If arg1 or arg2 equals the variable then it will be used
+				if (triple->arg1)
+					if (triple->arg1->value == r->regDescList[i]->value)
+						reg = NULL;
+				if (triple->arg2)
+					if (triple->arg2->value == r->regDescList[i]->value)
+						reg = NULL;
+				
 			}
 
 			triple = triple->next;
@@ -290,8 +322,10 @@ void generate_spill(register_list* registerList, register_T* r)
 	// and store the value of the variable in itself
 	for (i = 0; i < r->size; i++)
 	{
-		asm = calloc(1, strlen(r->regDescList[i]) + CHAR_SIZE_OF_REG + strlen(spillTemplate) - 3);
-		sprintf(asm, spillTemplate, r->regDescList[i], generate_get_register_name(r));
+		asm = calloc(1, strlen(r->regDescList[i]->value) + CHAR_SIZE_OF_REG + strlen(spillTemplate) - 3);
+		sprintf(asm, spillTemplate, r->regDescList[i]->value, generate_get_register_name(r));
+
+		push_address(table_search_entry(registerList->table, r->regDescList[i]->value), r->regDescList[i]->value);
 	}
 }
 

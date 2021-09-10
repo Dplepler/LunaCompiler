@@ -10,7 +10,7 @@ TAC_list* init_tac_list()
 arg_T* init_arg(void* arg, int type)
 {
 	arg_T* argument = calloc(1, sizeof(arg_T));
-	argument->arg = arg;
+	argument->value = arg;
 	argument->type = type;
 
 	return argument;
@@ -169,7 +169,7 @@ TAC* traversal_function_call(AST* node, TAC_list* list)
 	}
 	// Arg2 will be the number of arguments passing into the function
 	instruction->arg2 = init_arg(calloc(1, ++size), CHAR_P);
-	_itoa(node->size, instruction->arg2->arg, 10);
+	_itoa(node->size, instruction->arg2->value, 10);
 
 	list_push(list, instruction);
 
@@ -264,12 +264,21 @@ void traversal_statements(AST* node, TAC_list* list)
 {
 	unsigned int i = 0;
 
+	// These instructions are used to pass the information of when a block begins and ends
+	TAC* start = calloc(1, sizeof(TAC));
+	TAC* end = calloc(1, sizeof(TAC));
+
+	start->op = TOKEN_LBRACE;
+	list_push(list, start);
+	end->op = TOKEN_RBRACE;
+
 	// For all the statements in the block, push them into the list
 	for (i = 0; i < node->size; i++)
 	{
 		traversal_build_instruction(node->children[i], list);
 	}
-
+	
+	list_push(list, end);
 }
 
 void traversal_print_instructions(TAC_list* instructions)
@@ -284,16 +293,16 @@ void traversal_print_instructions(TAC_list* instructions)
 		if (triple->arg1)
 		{
 			if (triple->arg1->type == CHAR_P)
-				printf("Arg1: %s, ", triple->arg1->arg);
+				printf("Arg1: %s, ", triple->arg1->value);
 			else
-				printf("Arg1: %p, ", triple->arg1->arg);
+				printf("Arg1: %p, ", triple->arg1->value);
 		}
 		if (triple->arg2)
 		{
 			if (triple->arg2->type)
-				printf("Arg2: %s, ", triple->arg2->arg);
+				printf("Arg2: %s, ", triple->arg2->value);
 			else
-				printf("Arg2: %p, ", triple->arg2->arg);
+				printf("Arg2: %p, ", triple->arg2->value);
 		}
 
 		printf("Address: %p\n", triple);
@@ -314,7 +323,7 @@ void traversal_free_array(TAC_list* list)
 	{
 		if (triple->op == AST_FUNC_CALL)
 		{
-			free(triple->arg2->arg);
+			free(triple->arg2->value);
 		}
 		if (triple->op != AST_GOTO)
 		{

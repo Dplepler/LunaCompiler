@@ -1,9 +1,6 @@
 
-#include "TAC.h"
+#include "codeGen.h"
 #define SIZE 100
-
-
-
 
 int main(int argc, char** argv)
 {
@@ -31,9 +28,11 @@ int main(int argc, char** argv)
 			instructions = traversal_visit(root);
 		
 
-			table_print_table(parser->table, 0);
+			//table_print_table(parser->table, 0);
 
-			traversal_print_instructions(instructions);
+			//traversal_print_instructions(instructions);
+
+			write_asm(parser->table, instructions->head);
 
 
 			lexer_free_tokens(lexer);

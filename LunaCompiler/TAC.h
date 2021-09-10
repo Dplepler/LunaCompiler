@@ -5,13 +5,14 @@
 // This is a tagged union to determine if args of TAC will point to a struct or to a string
 typedef struct ARG_STRUCT
 {
-	void* arg;
+	void* value;
 	// Type of arg, TAC or string
 	enum
 	{
 		TAC_P,
 		CHAR_P,
-	}type;
+
+	} type;
 
 }arg_T;
 
@@ -21,7 +22,6 @@ typedef struct TAC_STRUCT
 	arg_T* arg1;
 	arg_T* arg2;
 
-	
 	struct TAC_STRUCT* next;
 
 }TAC;
