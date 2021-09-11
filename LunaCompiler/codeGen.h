@@ -31,30 +31,33 @@ typedef struct REGISTER_STRUCT_STRUCT
 
 } register_T;
 
-typedef struct REGISTER_LIST_STRUCT
+typedef struct ASM_BACKEND_STRUCT
 {
 	register_T** registers;
 	TAC* instruction;
 	table_T* table;
 
-} register_list;
+	FILE* targetProg;
 
-register_list* init_registers(table_T* table, TAC* head);
+} asm_backend;
+
+asm_backend* init_asm_backend(table_T* table, TAC* head, char* targetName);
 
 void descriptor_push(register_T* reg, arg_T* descriptor);
-void free_registers(register_list* registers_list);
-void write_asm(table_T* table, TAC* head);
-void generate_spill(register_list* registerList, register_T* r);
+void free_registers(asm_backend* registers_list);
+void write_asm(table_T* table, TAC* head, char* targetName);
+void generate_spill(asm_backend* backend, register_T* r);
+void descriptor_reset(register_T* r);
 
-register_T* generate_get_register(register_list* registerList, arg_T* arg);
-register_T* generate_check_variable_in_reg(register_list* registerList, void* var);
-register_T* generate_check_useless_value(register_list* registerList, register_T* r);
-register_T* generate_find_free_reg(register_list* registerList);
-register_T* generate_find_lowest_values(register_list* registerList);
-register_T* generate_find_used_reg(register_list* registerList);
-register_T* generate_check_variable_usabilty(register_list* registerList, register_T* r);
+register_T* generate_get_register(asm_backend* backend, arg_T* arg);
+register_T* generate_check_variable_in_reg(asm_backend* backend, void* var);
+register_T* generate_check_useless_value(asm_backend* backend, register_T* r);
+register_T* generate_find_free_reg(asm_backend* backend);
+register_T* generate_find_lowest_values(asm_backend* backend);
+register_T* generate_find_used_reg(asm_backend* backend);
+register_T* generate_check_variable_usabilty(asm_backend* backend, register_T* r);
 
-char* generate_asm(register_list* registerList);
+void generate_asm(asm_backend* backend);
 char* generate_get_register_name(register_T* r);
 char* generate_assign_reg(register_T* r, void* argument);
 

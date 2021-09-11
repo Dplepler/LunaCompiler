@@ -1,21 +1,23 @@
 #include "codeGen.h"
 
-register_list* init_registers(table_T* table, TAC* head)
+asm_backend* init_asm_backend(table_T* table, TAC* head, char* targetName)
 {
-	register_list* registerList = calloc(1, sizeof(register_list));
-	registerList->registers = calloc(1, sizeof(register_T*));
+	asm_backend* backend = calloc(1, sizeof(asm_backend));
+	backend->registers = calloc(REG_AMOUNT, sizeof(register_T*));
 	unsigned int i = 0;
 	
 	for (i = 0; i < REG_AMOUNT; i++)
 	{
-		registerList->registers[i] = calloc(1, sizeof(register_T));
-		registerList->registers[i]->reg = i;		// Assigning each register it's name
+		backend->registers[i] = calloc(1, sizeof(register_T));
+		backend->registers[i]->reg = i;		// Assigning each register it's name
 	}  
 	  
-	registerList->table = table;
-	registerList->instruction = head;
+	backend->table = table;
+	backend->instruction = head;
 
-	return registerList;
+	backend->targetProg = fopen(targetName, "w");
+
+	return backend;
 }
 
 void descriptor_push(register_T* reg, arg_T* descriptor)
@@ -24,73 +26,116 @@ void descriptor_push(register_T* reg, arg_T* descriptor)
 	reg->regDescList[reg->size - 1] = descriptor;
 }
 
-void write_asm(table_T* table, TAC* head)
+/*
+descriptor_push_tac pushes a temporary into the register
+Input: Desired register, instruction to push
+Output: None
+*/
+void descriptor_push_tac(register_T* reg, TAC* instruction)
 {
-	register_list* registerList = init_registers(table, head);
-	size_t tableIndex = 0;
+	descriptor_reset(reg);		
+	descriptor_push(reg, init_arg(instruction, TAC_P));
+}
 
-	while (registerList->instruction)
+void descriptor_reset(register_T* r)
+{
+	if (r->regDescList)
 	{
-		// If we reached the start of a new block, go to the fitting symbol table for that block
-		if (registerList->instruction->op == TOKEN_LBRACE)
-		{
-			registerList->table = registerList->table->nestedScopes[tableIndex];
-			tableIndex++;
-		}
-		// If we're done with a block, reset the index of the table and go to the previous one
-		else if (registerList->instruction->op == TOKEN_RBRACE)
-		{
-			registerList->table = registerList->table->prev;
-			tableIndex = 0;
-		}
-		else
-		{
-			generate_asm(registerList);
-		}
-
-		registerList->instruction = registerList->instruction->next;
+		free(r->regDescList);
+		r->regDescList = NULL;
+		r->size = 0;
 	}
 }
 
-char* generate_asm(register_list* registerList)
+void write_asm(table_T* table, TAC* head, char* targetName)
 {
-	register_T* reg = NULL;
+	asm_backend* backend = init_asm_backend(table, head, targetName);
+	
+	while (backend->instruction)
+	{
+		// If we reached the start of a new block, go to the fitting symbol table for that block
+		if (backend->instruction->op == TOKEN_LBRACE)
+		{
+			printf("----------------\n");
+			backend->table->tableIndex++;
+			backend->table = backend->table->nestedScopes[backend->table->tableIndex - 1];
+		}
+		// If we're done with a block, reset the index of the table and go to the previous one
+		else if (backend->instruction->op == TOKEN_RBRACE)
+		{
+			backend->table = backend->table->prev;
+		}
+		else
+		{
+			generate_asm(backend);
+		}
+
+		backend->instruction = backend->instruction->next;
+	}
+
+	fclose(backend->targetProg);
+	free_registers(backend);
+}
+
+void generate_asm(asm_backend* backend)
+{
+	register_T* reg1 = NULL;
+	register_T* reg2 = NULL;
 
 	const char* blankTemplate = "%s %s, %s";
 	
 	char* op = NULL;
 	char* arg1 = NULL;
 	char* arg2 = NULL;
-	char* asm = NULL;
+	entry_T* entry1 = NULL;
+	entry_T* entry2 = NULL;
 
-	op = typeToString(registerList->instruction->op);
+	if (backend->instruction->arg1)
+		entry1 = table_search_entry(backend->table, backend->instruction->arg1->value);
 
-	if (registerList->instruction->op == AST_ADD || registerList->instruction->op == AST_SUB || registerList->instruction->op == AST_MUL || registerList->instruction->op == AST_DIV)
+	if (backend->instruction->arg2)
+		entry2 = table_search_entry(backend->table, backend->instruction->arg2->value);
+
+	op = typeToString(backend->instruction->op);
+
+	if (backend->instruction->op == AST_ADD || backend->instruction->op == AST_SUB || backend->instruction->op == AST_MUL || backend->instruction->op == AST_DIV)
 	{
-		reg = generate_get_register(registerList, registerList->instruction->arg1);
-		arg1 = generate_assign_reg(reg, registerList->instruction->arg1->value);
+		reg1 = generate_get_register(backend, backend->instruction->arg1);
+		arg1 = generate_assign_reg(reg1, backend->instruction->arg1->value);
 
-	
-		printf("ASM: MOV %s, %s\n", generate_get_register_name(reg), registerList->instruction->arg1->value);
+		// If the value in the second argument is a variable or temp, we want to use a register
+		if (entry2 || backend->instruction->arg2->type == TAC_P)
+		{
+			reg2 = generate_get_register(backend, backend->instruction->arg2);
+			arg2 = generate_assign_reg(reg2, backend->instruction->arg2->value);
+		}
+		// If the value of the second argument is a number, we can treat it as a const instead of putting it
+		// in a new register
+		else
+		{
+			arg2 = backend->instruction->arg2->value;
+		}
 		
-		
+		descriptor_push_tac(reg1, backend->instruction);			// We treat the whole TAC as a temporary variable that is now in the register
+
+		//asm = calloc(1, strlen(arg1) + strlen(arg2) + strlen(op) + ASM_INSTRUCTION_SIZE + 1);	// Size of the entire line of code
+		fprintf(backend->targetProg, "[ASM]: %s %s, %s\n", op, arg1, arg2);
 
 
-		reg = generate_get_register(registerList, registerList->instruction->arg2);
-		arg2 = generate_assign_reg(reg, registerList->instruction->arg2->value);
-
-
-
-		asm = calloc(1, strlen(arg1) + strlen(arg2) + strlen(op) + ASM_INSTRUCTION_SIZE + 1);	// Size of the entire line of code
-		sprintf(asm, blankTemplate, op, arg1, arg2);
 	}
-	else if (registerList->instruction->op == AST_ASSIGNMENT)
+	else if (backend->instruction->op == AST_ASSIGNMENT)
 	{
-		reg = generate_get_register(registerList, registerList->instruction->arg2);
-		descriptor_push(reg, registerList->instruction->arg1);
+		reg1 = generate_get_register(backend, backend->instruction->arg2);
+		address_reset(entry1);
+		address_push(entry1, reg1);
+		descriptor_push(reg1, backend->instruction->arg1);
 	}
-	
-	return asm;
+
+	else if (backend->instruction->op == AST_FUNCTION)
+	{
+		fprintf(backend->targetProg, "[ASM]: %s PROC ", backend->instruction->arg1);	// Generating function label
+		
+	}
 }
 
 /*
@@ -119,7 +164,7 @@ generate_check_variable_in_reg checks if a variable exists in any general purpos
 Input: Register list, variable to search
 Output: First register to contain the variable, NULL if none of them do
 */
-register_T* generate_check_variable_in_reg(register_list* registerList, void* var)
+register_T* generate_check_variable_in_reg(asm_backend* backend, void* var)
 {
 	unsigned int i = 0;
 	unsigned int i2 = 0;
@@ -127,12 +172,12 @@ register_T* generate_check_variable_in_reg(register_list* registerList, void* va
 
 	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
-		for (i2 = 0; i2 < registerList->registers[i]->size; i2++)
+		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
 		{
-			//printf("Register [%s] = %s, var = %s\n", generate_get_register_name(registerList->registers[i]), registerList->registers[i]->regDescList[i2]->value, var);
-			if (registerList->registers[i]->regDescList[i2]->value == var)
+			if (backend->registers[i]->regDescList[i2]->value == var 
+				|| !strcmp(backend->registers[i]->regDescList[i2]->value, var))
 			{
-				reg = registerList->registers[i];
+				reg = backend->registers[i];
 				break;
 			}
 		}
@@ -141,38 +186,42 @@ register_T* generate_check_variable_in_reg(register_list* registerList, void* va
 	return reg;
 }
 
-register_T* generate_find_free_reg(register_list* registerList)
+register_T* generate_find_free_reg(asm_backend* backend)
 {
 	unsigned int i = 0;
 	register_T* reg = NULL;
 
 	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
-		if (!registerList->registers[i]->size)
-			reg = registerList->registers[i];
-
+		if (!backend->registers[i]->size)
+			reg = backend->registers[i];
 	}
 
 	return reg;
 }
 
-register_T* generate_get_register(register_list* registerList, arg_T* arg)
+register_T* generate_get_register(asm_backend* backend, arg_T* arg)
 {
 	entry_T* entry = NULL;
 	register_T* reg = NULL;	
 	
-	reg = generate_check_variable_in_reg(registerList, arg->value);	// Check if variable is in a register
+	reg = generate_check_variable_in_reg(backend, arg->value);	// Check if variable is in a register
 	if (!reg)
 	{
-		reg = generate_find_free_reg(registerList);
+		reg = generate_find_free_reg(backend);
 
 		if (!reg)
 		{
-			reg = generate_find_used_reg(registerList);		// Check if there's a register that can be used despite being occupied
+			reg = generate_find_used_reg(backend);		// Check if there's a register that can be used despite being occupied
 		}
 
 		// Push the new variable descriptor onto the register
 		descriptor_push(reg, arg);
+
+		if (entry = (table_search_entry(backend->table, arg->value)))
+			address_push(entry, reg);
+
+		printf("[ASM]: MOV %s, %s\n", generate_get_register_name(reg), arg->value);
 	}
 
 	return reg;
@@ -183,44 +232,46 @@ generate_find_lowest_values finds and returns the register with the lowest amoun
 Input: Register list
 Output: Register with lowest variables
 */
-register_T* generate_find_lowest_values(register_list* registerList)
+register_T* generate_find_lowest_values(asm_backend* backend)
 {
 	unsigned int i = 0;
 	size_t loc = 0;
 
 	for (i = 1; i < GENERAL_REG_AMOUNT; i++)
 	{
-		if (registerList->registers[i]->size < registerList->registers[loc]->size)
+		if (backend->registers[i]->size < backend->registers[loc]->size)
 		{
 			loc = i;
 		}
 	}
 
-	return registerList->registers[loc];
+	return backend->registers[loc];
 }
 
-register_T* generate_find_used_reg(register_list* registerList)
+register_T* generate_find_used_reg(asm_backend* backend)
 {
 	unsigned int i = 0;
 	unsigned int i2 = 0;
 	register_T* reg = NULL;
+	entry_T* entry = NULL;
 
 	// Going through all the variables in all the registers and searching to see if there's a register
-	// that has all it's values stores somewhere else as well, if so, we can use that register
+	// that has all it's values stored somewhere else as well, if so, we can use that register
 	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
-		reg = registerList->registers[i];
+		reg = backend->registers[i];
 
-		for (i2 = 0; i2 < registerList->registers[i]->size && reg; i2++)
+		for (i2 = 0; i2 < backend->registers[i]->size && reg; i2++)
 		{
 			// If there's a temporary in the register, we cannot use the register
-			if (registerList->registers[i]->regDescList[i2]->type == TAC_P)
+			if (backend->registers[i]->regDescList[i2]->type == TAC_P)
 			{
 				reg = NULL;
 			}
-			else if (table_search_entry(registerList->table, registerList->registers[i]->regDescList[i2]->value)->size <= 1)
+			else if (entry = table_search_entry(backend->table, backend->registers[i]->regDescList[i2]->value))
 			{
-				reg = NULL;
+				if (entry->size <= 1)
+					reg = NULL;
 			}
 		}
 	}
@@ -228,37 +279,35 @@ register_T* generate_find_used_reg(register_list* registerList)
 	// and if it doesn't, we can use a register that contains the variable
 	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
-		if (registerList->instruction->next && registerList->instruction->next->op == AST_ASSIGNMENT)
+		if (backend->instruction->next && backend->instruction->next->op == AST_ASSIGNMENT)
 		{
-			reg = generate_check_useless_value(registerList, registerList->registers[i]);
+			reg = generate_check_useless_value(backend, backend->registers[i]);
 		}
 	}
 	
 	// Going through registers and checking if there's a register that holds values that won't be used again
 	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
-		reg = generate_check_variable_usabilty(registerList, registerList->registers[i]);	
+		reg = generate_check_variable_usabilty(backend, backend->registers[i]);	
 	}
 	// If there are no usable registers, we need to spill the values of one of the registers
 	if (!reg)
 	{
-		reg = generate_find_lowest_values(registerList);
-		generate_spill(registerList, reg);
+		reg = generate_find_lowest_values(backend);
+		generate_spill(backend, reg);
 	}
 
 	// Now that the variable is in a new register, we need to free the previous values stored in it and reset the size
 	if (reg->regDescList)
 	{
-		free(reg->regDescList);
-		reg->regDescList = NULL;
-		reg->size = 0;
+		descriptor_reset(reg);
 	}
 	
 
 	return reg;
 }
 
-register_T* generate_check_useless_value(register_list* registerList, register_T* r)
+register_T* generate_check_useless_value(asm_backend* backend, register_T* r)
 {
 	register_T* reg = NULL;
 	unsigned int i = 0;
@@ -267,9 +316,9 @@ register_T* generate_check_useless_value(register_list* registerList, register_T
 
 	for (i = 0; i < r->size && reg; i++)
 	{
-		if (registerList->instruction->next->arg1->value == registerList->instruction->arg1->value
-			|| registerList->instruction->next->arg1->value == registerList->instruction->arg2->value
-			|| registerList->instruction->next->arg1->value != r->regDescList[i]->value)
+		if (backend->instruction->next->arg1->value == backend->instruction->arg1->value
+			|| backend->instruction->next->arg1->value == backend->instruction->arg2->value
+			|| backend->instruction->next->arg1->value != r->regDescList[i]->value)
 		{
 			reg = NULL;
 		}
@@ -279,10 +328,10 @@ register_T* generate_check_useless_value(register_list* registerList, register_T
 }
 
 
-register_T* generate_check_variable_usabilty(register_list* registerList, register_T* r)
+register_T* generate_check_variable_usabilty(asm_backend* backend, register_T* r)
 {
 	register_T* reg = NULL;
-	TAC* triple = registerList->instruction->next;
+	TAC* triple = backend->instruction;
 	unsigned int i = 0;
 
 	reg = r;
@@ -312,7 +361,7 @@ register_T* generate_check_variable_usabilty(register_list* registerList, regist
 	return reg;
 }
 
-void generate_spill(register_list* registerList, register_T* r)
+void generate_spill(asm_backend* backend, register_T* r)
 {
 	const char* spillTemplate = "MOV [%s], %s"; 
 	char* asm = NULL;
@@ -325,7 +374,7 @@ void generate_spill(register_list* registerList, register_T* r)
 		asm = calloc(1, strlen(r->regDescList[i]->value) + CHAR_SIZE_OF_REG + strlen(spillTemplate) - 3);
 		sprintf(asm, spillTemplate, r->regDescList[i]->value, generate_get_register_name(r));
 
-		push_address(table_search_entry(registerList->table, r->regDescList[i]->value), r->regDescList[i]->value);
+		address_push(table_search_entry(backend->table, r->regDescList[i]->value), r->regDescList[i]->value);
 	}
 }
 
@@ -352,17 +401,18 @@ char* generate_get_register_name(register_T* r)
 }
 
 
-void free_registers(register_list* registerList)
+void free_registers(asm_backend* backend)
 {
 	unsigned int i = 0;
 
 	for (i = 0; i < REG_AMOUNT; i++)
-	{
-		free(registerList->registers[i]);
-		free(registerList->registers[i]->regDescList);
+	{	
+		if (backend->registers[i]->regDescList)
+			free(backend->registers[i]->regDescList);
+		free(backend->registers[i]);
 	}
 		
 
-	free(registerList->registers);
-	free(registerList);
+	free(backend->registers);
+	free(backend);
 }

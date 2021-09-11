@@ -25,6 +25,19 @@ char* read_file(FILE* file)
     return contents;
 }
 
+size_t numOfDigits(int num)
+{
+    size_t counter = 0;
+    do
+    {
+        num /= 10;
+        counter++;
+
+    } while (num > 0);
+    
+    return counter;
+}
+
 /*
 Function will perform the fgets command and also remove the newline
 that might be at the end of the string - a known issue with fgets.

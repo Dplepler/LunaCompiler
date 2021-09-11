@@ -29,15 +29,21 @@ typedef struct STRUCT_SYMBOL_TABLE
 	
 	size_t entrySize;
 	size_t nestedSize;
+	size_t tableIndex;
 
 }table_T;
 
+
+
 entry_T* init_entry(char* name, int type);
-void push_address(entry_T* entry, void* location);
-void table_add_entry(table_T* table, char* name, int type);
+entry_T* table_search_entry(table_T* table, char* name);
+
 table_T* init_table(table_T* prev);
 table_T* table_add_table(table_T* table);
-entry_T* table_search_entry(table_T* table, char* name);
+
+void address_push(entry_T* entry, void* location);
+void address_reset(entry_T* entry);
+void table_add_entry(table_T* table, char* name, int type);
 void table_print_table(table_T* table, int level);
 void table_free_table(table_T* table);
 

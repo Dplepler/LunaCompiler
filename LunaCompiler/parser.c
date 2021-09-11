@@ -193,7 +193,6 @@ AST* parser_statement(parser_T* parser)
 							parser->token = lexer_get_next_token(parser->lexer);
 				}
 			}
-				
 		}
 		// Variable assignment
 		else if (lexer_token_peek(parser->lexer, 1)->type == TOKEN_EQUALS)
@@ -217,7 +216,7 @@ AST* parser_statement(parser_T* parser)
 		node = parser_block(parser);
 		parser->table = parser->table->prev;				// Exit current table and move to parent table
 	}
-	else if (parser->token->type == TOKEN_NUMBER)
+	else if (parser->token->type == TOKEN_NUMBER || parser->token->type == TOKEN_ID)
 	{
 		node = parser_expression(parser);
 		parser->token = parser_expect(parser, TOKEN_SEMI);
@@ -226,8 +225,6 @@ AST* parser_statement(parser_T* parser)
 	{
 		printf("[ERROR]: Invalid syntax\n"); exit(1);
 	}
-
-
 
 	return node;
 }
@@ -250,8 +247,6 @@ AST* parser_assignment(parser_T* parser)
 		reset->int_value = "0";
 		node = AST_initChildren(node, reset, AST_ASSIGNMENT);		
 	}
-
-	return node;
 }
 
 AST* parser_func_call(parser_T* parser)
@@ -459,12 +454,28 @@ AST* parser_condition(parser_T* parser)
 	parser->token = parser_expect(parser, TOKEN_ID);	
 
 	node->condition = parser_binary_expression(parser);
-	node->if_body = parser_statement(parser);
+
+	if (parser->token->type == TOKEN_LBRACE)
+		node->if_body = parser_statement(parser);
+	else
+	{
+		printf("[ERROR]: If statement missing braces\n");
+		exit(1);
+	}
+		
 
 	if (parser_check_reserved(parser) == ELSE_T)
 	{
 		parser->token = lexer_get_next_token(parser->lexer);
-		node->else_body = parser_statement(parser);
+
+		if (parser->token->type == TOKEN_LBRACE)
+			node->else_body = parser_statement(parser);
+		else
+		{
+			printf("[ERROR]: else statement missing braces\n");
+			exit(1);
+		}
+			
 	}
 
 	return node;
@@ -476,7 +487,13 @@ AST* parser_while(parser_T* parser)
 
 	node->condition = parser_binary_expression(parser);
 
-	node->if_body = parser_block(parser);
+	if (parser->token->type == TOKEN_LBRACE)
+		node->if_body = parser_statement(parser);
+	else
+	{
+		printf("[ERROR]: While statement missing braces\n");
+		exit(1);
+	}
 	
 	return node;
 }

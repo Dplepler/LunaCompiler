@@ -12,8 +12,10 @@
 
 
 char* read_file(FILE* file);
+
 void myFgets(char str[], int n);
 
+size_t numOfDigits(int num);
 
 
 #endif

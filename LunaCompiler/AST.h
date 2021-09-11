@@ -10,6 +10,7 @@ typedef struct AST_STRUCT
 	{
 		AST_PROGRAM = 21,		// Continue enumiration from tokens (tokens.c)
 		AST_FUNCTION,
+		AST_DEF_AMOUNT,
 		AST_COMPOUND,
 		AST_INT,
 		AST_ADD,

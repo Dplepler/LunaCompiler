@@ -8,15 +8,25 @@ entry_T* init_entry(char* name, int type)
 
 	entry->addressDesc = calloc(1, sizeof(void*));
 
-	push_address(entry, entry->name);
+	address_push(entry, entry->name);
 
 	return entry;
 }
 
-void push_address(entry_T* entry, void* location)
+void address_push(entry_T* entry, void* location)
 {
 	entry->addressDesc = realloc(entry->addressDesc, sizeof(location) * ++entry->size);
 	entry->addressDesc[entry->size - 1] = location;
+}
+
+void address_reset(entry_T* entry)
+{
+	if (entry->addressDesc)
+	{
+		free(entry->addressDesc);
+		entry->addressDesc = NULL;
+		entry->size = 0;
+	}
 }
 
 table_T* init_table(table_T* prev)
@@ -32,11 +42,7 @@ table_T* init_table(table_T* prev)
 
 void table_add_entry(table_T* table, char* name, int type)
 {
-	if (table->entrySize)
-		table->entries = realloc(table->entries, sizeof(entry_T*) * ++table->entrySize);
-	else
-		table->entrySize++;
-
+	table->entries = realloc(table->entries, sizeof(entry_T*) * ++table->entrySize);
 	table->entries[table->entrySize - 1] = init_entry(name, type);
 }
 

@@ -14,6 +14,11 @@ int main(int argc, char** argv)
 	unsigned int i = 0;
 
 	char* contents = NULL;
+	if (!argv[1] || !argv[2])
+	{
+		printf("Some file input is missing\n");
+		exit(1);
+	}
 
 	if (file = fopen(argv[1], "r"))
 	{
@@ -30,9 +35,9 @@ int main(int argc, char** argv)
 
 			//table_print_table(parser->table, 0);
 
-			//traversal_print_instructions(instructions);
+			traversal_print_instructions(instructions);
 
-			write_asm(parser->table, instructions->head);
+			write_asm(parser->table, instructions->head, argv[2]);
 
 
 			lexer_free_tokens(lexer);

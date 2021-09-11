@@ -67,11 +67,12 @@ char* typeToString(int type)
 	
 		case AST_PROGRAM: return "Program";
 		case AST_FUNCTION: return "Function";
+		case AST_DEF_AMOUNT: return "Definition amount";
 		case AST_INT: return "Int";
-		case AST_ADD: return "Addition";
-		case AST_SUB: return "Substruction";
-		case AST_MUL: return "Multiplication";
-		case AST_DIV: return "Division";
+		case AST_ADD: return "ADD";
+		case AST_SUB: return "SUB";
+		case AST_MUL: return "MUL";
+		case AST_DIV: return "DIV";
 		case AST_ASSIGNMENT: return "Assignment";
 		case AST_VARIABLE_DEC: return "Declaration";
 		case AST_VARIABLE: return "Variable";
