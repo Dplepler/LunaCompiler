@@ -87,7 +87,6 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 	return instruction;
 }
 
-
 TAC* traversal_func_dec(AST* node, TAC_list* list)
 {
 	TAC* instruction = calloc(1, sizeof(TAC));
@@ -324,6 +323,7 @@ void traversal_free_array(TAC_list* list)
 
 	while (triple->next)
 	{
+
 		if (triple->op == AST_FUNC_CALL)
 		{
 			free(triple->arg2->value);
@@ -339,11 +339,12 @@ void traversal_free_array(TAC_list* list)
 	
 		if (triple->arg2)
 			free(triple->arg2);
-
+		
 		prev = triple;
 		triple = triple->next;
 		free(prev);
 	}
+
 	free(list->last);
 	free(list);
 }

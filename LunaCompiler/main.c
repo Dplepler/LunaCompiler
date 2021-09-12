@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 
 			//table_print_table(parser->table, 0);
 
-			traversal_print_instructions(instructions);
+			//traversal_print_instructions(instructions);
 
 			write_asm(parser->table, instructions->head, argv[2]);
 

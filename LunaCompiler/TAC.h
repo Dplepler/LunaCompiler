@@ -10,6 +10,7 @@ typedef struct ARG_STRUCT
 	enum
 	{
 		TAC_P,
+		TEMP_P,
 		CHAR_P,
 
 	} type;

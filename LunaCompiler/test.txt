@@ -3,7 +3,7 @@ int globalVar;
 
 int foo(int x, int y) 		~ Comment comment blah blah blah
 {
-	
+	return y * x;
 }
 
 int main ()
@@ -12,11 +12,11 @@ int main ()
 	int z;
 	int y;
 	
-	while (z < x * 2)
+	while (z + 5 < x * 2)
 	{
 		y = y + 1;
 	}
 
-	
+	return z + y;
 }
 

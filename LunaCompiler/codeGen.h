@@ -46,6 +46,9 @@ asm_backend* init_asm_backend(table_T* table, TAC* head, char* targetName);
 void descriptor_push(register_T* reg, arg_T* descriptor);
 void free_registers(asm_backend* registers_list);
 void write_asm(table_T* table, TAC* head, char* targetName);
+void generate_binop(asm_backend* backend);
+void generate_assignment(asm_backend* backend);
+void generate_function(asm_backend* backend);
 void generate_spill(asm_backend* backend, register_T* r);
 void descriptor_reset(register_T* r);
 
@@ -59,6 +62,7 @@ register_T* generate_check_variable_usabilty(asm_backend* backend, register_T* r
 
 void generate_asm(asm_backend* backend);
 char* generate_get_register_name(register_T* r);
+char* dataToAsm(int type);
 char* generate_assign_reg(register_T* r, void* argument);
 
 #endif
