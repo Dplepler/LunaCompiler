@@ -37,13 +37,17 @@ typedef struct INSTRUCTIONS_STRUCT
 
 TAC_list* init_tac_list();
 TAC_list* traversal_visit(AST* node);
+
 arg_T* init_arg(void* arg, int type);
-int traversal_check_arg(AST* node);
+
 TAC* traversal_binop(AST* node, TAC_list* list);
 TAC* traversal_function_call(AST* node, TAC_list* list);
 TAC* traversal_func_dec(AST* node, TAC_list* list);
 TAC* traversal_assignment(AST* node, TAC_list* list);
 TAC* traversal_return(AST* node, TAC_list* list);
+
+int traversal_check_arg(AST* node);
+
 void traversal_if(AST* node, TAC_list* list);
 void traversal_while(AST* node, TAC_list* list);
 void* traversal_build_instruction(AST* node, TAC_list* list);
@@ -51,6 +55,7 @@ void traversal_statements(AST* node, TAC_list* list);
 void list_push(TAC_list* list, TAC* instruction);
 void traversal_free_array(TAC_list* list);
 void traversal_print_instructions(TAC_list* instructions);
+
 
 
 #endif

@@ -1,7 +1,7 @@
 
 int globalVar;
 
-int foo(int x, int y) 		~ Comment comment blah blah blah
+int foo(int x, int y) 		~ Comment comment blah blah blah  
 {
 	return y * x;
 }

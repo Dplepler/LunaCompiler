@@ -102,12 +102,19 @@ void lexer_skip_whitespace(lexer_T* lexer)
 	while (lexer->c == ' ' || lexer->c == '\n' || lexer->c == '\t')
 		lexer_advance(lexer);
 
+	lexer_skip_comments(lexer);
+}
+
+void lexer_skip_comments(lexer_T* lexer)
+{
 	// Skipping comments
 	if (lexer->c == '~')
 	{
 		while (lexer->c != '\n')
 			lexer_advance(lexer);
 		lexer_advance(lexer);		// Skipping newline
+
+		lexer_skip_whitespace(lexer);
 	}
 }
 
@@ -228,7 +235,7 @@ token_T* lexer_collect_string(lexer_T* lexer)
 	size_t size = 0;
 
 	lexer_advance(lexer);
-	while (isalpha(lexer->c))
+	while (isalpha(lexer->c) || isdigit(lexer->c))
 	{
 		string = realloc(string, ++size);
 		string[size] = lexer->c;  

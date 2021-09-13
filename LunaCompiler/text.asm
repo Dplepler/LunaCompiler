@@ -1,17 +1,17 @@
-MOV AX, 0
-
+MOV EAX, 0
 foo PROC x:DWORD, y:DWORD
-	MOV BX, y
-	MOV CX, x
-	MUL BX, CX
+MOV EBX, [x]
+MOV ECX, EAX
+MOV EAX, [y]
+MUL EBX
 foo ENDP
-
 main PROC 
-	ADD AX, 5
-	MUL CX, 2
-	MOV DX, y
-	ADD DX, 1
+ADD ECX, 5
+MOV EDX, 2
+MOV EAX, 
+MUL EDX
+MOV EAX, [y]
+ADD EAX, 1
+MOV ECX, [z]
+ADD ECX, EAX
 main ENDP
-
-MOV AX, z
-ADD AX, y

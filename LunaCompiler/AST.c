@@ -60,6 +60,7 @@ char* typeToString(int type)
 		case TOKEN_SUB: return "-";
 		case TOKEN_LBRACE: return "{";
 		case TOKEN_RBRACE: return "}";
+		case TOKEN_FUNC_END: return "End function";
 		case TOKEN_NOOP: return "NOOP";
 		case TOKEN_EOF: return "End of file";
 

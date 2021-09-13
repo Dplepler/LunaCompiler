@@ -68,7 +68,7 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 					for (i = 0; i < node->functionsSize; i++)		// Loop through functions
 						instruction = traversal_build_instruction(node->function_list[i], list);
 					break;
-				case AST_FUNCTION: instruction = traversal_func_dec(node, list); traversal_statements(node->function_body, list); break;
+				case AST_FUNCTION: instruction = traversal_func_dec(node, list); break;
 				case AST_COMPOUND: traversal_statements(node, list); break;
 				case AST_ASSIGNMENT: instruction = traversal_assignment(node, list); break;
 				case AST_VARIABLE_DEC: instruction = traversal_assignment(node->value, list); break;	// Variable declerations will become normal assignments
@@ -91,6 +91,7 @@ TAC* traversal_func_dec(AST* node, TAC_list* list)
 {
 	TAC* instruction = calloc(1, sizeof(TAC));
 	TAC* defAmount = calloc(1, sizeof(TAC));
+	TAC* endFunc = calloc(1, sizeof(TAC));
 	char* value = NULL;
 
 	// In this triple, arg1 will be the function name and arg2 will be the function return type
@@ -106,6 +107,11 @@ TAC* traversal_func_dec(AST* node, TAC_list* list)
 	defAmount->arg1 = init_arg(value, CHAR_P);
 	
 	list_push(list, defAmount);
+
+	traversal_statements(node->function_body, list);
+
+	endFunc->op = TOKEN_FUNC_END;
+	list_push(list, endFunc);
 
 	return instruction;
 }

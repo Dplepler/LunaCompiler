@@ -95,9 +95,13 @@ void generate_asm(asm_backend* backend)
 
 	op = typeToString(backend->instruction->op);
 
-	if (backend->instruction->op == AST_ADD || backend->instruction->op == AST_SUB || backend->instruction->op == AST_MUL || backend->instruction->op == AST_DIV)
+	if (backend->instruction->op == AST_ADD || backend->instruction->op == AST_SUB)
 	{
 		generate_binop(backend);
+	}
+	else if (backend->instruction->op == AST_MUL || backend->instruction->op == AST_DIV)
+	{
+		generate_mul_div(backend);
 	}
 	else if (backend->instruction->op == AST_ASSIGNMENT)
 	{
@@ -135,14 +139,61 @@ void generate_binop(asm_backend* backend)
 	fprintf(backend->targetProg, "%s %s, %s\n", typeToString(backend->instruction->op), arg1, arg2);
 }
 
+void generate_mul_div(asm_backend* backend)
+{
+	register_T* reg1 = NULL;
+	register_T* reg2 = generate_get_register(backend, backend->instruction->arg2);
+
+	unsigned int i = 0;
+
+	if ((reg1 = generate_check_variable_in_reg(backend, backend->instruction->arg1->value)) != backend->registers[REG_AX])
+	{
+		if (!reg1)
+		{
+			reg1 = generate_find_free_reg(backend);
+			if (!reg1)
+			{
+				reg1 = generate_find_used_reg(backend);
+			}
+
+			// Copying descriptors from available register to AX
+			for (i = 0; i < backend->registers[REG_AX]->size; i++)
+				descriptor_push(reg1, backend->registers[REG_AX]->regDescList[i]);
+
+			fprintf(backend->targetProg, "MOV %s, EAX\n", generate_get_register_name(reg1));
+			descriptor_reset(backend->registers[REG_AX]);	// Reset AX
+			descriptor_push(backend->registers[REG_AX], backend->instruction->arg1);
+
+			fprintf(backend->targetProg, "MOV EAX, [%s]\n", backend->instruction->arg1->value);
+
+		}
+		// If there is a register that contains the dividend already just put it in AX
+		else
+		{
+			fprintf(backend->targetProg, "MOV EAX, %s\n", reg1);
+		}
+	}
+
+	if (backend->instruction->op == AST_MUL)
+		fprintf(backend->targetProg, "MUL %s\n", generate_get_register_name(reg2));
+	else
+		fprintf(backend->targetProg, "DIV %s\n", generate_get_register_name(reg2));
+
+	descriptor_push_tac(backend->registers[REG_AX], backend->instruction);	// Now AX will hold the result value so we can reset it to that value
+
+}
+
+
 void generate_assignment(asm_backend* backend)
 {
 	register_T* reg = generate_get_register(backend, backend->instruction->arg2);
 	entry_T* entry = table_search_entry(backend->table, backend->instruction->arg1->value);
 
 	address_reset(entry);
+		
 	address_push(entry, reg);
 	descriptor_push(reg, backend->instruction->arg1);
+	
 }
 
 void generate_function(asm_backend* backend)
@@ -170,7 +221,7 @@ void generate_function(asm_backend* backend)
 
 	fprintf(backend->targetProg, "\n");
 
-	while (backend->instruction->op != TOKEN_RBRACE)
+	while (backend->instruction->op != TOKEN_FUNC_END)
 	{
 		generate_asm(backend);
 		backend->instruction = backend->instruction->next;
@@ -267,7 +318,10 @@ register_T* generate_get_register(asm_backend* backend, arg_T* arg)
 		if (entry = (table_search_entry(backend->table, arg->value)))
 			address_push(entry, reg);
 
-		fprintf(backend->targetProg, "MOV %s, %s\n", generate_get_register_name(reg), arg->value);
+		if (entry)
+			fprintf(backend->targetProg, "MOV %s, [%s]\n", generate_get_register_name(reg), arg->value);
+		else
+			fprintf(backend->targetProg, "MOV %s, %s\n", generate_get_register_name(reg), arg->value);
 	}
 
 	return reg;
@@ -429,17 +483,17 @@ char* generate_get_register_name(register_T* r)
 	// Switch types
 	switch (r->reg)
 	{
-		case REG_AX: return "AX";
-		case REG_BX: return "BX";
-		case REG_CX: return "CX";
-		case REG_DX: return "DX";
+		case REG_AX: return "EAX";
+		case REG_BX: return "EBX";
+		case REG_CX: return "ECX";
+		case REG_DX: return "EDX";
 		case REG_CS: return "CS";
 		case REG_DS: return "DS";
 		case REG_SS: return "SS";
-		case REG_SP: return "SP";
-		case REG_SI: return "SI";
-		case REG_DI: return "DI";
-		case REG_BP: return "BP";
+		case REG_SP: return "ESP";
+		case REG_SI: return "ESI";
+		case REG_DI: return "EDI";
+		case REG_BP: return "EBP";
 	}
 }
 

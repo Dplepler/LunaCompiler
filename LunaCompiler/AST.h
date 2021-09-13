@@ -8,7 +8,7 @@ typedef struct AST_STRUCT
 
 	enum
 	{
-		AST_PROGRAM = 21,		// Continue enumiration from tokens (tokens.c)
+		AST_PROGRAM = 22,		// Continue enumiration from tokens (tokens.c)
 		AST_FUNCTION,
 		AST_DEF_AMOUNT,
 		AST_COMPOUND,
