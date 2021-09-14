@@ -39,6 +39,7 @@
     <ClInclude Include="parser.h" />
     <ClInclude Include="symbolTable.h" />
     <ClInclude Include="TAC.h" />
+    <ClInclude Include="template.h" />
     <ClInclude Include="tokens.h" />
     <ClInclude Include="lexer.h" />
   </ItemGroup>

@@ -54,6 +54,11 @@ table_T* table_add_table(table_T* table)
 	return table->nestedScopes[table->nestedSize - 1];
 }
 
+/*
+table_search_entry searches which scope does a variable belong to, going from current scope to it's parents until we reach the global scope
+Input: Table, variable to search for
+Output: Entry that contains the variable
+*/
 entry_T* table_search_entry(table_T* table, char* name)
 {
 	unsigned int i = 0;
@@ -70,6 +75,28 @@ entry_T* table_search_entry(table_T* table, char* name)
 
 	return entry;
 }
+
+/*
+table_search_table searches an entry just like the above function "table_search_entry" but returns the table instead of the entry
+Input: Table, variable name
+Output: Table that contains the variable
+*/
+table_T* table_search_table(table_T* table, char* name)
+{
+	unsigned int i = 0;
+
+	for (i = 0; i < table->entrySize; i++)
+	{
+		if (!strcmp(table->entries[i]->name, name))
+			return table;
+	}
+
+	if (table->prev)
+		table_search_table(table->prev, name);
+
+	return NULL;
+}
+
 
 void table_print_table(table_T* table, int level)
 {

@@ -71,7 +71,7 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 				case AST_FUNCTION: instruction = traversal_func_dec(node, list); break;
 				case AST_COMPOUND: traversal_statements(node, list); break;
 				case AST_ASSIGNMENT: instruction = traversal_assignment(node, list); break;
-				case AST_VARIABLE_DEC: instruction = traversal_assignment(node->value, list); break;	// Variable declerations will become normal assignments
+				case AST_VARIABLE_DEC: instruction = traversal_var_dec(node, list); break;	// Variable declerations will become normal assignments
 				case AST_FUNC_CALL: instruction = traversal_function_call(node, list); break;
 				case AST_INT: instruction = (char*)node->int_value; break;
 				case AST_VARIABLE: instruction = (char*)node->name; break;
@@ -81,7 +81,6 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 					
 			}
 		}
-		
 	}
 
 	return instruction;
@@ -112,6 +111,19 @@ TAC* traversal_func_dec(AST* node, TAC_list* list)
 
 	endFunc->op = TOKEN_FUNC_END;
 	list_push(list, endFunc);
+
+	return instruction;
+}
+
+TAC* traversal_var_dec(AST* node, TAC_list* list)
+{
+	TAC* instruction = calloc(1, sizeof(TAC));
+
+	instruction->op = AST_VARIABLE_DEC;
+	instruction->arg1 = init_arg(node->name, CHAR_P);
+	instruction->arg2 = init_arg(dataToAsm(node->var_type), CHAR_P);
+
+	list_push(list, instruction);
 
 	return instruction;
 }
@@ -319,6 +331,24 @@ void traversal_print_instructions(TAC_list* instructions)
 	}
 }
 
+//char* dataToAsmDefine(int type)
+//{
+//	switch (type)
+//	{
+//		case DATA_INT: return "DD";
+//
+//	}
+//}
+
+char* dataToAsm(int type)
+{
+	switch (type)
+	{
+	case DATA_INT: return "DWORD";
+
+	}
+
+}
 
 
 

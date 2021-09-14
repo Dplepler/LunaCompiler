@@ -40,6 +40,7 @@ entry_T* table_search_entry(table_T* table, char* name);
 
 table_T* init_table(table_T* prev);
 table_T* table_add_table(table_T* table);
+table_T* table_search_table(table_T* table, char* name);
 
 void address_push(entry_T* entry, void* location);
 void address_reset(entry_T* entry);

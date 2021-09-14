@@ -1,4 +1,5 @@
 #include "codeGen.h"
+#include "template.h"
 
 asm_backend* init_asm_backend(table_T* table, TAC* head, char* targetName)
 {
@@ -46,7 +47,12 @@ void descriptor_reset(register_T* r)
 		for (i = 0; i < r->size; i++)
 		{
 			if (r->regDescList[i]->type == TEMP_P)
+			{
 				free(r->regDescList[i]);
+				r->regDescList[i]->value = NULL;
+				r->regDescList[i] = NULL;
+			}
+
 		}
 
 		free(r->regDescList);
@@ -55,10 +61,22 @@ void descriptor_reset(register_T* r)
 	}
 }
 
+
+
 void write_asm(table_T* table, TAC* head, char* targetName)
 {
 	asm_backend* backend = init_asm_backend(table, head, targetName);
 	
+	unsigned int i = 0;
+
+	for (i = 0; i < TEMPLATE_SIZE; i++)
+		fprintf(backend->targetProg, "%s\n", asm_template[i]);
+	
+	fprintf(backend->targetProg, ".data\n");
+	backend->globalDataIndex = ftell(backend->targetProg);
+
+	fprintf(backend->targetProg, ".code\n");
+
 	while (backend->instruction)
 	{
 		// If we reached the start of a new block, go to the fitting symbol table for that block
@@ -111,12 +129,19 @@ void generate_asm(asm_backend* backend)
 	{
 		generate_function(backend);
 	}
+	else if (backend->instruction->op == AST_VARIABLE_DEC)
+	{
+		generate_var_dec(backend);
+	}
 }
 
 void generate_binop(asm_backend* backend)
 {
 	register_T* reg1 = generate_get_register(backend, backend->instruction->arg1);
 	register_T* reg2 = NULL;
+	entry_T* entry = table_search_entry(backend->table, backend->instruction->arg1->value);
+
+	address_reset(entry);		// The variable being added to will not hold previous numbers anymore
 
 	char* arg1 = generate_assign_reg(reg1, backend->instruction->arg1->value);
 	char* arg2 = NULL;
@@ -146,11 +171,12 @@ void generate_mul_div(asm_backend* backend)
 
 	unsigned int i = 0;
 
-	if ((reg1 = generate_check_variable_in_reg(backend, backend->instruction->arg1->value)) != backend->registers[REG_AX])
+	if ((reg1 = generate_check_variable_in_reg(backend, backend->instruction->arg1)) != backend->registers[REG_AX])
 	{
 		if (!reg1)
-		{
+		{  
 			reg1 = generate_find_free_reg(backend);
+
 			if (!reg1)
 			{
 				reg1 = generate_find_used_reg(backend);
@@ -159,9 +185,14 @@ void generate_mul_div(asm_backend* backend)
 			// Copying descriptors from available register to AX
 			for (i = 0; i < backend->registers[REG_AX]->size; i++)
 				descriptor_push(reg1, backend->registers[REG_AX]->regDescList[i]);
+			
+			fprintf(backend->targetProg, "MOV %s, EAX\n", generate_get_register_name(reg1));	// Move the value of AX to a different register
 
-			fprintf(backend->targetProg, "MOV %s, EAX\n", generate_get_register_name(reg1));
-			descriptor_reset(backend->registers[REG_AX]);	// Reset AX
+			// Reset AX
+			backend->registers[REG_AX]->size = 0;	
+			free(backend->registers[REG_AX]->regDescList);
+			backend->registers[REG_AX]->regDescList = NULL;
+
 			descriptor_push(backend->registers[REG_AX], backend->instruction->arg1);
 
 			fprintf(backend->targetProg, "MOV EAX, [%s]\n", backend->instruction->arg1->value);
@@ -170,7 +201,7 @@ void generate_mul_div(asm_backend* backend)
 		// If there is a register that contains the dividend already just put it in AX
 		else
 		{
-			fprintf(backend->targetProg, "MOV EAX, %s\n", reg1);
+			fprintf(backend->targetProg, "MOV EAX, %s\n", generate_get_register_name(reg1));
 		}
 	}
 
@@ -195,6 +226,22 @@ void generate_assignment(asm_backend* backend)
 	descriptor_push(reg, backend->instruction->arg1);
 	
 }
+
+void generate_var_dec(asm_backend* backend)
+{
+	if (!(table_search_table(backend->table, backend->instruction->arg1->value)->prev))
+	{
+		fseek(backend->targetProg, backend->globalDataIndex, SEEK_SET);
+		fprintf(backend->targetProg, "%s %s 0\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
+		fseek(backend->targetProg, 0, SEEK_END);
+	}
+	else
+	{
+		fprintf(backend->targetProg, "LOCAL %s:%s\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
+	}
+
+}
+
 
 void generate_function(asm_backend* backend)
 {
@@ -255,13 +302,12 @@ char* generate_assign_reg(register_T* r, void* argument)
 }
 
 
-
 /*
 generate_check_variable_in_reg checks if a variable exists in any general purpose register, and if so it returns the register
 Input: Register list, variable to search
 Output: First register to contain the variable, NULL if none of them do
 */
-register_T* generate_check_variable_in_reg(asm_backend* backend, void* var)
+register_T* generate_check_variable_in_reg(asm_backend* backend, arg_T* var)
 {
 	unsigned int i = 0;
 	unsigned int i2 = 0;
@@ -271,8 +317,12 @@ register_T* generate_check_variable_in_reg(asm_backend* backend, void* var)
 	{
 		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
 		{
-			if (backend->registers[i]->regDescList[i2]->value == var 
-				|| !strcmp(backend->registers[i]->regDescList[i2]->value, var))
+			if (var->type == TAC_P && backend->registers[i]->regDescList[i2]->value == var->value)
+			{
+				reg = backend->registers[i];
+				break;
+			}
+			else if (var->type == CHAR_P && !strcmp(backend->registers[i]->regDescList[i2]->value, var->value))
 			{
 				reg = backend->registers[i];
 				break;
@@ -302,7 +352,7 @@ register_T* generate_get_register(asm_backend* backend, arg_T* arg)
 	entry_T* entry = NULL;
 	register_T* reg = NULL;	
 	
-	reg = generate_check_variable_in_reg(backend, arg->value);	// Check if variable is in a register
+	reg = generate_check_variable_in_reg(backend, arg);	// Check if variable is in a register
 	if (!reg)
 	{
 		reg = generate_find_free_reg(backend);
@@ -469,7 +519,6 @@ void generate_spill(asm_backend* backend, register_T* r)
 	// and store the value of the variable in itself
 	for (i = 0; i < r->size; i++)
 	{
-		
 		fprintf(backend->targetProg, "MOV [%s], %s\n", r->regDescList[i]->value, generate_get_register_name(r));
 		address_push(table_search_entry(backend->table, r->regDescList[i]->value), r->regDescList[i]->value);
 	}
@@ -497,15 +546,6 @@ char* generate_get_register_name(register_T* r)
 	}
 }
 
-char* dataToAsm(int type)
-{
-	switch (type)
-	{
-	case DATA_INT: return "DWORD";
-
-	}
-
-}
 
 void free_registers(asm_backend* backend)
 {

@@ -40,9 +40,10 @@ TAC_list* traversal_visit(AST* node);
 
 arg_T* init_arg(void* arg, int type);
 
+TAC* traversal_func_dec(AST* node, TAC_list* list);
+TAC* traversal_var_dec(AST* node, TAC_list* list);
 TAC* traversal_binop(AST* node, TAC_list* list);
 TAC* traversal_function_call(AST* node, TAC_list* list);
-TAC* traversal_func_dec(AST* node, TAC_list* list);
 TAC* traversal_assignment(AST* node, TAC_list* list);
 TAC* traversal_return(AST* node, TAC_list* list);
 
@@ -56,6 +57,6 @@ void list_push(TAC_list* list, TAC* instruction);
 void traversal_free_array(TAC_list* list);
 void traversal_print_instructions(TAC_list* instructions);
 
-
+char* dataToAsm(int type);
 
 #endif
