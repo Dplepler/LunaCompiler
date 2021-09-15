@@ -20,3 +20,4 @@ int main ()
 	return z + y;
 }
 
+int anotherGlobal;

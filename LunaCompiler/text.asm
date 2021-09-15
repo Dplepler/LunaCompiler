@@ -8,13 +8,15 @@ includelib c:\masm32\lib\user32.lib
 includelib c:\masm32\lib\kernel32.lib
 .data
 globalVar DWORD 0
+anotherGlobal DWORD 0
+.code
 foo PROC x:DWORD, y:DWORD
 MOV EAX, [x]
 MOV EBX, EAX
 MOV EAX, [y]
 MUL EAX
 foo ENDP
-main PROC 
+main:
 LOCAL x:DWORD
 LOCAL z:DWORD
 LOCAL y:DWORD
@@ -27,4 +29,4 @@ MOV EAX, [y]
 ADD EAX, 1
 MOV ECX, [z]
 ADD ECX, EAX
-main ENDP
+end main

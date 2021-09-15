@@ -37,7 +37,6 @@ typedef struct ASM_BACKEND_STRUCT
 	table_T* table;
 
 	FILE* targetProg;
-	unsigned int globalDataIndex;
 
 } asm_backend;
 
@@ -53,6 +52,7 @@ void generate_var_dec(asm_backend* backend);
 void generate_binop(asm_backend* backend);
 void generate_mul_div(asm_backend* backend);
 void generate_assignment(asm_backend* backend);
+void generate_main(asm_backend* backend);
 void generate_function(asm_backend* backend);
 void generate_spill(asm_backend* backend, register_T* r);
 void descriptor_reset(register_T* r);
@@ -66,7 +66,6 @@ register_T* generate_find_used_reg(asm_backend* backend);
 register_T* generate_check_variable_usabilty(asm_backend* backend, register_T* r);
 
 char* generate_get_register_name(register_T* r);
-//char* dataToAsm(int type);
 char* generate_assign_reg(register_T* r, void* argument);
 
 #endif

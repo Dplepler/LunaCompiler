@@ -66,6 +66,8 @@ void descriptor_reset(register_T* r)
 void write_asm(table_T* table, TAC* head, char* targetName)
 {
 	asm_backend* backend = init_asm_backend(table, head, targetName);
+	TAC* triple = head;
+	table_T* tableTemp = table;
 	
 	unsigned int i = 0;
 
@@ -73,28 +75,36 @@ void write_asm(table_T* table, TAC* head, char* targetName)
 		fprintf(backend->targetProg, "%s\n", asm_template[i]);
 	
 	fprintf(backend->targetProg, ".data\n");
-	backend->globalDataIndex = ftell(backend->targetProg);
+	while (triple)
+	{	
+		switch (triple->op)
+		{
+			case TOKEN_LBRACE: 
+				tableTemp->tableIndex++;
+				tableTemp = tableTemp->nestedScopes[tableTemp->tableIndex - 1];
+				break;
+
+			case TOKEN_RBRACE:
+				tableTemp->tableIndex = 0;
+				tableTemp = tableTemp->prev;
+				break;
+
+			case AST_VARIABLE_DEC:
+				if (!(table_search_table(tableTemp, triple->arg1->value)->prev))
+					fprintf(backend->targetProg, "%s %s 0\n", triple->arg1->value, triple->arg2->value);
+				break;
+		}
+
+		triple = triple->next;
+	}
 
 	fprintf(backend->targetProg, ".code\n");
 
+	backend->table->tableIndex = 0;
+
 	while (backend->instruction)
 	{
-		// If we reached the start of a new block, go to the fitting symbol table for that block
-		if (backend->instruction->op == TOKEN_LBRACE)
-		{
-			backend->table->tableIndex++;
-			backend->table = backend->table->nestedScopes[backend->table->tableIndex - 1];
-		}
-		// If we're done with a block, reset the index of the table and go to the previous one
-		else if (backend->instruction->op == TOKEN_RBRACE)
-		{
-			backend->table = backend->table->prev;
-		}
-		else
-		{
-			generate_asm(backend);
-		}
-
+		generate_asm(backend);
 		backend->instruction = backend->instruction->next;
 	}
 
@@ -121,17 +131,29 @@ void generate_asm(asm_backend* backend)
 	{
 		generate_mul_div(backend);
 	}
-	else if (backend->instruction->op == AST_ASSIGNMENT)
+	else
 	{
-		generate_assignment(backend);
-	}
-	else if (backend->instruction->op == AST_FUNCTION)
-	{
-		generate_function(backend);
-	}
-	else if (backend->instruction->op == AST_VARIABLE_DEC)
-	{
-		generate_var_dec(backend);
+		switch (backend->instruction->op)
+		{
+			case AST_FUNCTION:
+				if (!strcmp(backend->instruction->arg1->value, "main"))
+					generate_main(backend);
+				else
+					generate_function(backend);
+				break;
+
+			case TOKEN_LBRACE:
+				// If we reached the start of a new block, go to the fitting symbol table for that block
+				backend->table->tableIndex++;
+				backend->table = backend->table->nestedScopes[backend->table->tableIndex - 1];
+				break;
+
+			case TOKEN_RBRACE: backend->table = backend->table->prev; break; // If we're done with a block, reset the index of the table and go to the previous one
+
+			case AST_ASSIGNMENT: generate_assignment(backend); break;
+			case AST_VARIABLE_DEC: generate_var_dec(backend); break;
+		
+		}
 	}
 }
 
@@ -229,17 +251,27 @@ void generate_assignment(asm_backend* backend)
 
 void generate_var_dec(asm_backend* backend)
 {
-	if (!(table_search_table(backend->table, backend->instruction->arg1->value)->prev))
-	{
-		fseek(backend->targetProg, backend->globalDataIndex, SEEK_SET);
-		fprintf(backend->targetProg, "%s %s 0\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
-		fseek(backend->targetProg, 0, SEEK_END);
-	}
-	else
+	if (table_search_table(backend->table, backend->instruction->arg1->value)->prev)
 	{
 		fprintf(backend->targetProg, "LOCAL %s:%s\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
 	}
+}
 
+void generate_main(asm_backend* backend)
+{
+	char* name = backend->instruction->arg1->value;
+
+	fprintf(backend->targetProg, "%s:\n", name);
+
+	backend->instruction = backend->instruction->next->next;
+
+	while (backend->instruction->op != TOKEN_FUNC_END)
+	{
+		generate_asm(backend);
+		backend->instruction = backend->instruction->next;
+	}
+	
+	fprintf(backend->targetProg, "end %s\n", name);
 }
 
 
@@ -255,8 +287,8 @@ void generate_function(asm_backend* backend)
 	backend->table = backend->table->nestedScopes[backend->table->tableIndex - 1];
 
 	// Skipping number of local vars and start of block
-	backend->instruction = backend->instruction->next;
-	backend->instruction = backend->instruction->next;
+	backend->instruction = backend->instruction->next->next->next;
+
 
 	if (counter > 0)
 		fprintf(backend->targetProg, "%s:%s", backend->table->entries[i]->name, dataToAsm(backend->table->entries[i]->dtype));
@@ -274,7 +306,6 @@ void generate_function(asm_backend* backend)
 		backend->instruction = backend->instruction->next;
 	}
 
-	backend->table = backend->table->prev;
 	fprintf(backend->targetProg, "%s ENDP\n", name);
 }
 
