@@ -11,10 +11,9 @@ globalVar DWORD 0
 anotherGlobal DWORD 0
 .code
 foo PROC x:DWORD, y:DWORD
-MOV EAX, [x]
-MOV EBX, EAX
 MOV EAX, [y]
-MUL EAX
+MOV EBX, [x]
+MUL EBX
 foo ENDP
 main:
 LOCAL x:DWORD
@@ -22,11 +21,11 @@ LOCAL z:DWORD
 LOCAL y:DWORD
 MOV ECX, [z]
 ADD ECX, 5
-MOV EDX, 2
 MOV EAX, EBX
+MOV EDX, 2
 MUL EDX
 MOV EAX, [y]
-ADD EAX, 1
+MUL EAX
 MOV ECX, [z]
 ADD ECX, EAX
 end main

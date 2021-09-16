@@ -25,8 +25,10 @@ typedef struct REGISTER_STRUCT_STRUCT
 
 	} reg;
 
+	bool regLock;			// regLock will lock the register so that get_register won't be able to use it until it's unlocked
+
 	arg_T** regDescList;	// Register descriptors: Stores variables and addresses that have their value in the current register
-	size_t size;		// Size of register descriptors
+	size_t size;			// Size of register descriptors
 
 } register_T;
 
@@ -57,7 +59,9 @@ void generate_function(asm_backend* backend);
 void generate_spill(asm_backend* backend, register_T* r);
 void descriptor_reset(register_T* r);
 
-register_T* generate_get_register(asm_backend* backend, arg_T* arg);
+register_T* generate_find_register(asm_backend* backend, arg_T* arg);
+register_T* generate_move_to_register(asm_backend* backend, arg_T* arg);
+register_T* generate_get_register(asm_backend* backend);
 register_T* generate_check_variable_in_reg(asm_backend* backend, arg_T* var);
 register_T* generate_check_useless_value(asm_backend* backend, register_T* r);
 register_T* generate_find_free_reg(asm_backend* backend);
@@ -67,5 +71,7 @@ register_T* generate_check_variable_usabilty(asm_backend* backend, register_T* r
 
 char* generate_get_register_name(register_T* r);
 char* generate_assign_reg(register_T* r, void* argument);
+
+bool generate_compare_arguments(arg_T* arg1, arg_T* arg2);
 
 #endif
