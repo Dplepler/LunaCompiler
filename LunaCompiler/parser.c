@@ -278,7 +278,7 @@ AST* parser_func_call(parser_T* parser)
 
 AST* parser_var_dec(parser_T* parser)
 {
-	AST* node = init_AST(AST_VARIABLE_DEC);
+	AST* node = init_AST(AST_VARIABLE_DEC); 
 
 	if (parser->token->type == TOKEN_ID)
 	{
@@ -428,7 +428,8 @@ AST* parser_binary_expression(parser_T* parser)
 
 	node->leftChild = parser_expression(parser);	// Getting first expression
 
-	if (parser->token->type == TOKEN_MORE || parser->token->type == TOKEN_EMORE || parser->token->type == TOKEN_LESS || parser->token->type == TOKEN_ELESS || parser->token->type == TOKEN_DEQUAL)
+	if (parser->token->type == TOKEN_MORE || parser->token->type == TOKEN_EMORE || parser->token->type == TOKEN_LESS 
+		|| parser->token->type == TOKEN_ELESS || parser->token->type == TOKEN_DEQUAL || parser->token->type == TOKEN_NEQUAL)
 	{
 		node->type_c = parser->token->type;
 		parser->token = lexer_get_next_token(parser->lexer);
@@ -438,7 +439,6 @@ AST* parser_binary_expression(parser_T* parser)
 	{
 		node->value = node->leftChild;		// If there's one expression we switch it from left child to value field
 		node->leftChild = NULL;
-
 		node->type_c = TOKEN_NOOP;
 	}
 	parser->token = parser_expect(parser, TOKEN_RPAREN);

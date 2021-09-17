@@ -54,6 +54,8 @@ char* typeToString(int type)
 		case TOKEN_MORE: return ">";
 		case TOKEN_ELESS: return "<=";
 		case TOKEN_EMORE: return ">=";
+		case TOKEN_NEQUAL: return "!=";
+		case TOKEN_NOT: return "!";
 		case TOKEN_MUL: return "*";
 		case TOKEN_ADD: return "+";
 		case TOKEN_DIV: return "/";

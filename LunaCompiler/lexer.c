@@ -75,7 +75,7 @@ token_T* lexer_advance_current(lexer_T* lexer, int type)
 	value[0] = lexer->c;
 
 	// If token is 2 characters long (e.g: <=, ==)
-	if (type == TOKEN_ELESS || type == TOKEN_EMORE || type == TOKEN_DEQUAL)
+	if (type == TOKEN_ELESS || type == TOKEN_EMORE || type == TOKEN_DEQUAL || type == TOKEN_NEQUAL)
 	{
 		value = realloc(value, VALUE_SIZE + 1);
 		lexer_advance(lexer);
@@ -137,6 +137,14 @@ token_T* lexer_get_next_token(lexer_T* lexer)
 	{
 		switch (lexer->c)
 		{
+			case '!':
+				if (lexer_peek(lexer, 1) == '=')
+					token = lexer_advance_current(lexer, TOKEN_NEQUAL);
+				else
+					token = lexer_advance_current(lexer, TOKEN_NOT);
+				break;
+
+
 			case '=':
 				if (lexer_peek(lexer, 1) == '=')
 					token = lexer_advance_current(lexer, TOKEN_DEQUAL);

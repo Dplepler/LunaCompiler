@@ -167,32 +167,32 @@ TAC* traversal_assignment(AST* node, TAC_list* list)
 TAC* traversal_function_call(AST* node, TAC_list* list)
 {
 	TAC* instruction = NULL;
-	unsigned int i = 0;
+	TAC* param = NULL;
+	int i = 0;
 	size_t counter = 0;
 	size_t size = 0;
-	
-
-	// Push params for function call
-	for (i = 0; i < node->size; i++)
-	{
-		instruction = calloc(1, sizeof(TAC));
-		instruction->arg1 = init_arg(node->arguments[i]->name, CHAR_P);
-		instruction->op = AST_PARAM;
-		list_push(list, instruction);
-	}
 	
 	instruction = calloc(1, sizeof(TAC));
 
 	instruction->op = node->type;
 	instruction->arg1 = init_arg(node->name, CHAR_P);
 
-	
+
 	// Arg2 will be the number of arguments passing into the function
 	instruction->arg2 = init_arg(calloc(1, numOfDigits(node->size) + 1), CHAR_P);
 	_itoa(node->size, instruction->arg2->value, 10);
 
 	list_push(list, instruction);
 
+	// Push params for function call
+	for (i = node->size - 1; i >= 0; i--)
+	{
+		param = calloc(1, sizeof(TAC));
+		param->arg1 = init_arg(traversal_build_instruction(node->arguments[i], list), traversal_check_arg(node->arguments[i]));
+		param->op = AST_PARAM;
+		list_push(list, param);
+	}
+	
 	return instruction;
 
 }
@@ -201,13 +201,13 @@ TAC* traversal_condition(AST* node, TAC_list* list)
 {
 	TAC* instruction = calloc(1, sizeof(TAC));
 
-	instruction->op = AST_IFZ;		// If false (If zero)
+	instruction->op = AST_IFZ;			// If false (If zero)
 
 	if (node->type_c == TOKEN_NOOP)		// If there's no relation operation (<, >, <= etc)
 		instruction->arg1 = init_arg(traversal_build_instruction(node->value, list), traversal_check_arg(node->value));
 	else
 		instruction->arg1 = init_arg(traversal_binop(node, list), TAC_P);
-
+		
 	list_push(list, instruction);
 
 	return instruction;
@@ -216,7 +216,8 @@ TAC* traversal_condition(AST* node, TAC_list* list)
 void traversal_if(AST* node, TAC_list* list)
 {
 	TAC* instruction = traversal_condition(node->condition, list);
-	TAC* label = calloc(1, sizeof(TAC));
+	TAC* label1 = NULL;
+	TAC* label2 = calloc(1, sizeof(TAC));
 	TAC* gotoInstruction = NULL;
 
 	unsigned int i = 0;
@@ -224,47 +225,56 @@ void traversal_if(AST* node, TAC_list* list)
 	for (i = 0; i < node->if_body->size; i++)
 		traversal_build_instruction(node->if_body->children[i], list);
 	
-	label->op = AST_LABEL;
+	label2->op = AST_LABEL;
 	
 	if (node->else_body)
 	{
 		gotoInstruction = calloc(1, sizeof(TAC));
+		label1 = calloc(1, sizeof(TAC));
+		label1->op = AST_LABEL;
 
 		gotoInstruction->op = AST_GOTO;
 		list_push(list, gotoInstruction);
 
+		list_push(list, label1);
 		// Assign the goto of if to the start of the else
-		instruction->arg2 = init_arg(traversal_build_instruction(node->else_body->children[0], list), TAC_P);		
-		for (i = 1; i < node->else_body->size; i++)
+		instruction->arg2 = init_arg(label1, TAC_P);		
+		for (i = 0; i < node->else_body->size; i++)
 			traversal_build_instruction(node->else_body->children[i], list);
 
-		list_push(list, label);
-		gotoInstruction->arg1 = init_arg(label, TAC_P);
+		list_push(list, label2);
+		gotoInstruction->arg1 = init_arg(label2, TAC_P);
 	}
 	else
 	{
-		list_push(list, label);
-		instruction->arg2 = init_arg(label, TAC_P);
+		list_push(list, label2);
+		instruction->arg2 = init_arg(label2, TAC_P);
 	}	
 }
 
 void traversal_while(AST* node, TAC_list* list)
 {
-	TAC* condition = traversal_condition(node->condition, list);		// Create a condition
+	TAC* condition = NULL;
 	TAC* gotoInstruction = calloc(1, sizeof(TAC));
-	TAC* label = calloc(1, sizeof(TAC));
+	TAC* label1 = calloc(1, sizeof(TAC));
+	TAC* label2 = calloc(1, sizeof(TAC));
+
+	label1->op = AST_LABEL;
+	list_push(list, label1);
+
+	condition = traversal_condition(node->condition, list);		// Create a condition
 	
 	traversal_statements(node->if_body, list);		// Travel through the body of the while loop and create instructions
 
 	// Jump to the start of the loop including the condition
 	gotoInstruction->op = AST_GOTO;
-	gotoInstruction->arg1 = init_arg(condition->arg1->value, TAC_P);	
+	gotoInstruction->arg1 = init_arg(label1, TAC_P);	
 	list_push(list, gotoInstruction);
 
-	label->op = AST_LABEL;
-	list_push(list, label);
+	label2->op = AST_LABEL;
+	list_push(list, label2);
 
-	condition->arg2 = init_arg(label, TAC_P);
+	condition->arg2 = init_arg(label2, TAC_P);
 
 }
 
@@ -330,15 +340,6 @@ void traversal_print_instructions(TAC_list* instructions)
 		triple = triple->next;
 	}
 }
-
-//char* dataToAsmDefine(int type)
-//{
-//	switch (type)
-//	{
-//		case DATA_INT: return "DD";
-//
-//	}
-//}
 
 char* dataToAsm(int type)
 {

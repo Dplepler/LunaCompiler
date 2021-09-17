@@ -5,7 +5,7 @@
 
 typedef enum data_type
 {
-	DATA_INT = 43,			// Continuation from AST
+	DATA_INT = 45,			// Continuation from AST
 
 }dtype;
 

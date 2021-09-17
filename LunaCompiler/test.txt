@@ -1,23 +1,38 @@
 
 int globalVar;
+int anotherGlobal;
+
+int main()
+{
+	int x;
+	int z;
+	int y;
+	
+	if (x)
+	{
+		y = y * y;
+		return y;
+	}
+	else
+	{
+		y = x * x;
+		return y;
+	}
+	
+
+	x = foo(x + y, y);
+	
+	y = x - 5;
+	return z + y;
+	bruhbruh = 3;
+}
+
 
 int foo(int x, int y) 		~ Comment comment blah blah blah  
 {
 	return y * x;
 }
 
-int main ()
-{
-	int x;
-	int z;
-	int y;
-	
-	while (z + 5 < x * 2)
-	{
-		y = y * y;
-	}
+int bruhbruh;
 
-	return z + y;
-}
 
-int anotherGlobal;
