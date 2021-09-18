@@ -57,7 +57,6 @@ typedef struct ASM_BACKEND_STRUCT
 
 asm_backend* init_asm_backend(table_T* table, TAC* head, char* targetName);
 
-
 void write_asm(table_T* table, TAC* head, char* targetName);
 void generate_asm(asm_backend* backend);
 void generate_global_vars(asm_backend* backend, TAC* triple);
@@ -71,6 +70,7 @@ void generate_condition(asm_backend* backend);
 void generate_if_false(asm_backend* backend);
 void generate_unconditional_jump(asm_backend* backend);
 void generate_assignment(asm_backend* backend);
+void generate_block_exit(asm_backend* backend);
 void generate_main(asm_backend* backend);
 void generate_function(asm_backend* backend);
 void generate_return(asm_backend* backend);

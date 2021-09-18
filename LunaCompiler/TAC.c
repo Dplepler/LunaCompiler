@@ -222,8 +222,10 @@ void traversal_if(AST* node, TAC_list* list)
 
 	unsigned int i = 0;
 	
-	for (i = 0; i < node->if_body->size; i++)
-		traversal_build_instruction(node->if_body->children[i], list);
+	/*for (i = 0; i < node->if_body->size; i++)
+		traversal_build_instruction(node->if_body->children[i], list);*/
+
+	traversal_statements(node->if_body, list);
 	
 	label2->op = AST_LABEL;
 	
@@ -238,9 +240,11 @@ void traversal_if(AST* node, TAC_list* list)
 
 		list_push(list, label1);
 		// Assign the goto of if to the start of the else
-		instruction->arg2 = init_arg(label1, TAC_P);		
-		for (i = 0; i < node->else_body->size; i++)
-			traversal_build_instruction(node->else_body->children[i], list);
+		instruction->arg2 = init_arg(label1, TAC_P);
+
+		traversal_statements(node->else_body, list);
+		/*for (i = 0; i < node->else_body->size; i++)
+			traversal_build_instruction(node->else_body->children[i], list);*/
 
 		list_push(list, label2);
 		gotoInstruction->arg1 = init_arg(label2, TAC_P);

@@ -97,6 +97,37 @@ table_T* table_search_table(table_T* table, char* name)
 	return NULL;
 }
 
+bool table_search_in_specific_table(table_T* table, char* entry)
+{
+	bool flag = false;
+
+	unsigned int i = 0;
+
+	for (i = 0; i < table->entrySize && !flag; i++)
+	{
+		if (!strcmp(table->entries[i]->name, entry))
+			flag = true;
+	}
+
+	return flag;
+}
+
+bool table_search_address(entry_T* entry, char* name)
+{
+	bool flag = false;
+	
+	unsigned int i = 0;
+
+	for (i = 0; i < entry->size && !flag; i++)
+	{
+		if (!strcmp(entry->addressDesc[i], name))
+			flag = true;
+
+	}
+
+	return flag;
+}
+
 
 void table_print_table(table_T* table, int level)
 {
@@ -120,6 +151,7 @@ void table_print_table(table_T* table, int level)
 		}
 	}
 }
+
 
 /*
 table_free_table is a postorder tree traversal that frees all nodes of the symbol table

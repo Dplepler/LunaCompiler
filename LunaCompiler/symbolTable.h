@@ -7,7 +7,19 @@ typedef enum data_type
 {
 	DATA_INT = 45,			// Continuation from AST
 
-}dtype;
+} dtype;
+
+typedef struct ADDRESS_STRUCT
+{
+	void* address;
+	enum
+	{
+		ADDRESS_REG,
+		ADDRESS_VAR,
+
+	} type;
+
+} address_T;
 
 typedef struct STRUCT_SYMBOL_ENTRY
 {
@@ -18,7 +30,7 @@ typedef struct STRUCT_SYMBOL_ENTRY
 	size_t size;		// Size of addresses in array
 
 
-}entry_T;
+} entry_T;
 
 typedef struct STRUCT_SYMBOL_TABLE
 {
@@ -31,7 +43,7 @@ typedef struct STRUCT_SYMBOL_TABLE
 	size_t nestedSize;
 	size_t tableIndex;
 
-}table_T;
+} table_T;
 
 
 
@@ -41,6 +53,9 @@ entry_T* table_search_entry(table_T* table, char* name);
 table_T* init_table(table_T* prev);
 table_T* table_add_table(table_T* table);
 table_T* table_search_table(table_T* table, char* name);
+
+bool table_search_in_specific_table(table_T* table, char* entry);
+bool table_search_address(entry_T* entry, char* name);
 
 void address_push(entry_T* entry, void* location);
 void address_reset(entry_T* entry);

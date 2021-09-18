@@ -11,12 +11,10 @@ int main()
 	if (x)
 	{
 		y = y * y;
-		return y;
 	}
 	else
 	{
 		y = x * x;
-		return y;
 	}
 	
 

@@ -146,7 +146,6 @@ void write_asm(table_T* table, TAC* head, char* targetName)
 		exit(1);
 	}
 		
-
 	fclose(backend->targetProg);
 	free_registers(backend);
 }
@@ -187,7 +186,7 @@ void generate_asm(asm_backend* backend)
 			backend->table = backend->table->nestedScopes[backend->table->tableIndex - 1];
 			break;
 
-		case TOKEN_RBRACE: backend->table = backend->table->prev; break; // If we're done with a block, reset the index of the table and go to the previous one
+		case TOKEN_RBRACE: generate_block_exit(backend); break;
 		case AST_FUNCTION: generate_function(backend); break;
 		case AST_ASSIGNMENT: generate_assignment(backend); break;
 		case AST_VARIABLE_DEC: generate_var_dec(backend); break;
@@ -769,6 +768,38 @@ void generate_spill(asm_backend* backend, register_T* r)
 		address_push(table_search_entry(backend->table, r->regDescList[i]->value), r->regDescList[i]->value);
 	}
 }
+
+void generate_block_exit(asm_backend* backend)
+{
+	unsigned int i = 0;
+	unsigned int i2 = 0;
+
+	// TODO: For variables that are live on exit, check if their value has changed, if it wasn't then it is
+	// redundant to store their value from the register that holds it back to them
+
+	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
+	{
+		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
+		{
+			if (backend->registers[i]->regDescList[i2]->type == CHAR_P && !table_search_in_specific_table(backend->table, backend->registers[i]->regDescList[i2]->value))
+			{
+				fprintf(backend->targetProg, "MOV [%s], %s\n", backend->registers[i]->regDescList[i2]->value, generate_get_register_name(backend->registers[i]));
+			}
+			else if (backend->registers[i]->regDescList[i2]->type == CHAR_P && table_search_entry(backend->table, backend->registers[i]->regDescList[i2]->value))
+			{
+				address_reset(table_search_entry(backend->table, backend->registers[i]->regDescList[i2]->value));
+			}
+		}
+
+		descriptor_reset(backend->registers[i]);
+
+	}
+
+
+	backend->table = backend->table->prev; // When done with a block, reset the index of the table and go to the previous one
+
+}
+
 
 char* generate_get_label(asm_backend* backend, TAC* label)
 {
