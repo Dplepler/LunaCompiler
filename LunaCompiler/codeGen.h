@@ -77,10 +77,12 @@ void generate_return(asm_backend* backend);
 void generate_func_call(asm_backend* backend);
 void generate_spill(asm_backend* backend, register_T* r);
 void descriptor_reset(register_T* r);
+void generate_remove_descriptor(register_T* reg, arg_T* desc);
 
 register_T* generate_find_register(asm_backend* backend, arg_T* arg);
 register_T* generate_move_to_ax(asm_backend* backend, arg_T* arg);
 register_T* generate_move_to_register(asm_backend* backend, arg_T* arg);
+register_T* generate_move_new_value_to_register(asm_backend* backend, arg_T* arg);
 register_T* generate_get_register(asm_backend* backend);
 register_T* generate_check_variable_in_reg(asm_backend* backend, arg_T* var);
 register_T* generate_check_useless_value(asm_backend* backend, register_T* r);

@@ -124,6 +124,8 @@ void write_asm(table_T* table, TAC* head, char* targetName)
 			mainStart = backend->instruction;
 			mainTableIndex = backend->table->tableIndex;
 
+			backend->table->tableIndex++;
+
 			while (backend->instruction->op != TOKEN_FUNC_END)
 				backend->instruction = backend->instruction->next;
 		}
@@ -186,13 +188,19 @@ void generate_asm(asm_backend* backend)
 			backend->table = backend->table->nestedScopes[backend->table->tableIndex - 1];
 			break;
 
-		case TOKEN_RBRACE: generate_block_exit(backend); break;
+		case TOKEN_RBRACE: generate_block_exit(backend); 
+			// When done with a block, reset the index of the table and go to the previous one break;
+			backend->table->tableIndex = 0;
+			backend->table = backend->table->prev;
+			break;
+
 		case AST_FUNCTION: generate_function(backend); break;
 		case AST_ASSIGNMENT: generate_assignment(backend); break;
 		case AST_VARIABLE_DEC: generate_var_dec(backend); break;
 		case AST_IFZ: generate_if_false(backend); break;
 		case AST_GOTO: generate_unconditional_jump(backend); break;
 		case AST_LABEL: fprintf(backend->targetProg, "%s:\n", generate_get_label(backend, backend->instruction)); break;
+		case AST_LOOP_LABEL: fprintf(backend->targetProg, "%s:\n", generate_get_label(backend, backend->instruction)); generate_block_exit(backend); break;
 		case AST_FUNC_CALL: generate_func_call(backend); break;
 		case AST_RETURN: generate_return(backend); break;
 	
@@ -310,7 +318,6 @@ void generate_condition(asm_backend* backend)
 	
 }
 
-
 void generate_if_false(asm_backend* backend)
 {
 	char* jmpCondition = NULL;
@@ -347,24 +354,30 @@ void generate_unconditional_jump(asm_backend* backend)
 
 void generate_assignment(asm_backend* backend)
 {
-	register_T* reg = NULL;  
+	register_T* reg1 = NULL;
+	register_T* reg2 = NULL;
 	entry_T* entry = table_search_entry(backend->table, backend->instruction->arg1->value);
 
 	// If variable equals a function call then the value will return in AX, therefore we know that the register will always be AX
 	if (backend->instruction->arg2->type == TAC_P && ((TAC*)backend->instruction->arg2->value)->op == AST_FUNC_CALL)
 	{
-		reg = backend->registers[REG_AX];
+		reg1 = backend->registers[REG_AX];
 	}
 	// Otherwise, without a function call, we can use any register
 	else
 	{
-		reg = generate_move_to_register(backend, backend->instruction->arg2);
+		reg1 = generate_move_to_register(backend, backend->instruction->arg2);
 	}
+
+	reg2 = generate_check_variable_in_reg(backend, backend->instruction->arg1);
 
 	address_reset(entry);
 	
-	address_push(entry, reg);
-	descriptor_push(reg, backend->instruction->arg1);
+	address_push(entry, reg1, ADDRESS_REG);
+	descriptor_push(reg1, backend->instruction->arg1);
+	
+	if (reg2)
+		generate_remove_descriptor(reg2, backend->instruction->arg1);
 	
 }
 
@@ -572,7 +585,7 @@ register_T* generate_move_to_register(asm_backend* backend, arg_T* arg)
 
 		if (entry)
 		{
-			address_push(entry, reg);
+			address_push(entry, reg, ADDRESS_REG);
 			fprintf(backend->targetProg, "MOV %s, [%s]\n", name, arg->value);
 		}
 		else
@@ -584,6 +597,40 @@ register_T* generate_move_to_register(asm_backend* backend, arg_T* arg)
 				fprintf(backend->targetProg, "MOV %s, %s\n", name, arg->value);
 		}
 	}
+
+	return reg;
+}
+
+register_T* generate_move_new_value_to_register(asm_backend* backend, arg_T* arg)
+{
+	register_T* reg = NULL;
+	entry_T* entry = NULL;
+	char* name = NULL;
+
+	
+	entry = table_search_entry(backend->table, arg->value);
+
+	reg = generate_get_register(backend);
+
+	name = generate_get_register_name(reg);
+
+	// Push the new variable descriptor onto the register
+	descriptor_push(reg, arg);
+
+	if (entry)
+	{
+		address_push(entry, reg, ADDRESS_REG);
+		fprintf(backend->targetProg, "MOV %s, [%s]\n", name, arg->value);
+	}
+	else
+	{
+
+		if (!strcmp(arg->value, "0"))
+			fprintf(backend->targetProg, "XOR %s %s\n", name, name);
+		else
+			fprintf(backend->targetProg, "MOV %s, %s\n", name, arg->value);
+	}
+	
 
 	return reg;
 }
@@ -765,7 +812,7 @@ void generate_spill(asm_backend* backend, register_T* r)
 	for (i = 0; i < r->size; i++)
 	{
 		fprintf(backend->targetProg, "MOV [%s], %s\n", r->regDescList[i]->value, generate_get_register_name(r));
-		address_push(table_search_entry(backend->table, r->regDescList[i]->value), r->regDescList[i]->value);
+		address_push(table_search_entry(backend->table, r->regDescList[i]->value), r->regDescList[i]->value, ADDRESS_VAR);
 	}
 }
 
@@ -773,32 +820,30 @@ void generate_block_exit(asm_backend* backend)
 {
 	unsigned int i = 0;
 	unsigned int i2 = 0;
-
-	// TODO: For variables that are live on exit, check if their value has changed, if it wasn't then it is
-	// redundant to store their value from the register that holds it back to them
+	entry_T* entry = NULL;
 
 	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
 	{
 		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
 		{
-			if (backend->registers[i]->regDescList[i2]->type == CHAR_P && !table_search_in_specific_table(backend->table, backend->registers[i]->regDescList[i2]->value))
+			entry = table_search_entry(backend->table, backend->registers[i]->regDescList[i2]->value);
+
+			if (backend->registers[i]->regDescList[i2]->type == CHAR_P && !table_search_in_specific_table(backend->table, backend->registers[i]->regDescList[i2]->value)
+				&& !table_search_address(entry, backend->registers[i]->regDescList[i2]->value) && entry)
 			{
 				fprintf(backend->targetProg, "MOV [%s], %s\n", backend->registers[i]->regDescList[i2]->value, generate_get_register_name(backend->registers[i]));
+				address_push(entry, backend->registers[i]->regDescList[i2]->value, ADDRESS_VAR);
 			}
-			else if (backend->registers[i]->regDescList[i2]->type == CHAR_P && table_search_entry(backend->table, backend->registers[i]->regDescList[i2]->value))
+			else if (backend->registers[i]->regDescList[i2]->type == CHAR_P && entry && table_search_in_specific_table(backend->table, backend->registers[i]->regDescList[i2]->value))
 			{
-				address_reset(table_search_entry(backend->table, backend->registers[i]->regDescList[i2]->value));
+				address_reset(entry);
 			}
 		}
 
 		descriptor_reset(backend->registers[i]);
-
 	}
-
-
-	backend->table = backend->table->prev; // When done with a block, reset the index of the table and go to the previous one
-
 }
+
 
 
 char* generate_get_label(asm_backend* backend, TAC* label)
@@ -864,6 +909,25 @@ bool generate_compare_arguments(arg_T* arg1, arg_T* arg2)
 	}
 
 	return flag;
+}
+
+void generate_remove_descriptor(register_T* reg, arg_T* desc)
+{
+	unsigned int i = 0;
+	unsigned int index = 0;
+
+	while (i < reg->size)
+	{
+		if (!generate_compare_arguments(reg->regDescList[i], desc))
+		{
+			reg->regDescList[index] = reg->regDescList[index];
+			index++;
+		}
+
+		i++;
+	}
+
+	reg->regDescList = realloc(reg->regDescList, --reg->size * sizeof(arg_T*));
 }
 
 void free_registers(asm_backend* backend)

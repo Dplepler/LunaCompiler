@@ -84,6 +84,7 @@ char* typeToString(int type)
 		case AST_IF: return "If";
 		case AST_IFZ: return "If false";
 		case AST_LABEL: return "Label";
+		case AST_LOOP_LABEL: return "Loop label";
 		case AST_GOTO: return "Goto";
 		case AST_WHILE: return "While";
 		case AST_COMPARE: return "Comparsion";

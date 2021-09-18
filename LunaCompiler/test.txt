@@ -2,6 +2,7 @@
 int globalVar;
 int anotherGlobal;
 
+
 int main()
 {
 	int x;
@@ -10,7 +11,15 @@ int main()
 	
 	if (x)
 	{
-		y = y * y;
+		while (x > 3)
+		{
+			y = y * y;
+			x = x - 1;
+		}
+		if (x < 3)
+		{
+			x = y;
+		}
 	}
 	else
 	{
@@ -18,18 +27,19 @@ int main()
 	}
 	
 
-	x = foo(x + y, y);
+	~ x = foo(x + y, y);
 	
 	y = x - 5;
 	return z + y;
 	bruhbruh = 3;
 }
 
-
 int foo(int x, int y) 		~ Comment comment blah blah blah  
 {
 	return y * x;
 }
+
+
 
 int bruhbruh;
 

@@ -8,15 +8,17 @@ entry_T* init_entry(char* name, int type)
 
 	entry->addressDesc = calloc(1, sizeof(void*));
 
-	address_push(entry, entry->name);
+	address_push(entry, entry->name, ADDRESS_VAR);
 
 	return entry;
 }
 
-void address_push(entry_T* entry, void* location)
+void address_push(entry_T* entry, void* location, int type)
 {
-	entry->addressDesc = realloc(entry->addressDesc, sizeof(location) * ++entry->size);
-	entry->addressDesc[entry->size - 1] = location;
+	entry->addressDesc = realloc(entry->addressDesc, sizeof(address_T*) * ++entry->size);
+	entry->addressDesc[entry->size - 1] = calloc(1, sizeof(address_T));
+	entry->addressDesc[entry->size - 1]->address = location;
+	entry->addressDesc[entry->size - 1]->type = type;
 }
 
 void address_reset(entry_T* entry)
@@ -115,15 +117,20 @@ bool table_search_in_specific_table(table_T* table, char* entry)
 bool table_search_address(entry_T* entry, char* name)
 {
 	bool flag = false;
-	
 	unsigned int i = 0;
 
-	for (i = 0; i < entry->size && !flag; i++)
+	
+	for (i = 0; entry && i < entry->size && !flag; i++)
 	{
-		if (!strcmp(entry->addressDesc[i], name))
-			flag = true;
+		if (entry->addressDesc[i]->type == ADDRESS_VAR)
+		{
+			if (!strcmp(entry->addressDesc[i]->address, name))
+				flag = true;
 
+		}
 	}
+	
+	
 
 	return flag;
 }
@@ -142,7 +149,7 @@ void table_print_table(table_T* table, int level)
 			printf("Address descriptors\n");
 			for (i2 = 0; i2 < table->entries[i]->size; i2++)
 			{
-				printf("%s\n", table->entries[i]->addressDesc[i2]);
+				printf("%s\n", table->entries[i]->addressDesc[i2]->address);
 			}
 		}
 		for (i = 0; i < table->nestedSize; i++)

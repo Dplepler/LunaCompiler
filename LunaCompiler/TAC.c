@@ -221,9 +221,6 @@ void traversal_if(AST* node, TAC_list* list)
 	TAC* gotoInstruction = NULL;
 
 	unsigned int i = 0;
-	
-	/*for (i = 0; i < node->if_body->size; i++)
-		traversal_build_instruction(node->if_body->children[i], list);*/
 
 	traversal_statements(node->if_body, list);
 	
@@ -243,8 +240,6 @@ void traversal_if(AST* node, TAC_list* list)
 		instruction->arg2 = init_arg(label1, TAC_P);
 
 		traversal_statements(node->else_body, list);
-		/*for (i = 0; i < node->else_body->size; i++)
-			traversal_build_instruction(node->else_body->children[i], list);*/
 
 		list_push(list, label2);
 		gotoInstruction->arg1 = init_arg(label2, TAC_P);
@@ -263,7 +258,7 @@ void traversal_while(AST* node, TAC_list* list)
 	TAC* label1 = calloc(1, sizeof(TAC));
 	TAC* label2 = calloc(1, sizeof(TAC));
 
-	label1->op = AST_LABEL;
+	label1->op = AST_LOOP_LABEL;
 	list_push(list, label1);
 
 	condition = traversal_condition(node->condition, list);		// Create a condition

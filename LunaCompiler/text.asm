@@ -11,7 +11,7 @@ globalVar DWORD 0
 anotherGlobal DWORD 0
 bruhbruh DWORD 0
 .code
-foo PROC x:DWORD, z:DWORD
+foo PROC x:DWORD, y:DWORD
 MOV EAX, [y]
 MOV EBX, [x]
 MUL EBX
@@ -24,26 +24,36 @@ LOCAL y:DWORD
 MOV EAX, [x]
 CMP EAX, 0
 JE label1
-MOV EBX, EAX
+label2:
+MOV EAX, 3
+MOV EBX, [x]
+CMP EBX, EAX
+JLE label3
+MOV EDX, EAX
 MOV EAX, [y]
 MUL EAX
+DEC EBX
 MOV [y], EAX
 MOV [x], EBX
 JMP label2
+label3:
+MOV EAX, 3
+MOV EBX, [x]
+CMP EBX, EAX
+JGE label4
+MOV EDX, [y]
+MOV [x], EDX
+label4:
+JMP label5
 label1:
 MOV EAX, [x]
 MUL EAX
 MOV [y], EAX
-label2:
-PUSH y
+label5:
 MOV EAX, [x]
-MOV EBX, [y]
-ADD EAX, EBX
-PUSH EAX
-CALL foo
 SUB EAX, 5
-MOV ECX, [z]
-ADD ECX, EAX
-MOV EAX, ECX
+MOV EBX, [z]
+ADD EBX, EAX
+MOV EAX, EBX
 RET
 end main

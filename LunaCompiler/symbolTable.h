@@ -5,7 +5,7 @@
 
 typedef enum data_type
 {
-	DATA_INT = 45,			// Continuation from AST
+	DATA_INT = 46,			// Continuation from AST
 
 } dtype;
 
@@ -26,7 +26,7 @@ typedef struct STRUCT_SYMBOL_ENTRY
 	char* name;
 	dtype dtype;
 
-	void** addressDesc;	// Address descriptor: Keeping track of which addresses keep the current value of entry
+	address_T** addressDesc;	// Address descriptor: Keeping track of which addresses keep the current value of entry
 	size_t size;		// Size of addresses in array
 
 
@@ -57,7 +57,7 @@ table_T* table_search_table(table_T* table, char* name);
 bool table_search_in_specific_table(table_T* table, char* entry);
 bool table_search_address(entry_T* entry, char* name);
 
-void address_push(entry_T* entry, void* location);
+void address_push(entry_T* entry, void* location, int type);
 void address_reset(entry_T* entry);
 void table_add_entry(table_T* table, char* name, int type);
 void table_print_table(table_T* table, int level);
