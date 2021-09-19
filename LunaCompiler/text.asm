@@ -17,7 +17,7 @@ MOV EBX, [x]
 MUL EBX
 RET
 foo ENDP
-rashi:
+main:
 LOCAL x:DWORD
 LOCAL z:DWORD
 LOCAL y:DWORD
@@ -59,4 +59,4 @@ MOV EBX, [z]
 ADD EBX, EAX
 MOV EAX, EBX
 RET
-end rashi
+end main
