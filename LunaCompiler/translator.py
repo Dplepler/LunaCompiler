@@ -4,7 +4,7 @@ import enum
 hebrew_alphabet = "אבגדהוזחטיכלמנסעפצקרשתםןץףך"
 english_alphabet = "abcdefghijklmnopqrstuvxwyz"
 
-reserved_words = ["תדפיס", "אם", "אחרת", "בזמן ש", "מספר", "תחזיר"]
+reserved_words = ["תדפיס", "אם", "אחרת", "בזמןש", "מספר", "תחזיר"]
 
 class Lexer(enum.Enum):
     data = 0
@@ -37,7 +37,7 @@ def replace_keyword(token):
         return "if"
     elif token == "אחרת":
         return "else"
-    elif token == "בזמן ש":
+    elif token == "בזמןש":
         return "while"
     elif token == "מספר":
         return "int"

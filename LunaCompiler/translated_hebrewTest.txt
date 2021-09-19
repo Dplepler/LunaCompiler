@@ -9,7 +9,7 @@ int tauj()
 	
 	if (a)
 	{
-		bgmn > (a > 3)
+		while (a > 3)
 		{
 			b = b * b;
 			a = a - 1;
