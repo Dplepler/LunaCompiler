@@ -15,7 +15,7 @@ typedef struct ARG_STRUCT
 
 	} type;
 
-}arg_T;
+} arg_T;
 
 typedef struct TAC_STRUCT
 {
@@ -25,7 +25,7 @@ typedef struct TAC_STRUCT
 
 	struct TAC_STRUCT* next;
 
-}TAC;
+} TAC;
 
 typedef struct INSTRUCTIONS_STRUCT
 {
@@ -33,7 +33,7 @@ typedef struct INSTRUCTIONS_STRUCT
 	TAC* last;
 	size_t size;
 
-}TAC_list;
+} TAC_list;
 
 TAC_list* init_tac_list();
 TAC_list* traversal_visit(AST* node);
@@ -54,6 +54,8 @@ void traversal_while(AST* node, TAC_list* list);
 void* traversal_build_instruction(AST* node, TAC_list* list);
 void traversal_statements(AST* node, TAC_list* list);
 void list_push(TAC_list* list, TAC* instruction);
+void traversal_optimize(TAC_list* list);
+void traversal_remove_triple(TAC_list* list, TAC* triple);
 void traversal_free_array(TAC_list* list);
 void traversal_print_instructions(TAC_list* instructions);
 

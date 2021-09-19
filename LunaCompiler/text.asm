@@ -17,7 +17,7 @@ MOV EBX, [x]
 MUL EBX
 RET
 foo ENDP
-main:
+rashi:
 LOCAL x:DWORD
 LOCAL z:DWORD
 LOCAL y:DWORD
@@ -43,7 +43,10 @@ CMP EBX, EAX
 JGE label4
 MOV EDX, [y]
 MOV [x], EDX
+JMP label5
 label4:
+MOV EAX, [x]
+MOV [y], EAX
 JMP label5
 label1:
 MOV EAX, [x]
@@ -56,4 +59,4 @@ MOV EBX, [z]
 ADD EBX, EAX
 MOV EAX, EBX
 RET
-end main
+end rashi

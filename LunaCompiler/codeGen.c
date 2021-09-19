@@ -119,7 +119,7 @@ void write_asm(table_T* table, TAC* head, char* targetName)
 	while (backend->instruction)
 	{
 		// Skipping the main function to only generate it at the end
-		if (backend->instruction->op == AST_FUNCTION && !strcmp(backend->instruction->arg1->value, "main"))
+		if (backend->instruction->op == AST_FUNCTION && !strcmp(backend->instruction->arg1->value, "rashi"))
 		{
 			mainStart = backend->instruction;
 			mainTableIndex = backend->table->tableIndex;
@@ -402,7 +402,8 @@ void generate_main(asm_backend* backend)
 		generate_asm(backend);
 		backend->instruction = backend->instruction->next;
 	}
-	
+	generate_block_exit(backend);
+
 	fprintf(backend->targetProg, "end %s\n", name);
 }
 

@@ -16,15 +16,24 @@ entry_T* init_entry(char* name, int type)
 void address_push(entry_T* entry, void* location, int type)
 {
 	entry->addressDesc = realloc(entry->addressDesc, sizeof(address_T*) * ++entry->size);
-	entry->addressDesc[entry->size - 1] = calloc(1, sizeof(address_T));
+	entry->addressDesc[entry->size - 1] = calloc(1, sizeof(address_T)); 
 	entry->addressDesc[entry->size - 1]->address = location;
 	entry->addressDesc[entry->size - 1]->type = type;
 }
 
 void address_reset(entry_T* entry)
 {
+	unsigned int i = 0;
+
 	if (entry->addressDesc)
 	{
+		for (i = 0; i < entry->size; i++)
+		{
+			free(entry->addressDesc[i]);
+			entry->addressDesc[i] = NULL;
+		}
+			
+			
 		free(entry->addressDesc);
 		entry->addressDesc = NULL;
 		entry->size = 0;
@@ -168,6 +177,7 @@ Output: None
 void table_free_table(table_T* table)
 {
 	unsigned int i = 0;
+	unsigned int i2 = 0;
 
 	if (table)
 	{
@@ -177,6 +187,10 @@ void table_free_table(table_T* table)
 		}
 		for (i = 0; i < table->entrySize; i++)
 		{
+			for (i2 = 0; i2 < table->entries[i]->size; i2++)
+				if (table->entries[i]->addressDesc[i2]) { free(table->entries[i]->addressDesc[i2]); }
+			
+
 			free(table->entries[i]->addressDesc);
 			free(table->entries[i]);
 		}

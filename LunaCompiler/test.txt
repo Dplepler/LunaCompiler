@@ -20,6 +20,10 @@ int main()
 		{
 			x = y;
 		}
+		else
+		{
+			y = x;
+		}
 	}
 	else
 	{

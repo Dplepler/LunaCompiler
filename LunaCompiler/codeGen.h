@@ -54,7 +54,6 @@ typedef struct ASM_BACKEND_STRUCT
 
 } asm_backend;
 
-
 asm_backend* init_asm_backend(table_T* table, TAC* head, char* targetName);
 
 void write_asm(table_T* table, TAC* head, char* targetName);

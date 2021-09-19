@@ -41,6 +41,9 @@ TAC_list* traversal_visit(AST* node)
 	TAC_list* list = init_tac_list();
 
 	traversal_build_instruction(node, list);
+
+	if (list->head)
+		traversal_optimize(list);
 	
 	return list;
 }
@@ -201,7 +204,7 @@ TAC* traversal_condition(AST* node, TAC_list* list)
 {
 	TAC* instruction = calloc(1, sizeof(TAC));
 
-	instruction->op = AST_IFZ;			// If false (If zero)
+	instruction->op = AST_IFZ;			// If zero (If false)
 
 	if (node->type_c == TOKEN_NOOP)		// If there's no relation operation (<, >, <= etc)
 		instruction->arg1 = init_arg(traversal_build_instruction(node->value, list), traversal_check_arg(node->value));
@@ -348,6 +351,76 @@ char* dataToAsm(int type)
 
 	}
 
+}
+
+void traversal_optimize(TAC_list* list)
+{
+	TAC* instruction = list->head;
+	TAC* next = NULL;
+	TAC* label = NULL;
+
+
+	while (instruction)
+	{
+		// Sometimes we may create labels that jump to other labels, in that case we want the first label to instantly
+		// jump to the correct table
+
+		// TODO: implement this not only on if false statements
+		if (instruction->op == AST_IFZ)
+		{
+			label = instruction->arg2->value;
+			next = label->next;
+
+			while (next->op == TOKEN_LBRACE || next->op == TOKEN_RBRACE)
+			{
+				next = next->next;
+			}
+				
+			if (next->op == AST_GOTO)
+			{
+				instruction->arg2->value = next->arg1->value;
+				traversal_remove_triple(list, label);
+			}
+				
+
+		}
+		else if (instruction->op == AST_GOTO)
+		{
+			label = instruction->arg1->value;
+			next = label->next;
+
+			while (next->op == TOKEN_LBRACE || next->op == TOKEN_RBRACE)
+			{
+				next = next->next;
+			}
+			if (next->op == AST_GOTO)
+			{
+				instruction->arg1->value = next->arg1->value;
+				traversal_remove_triple(list, label);
+			}
+
+		}
+
+		instruction = instruction->next;
+	}
+
+}
+
+void traversal_remove_triple(TAC_list* list, TAC* triple)
+{
+	TAC* instruction = list->head;
+
+	while (instruction)
+	{
+		if (instruction->next == triple)
+		{
+			instruction->next = triple->next;
+			list->size--;
+			free(triple);
+		}
+
+		instruction = instruction->next;
+	}
 }
 
 

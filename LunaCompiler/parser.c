@@ -1,9 +1,10 @@
 #include "parser.h"
 
-const char* reserved[RESERVED_SIZE] = { "if", "else", "while", "int", "return" };
+const char* reserved[RESERVED_SIZE] = { "tadpis", "eem", "aheret", "bizman", "mispar", "ahzer" };
 
 enum
 {
+	OUT_T,
 	IF_T,
 	ELSE_T,
 	WHILE_T,

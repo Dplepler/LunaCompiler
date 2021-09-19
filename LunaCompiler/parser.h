@@ -2,7 +2,7 @@
 #define PARSER_H
 #include "lexer.h"
 
-#define RESERVED_SIZE 5
+#define RESERVED_SIZE 6
 
  
 typedef struct PARSER_STRUCT
