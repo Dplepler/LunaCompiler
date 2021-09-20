@@ -13,6 +13,7 @@ typedef struct AST_STRUCT
 		AST_DEF_AMOUNT,
 		AST_COMPOUND,
 		AST_INT,
+		AST_STRING,
 		AST_ADD,
 		AST_SUB,
 		AST_MUL,
@@ -29,6 +30,7 @@ typedef struct AST_STRUCT
 		AST_LOOP_LABEL,
 		AST_WHILE,
 		AST_COMPARE,
+		AST_PRINT,
 		AST_RETURN,
 
 	} type;

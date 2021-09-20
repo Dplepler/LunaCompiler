@@ -12,6 +12,9 @@
 
 
 char* read_file(FILE* file);
+char* make_new_filename(char* name);
+
+bool isNum(char* value);
 
 void myFgets(char str[], int n);
 

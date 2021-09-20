@@ -5,7 +5,7 @@
 
 #define GENERAL_REG_AMOUNT 4
 #define REG_AMOUNT 11
-#define TEMPLATE_SIZE 8
+#define TEMPLATE_SIZE 13
 
 typedef struct REGISTER_STRUCT_STRUCT
 {
@@ -74,6 +74,7 @@ void generate_main(asm_backend* backend);
 void generate_function(asm_backend* backend);
 void generate_return(asm_backend* backend);
 void generate_func_call(asm_backend* backend);
+void generate_print(asm_backend* backend);
 void generate_spill(asm_backend* backend, register_T* r);
 void descriptor_reset(register_T* r);
 void generate_remove_descriptor(register_T* reg, arg_T* desc);

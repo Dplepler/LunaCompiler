@@ -13,6 +13,8 @@ lexer_T* init_lexer(char* contents)
 	lexer->contentsLength = strlen(contents);
 	lexer->c = contents[lexer->index];
 
+	lexer->lineIndex = 1;
+
 	lexer->tokens = calloc(1, sizeof(token_T*));
 
 	return lexer;
@@ -85,7 +87,7 @@ token_T* lexer_advance_current(lexer_T* lexer, int type)
 	else
 		value[1] = '\0';
 	
-	token = init_token(type, value);
+	token = init_token(type, value, lexer->lineIndex);
 	lexer_advance(lexer);
 
 	return token;
@@ -100,7 +102,13 @@ void lexer_skip_whitespace(lexer_T* lexer)
 {
 	// Skipping Whitespace
 	while (lexer->c == ' ' || lexer->c == '\n' || lexer->c == '\t')
+	{
+		if (lexer->c == '\n')
+			lexer->lineIndex++;
+
 		lexer_advance(lexer);
+	}
+		
 
 	lexer_skip_comments(lexer);
 }
@@ -111,8 +119,15 @@ void lexer_skip_comments(lexer_T* lexer)
 	if (lexer->c == '~')
 	{
 		while (lexer->c != '\n')
+		{
+			if (lexer->c == '\0')
+				break;
 			lexer_advance(lexer);
+		}
+			
 		lexer_advance(lexer);		// Skipping newline
+
+		lexer->lineIndex++;
 
 		lexer_skip_whitespace(lexer);
 	}
@@ -133,6 +148,7 @@ token_T* lexer_get_next_token(lexer_T* lexer)
 		token = lexer_collect_id(lexer);
 	else if (isdigit(lexer->c))
 		token = lexer_collect_number(lexer);
+
 	else
 	{
 		switch (lexer->c)
@@ -178,7 +194,7 @@ token_T* lexer_get_next_token(lexer_T* lexer)
 			case '{': token = lexer_advance_current(lexer, TOKEN_LBRACE); break;
 			case '}': token = lexer_advance_current(lexer, TOKEN_RBRACE); break;
 			case '\0': token = lexer_advance_current(lexer, TOKEN_EOF);  break;
-			default: printf("Unknown lexeme: '%c'", lexer->c); exit(1);
+			default: printf("Unknown lexeme: '%c' in line %s", lexer->c, lexer->lineIndex); exit(1);
 		}
 	}
 	
@@ -196,7 +212,7 @@ token_T* lexer_collect_id(lexer_T* lexer)
 	char* id = calloc(1, sizeof(char));
 	size_t size = 0;
 	
-	while (isalpha(lexer->c) || isdigit(lexer->c))
+	while (isalpha(lexer->c) || isdigit(lexer->c) || lexer->c == '_')
 	{
 		id = realloc(id, ++size);
 		id[size - 1] = lexer->c;
@@ -206,7 +222,7 @@ token_T* lexer_collect_id(lexer_T* lexer)
 	id = realloc(id, size + 1);
 	id[size] = '\0';
 
-	return init_token(TOKEN_ID, id);
+	return init_token(TOKEN_ID, id, lexer->lineIndex);
 }
  
 /*
@@ -229,7 +245,7 @@ token_T* lexer_collect_number(lexer_T* lexer)
 	num = realloc(num, size + 1);
 	num[size] = '\0';
 
-	return init_token(TOKEN_NUMBER, num);
+	return init_token(TOKEN_NUMBER, num, lexer->lineIndex);
 }
 
 /*
@@ -242,11 +258,20 @@ token_T* lexer_collect_string(lexer_T* lexer)
 	char* string = calloc(1, sizeof(char));
 	size_t size = 0;
 
+	unsigned int line = lexer->lineIndex;
+
 	lexer_advance(lexer);
-	while (isalpha(lexer->c) || isdigit(lexer->c))
+
+	while (lexer->c != '"')
 	{
+		if (lexer->c == '\0')
+		{
+			printf("[Error in line %d]: Start of string was never ended", line);
+			exit(1);
+		}
+
 		string = realloc(string, ++size);
-		string[size] = lexer->c;  
+		string[size - 1] = lexer->c;  
 		lexer_advance(lexer);
 	}
 	string = realloc(string, size + 1);
@@ -254,7 +279,7 @@ token_T* lexer_collect_string(lexer_T* lexer)
 
 	lexer_advance(lexer);
 
-	return init_token(TOKEN_STRING, string);
+	return init_token(TOKEN_STRING, string, lexer->lineIndex);
 }
 
 void lexer_token_list_push(lexer_T* lexer, token_T* token)

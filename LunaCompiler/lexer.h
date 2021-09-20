@@ -9,6 +9,7 @@ typedef struct LEXER_STRUCT
 	size_t tokensSize;
 
 	size_t index;
+	size_t lineIndex;
 	size_t contentsLength;
 
 	char* contents;

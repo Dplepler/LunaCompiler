@@ -2,12 +2,24 @@
 int globalVar;
 int anotherGlobal;
 
+int foo(int x, int y) 		~ Comment comment blah blah blah  
+{
+	return y * x;
+}
+
+
+
+int bruhbruh;
+
 
 int main()
 {
 	int x;
 	int z;
 	int y;
+	string str = "Hello, world!";
+	string str2 = "Hi again";
+	print(str, str2);
 	
 	if (x)
 	{
@@ -30,21 +42,14 @@ int main()
 		y = x * x;
 	}
 	
+	
+	
 
-	~ x = foo(x + y, y);
+	x = foo(x + y, y);
 	
 	y = x - 5;
-	return z + y;
-	bruhbruh = 3;
+	~ return z + y;
+
+
 }
-
-int foo(int x, int y) 		~ Comment comment blah blah blah  
-{
-	return y * x;
-}
-
-
-
-int bruhbruh;
-
 

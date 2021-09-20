@@ -18,7 +18,7 @@ arg_T* init_arg(void* arg, int type)
 
 int traversal_check_arg(AST* node)
 {
-	if (node->type == AST_VARIABLE || node->type == AST_INT)
+	if (node->type == AST_VARIABLE || node->type == AST_INT || node->type == AST_STRING)
 		return CHAR_P;
 	else
 		return TAC_P;
@@ -77,6 +77,7 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 				case AST_VARIABLE_DEC: instruction = traversal_var_dec(node, list); break;	// Variable declerations will become normal assignments
 				case AST_FUNC_CALL: instruction = traversal_function_call(node, list); break;
 				case AST_INT: instruction = (char*)node->int_value; break;
+				case AST_STRING: instruction = (char*)node->name; break;
 				case AST_VARIABLE: instruction = (char*)node->name; break;
 				case AST_IF: traversal_if(node, list); break;
 				case AST_WHILE: traversal_while(node, list); break;
@@ -121,12 +122,27 @@ TAC* traversal_func_dec(AST* node, TAC_list* list)
 TAC* traversal_var_dec(AST* node, TAC_list* list)
 {
 	TAC* instruction = calloc(1, sizeof(TAC));
+	char* buffer = NULL;
 
 	instruction->op = AST_VARIABLE_DEC;
 	instruction->arg1 = init_arg(node->name, CHAR_P);
-	instruction->arg2 = init_arg(dataToAsm(node->var_type), CHAR_P);
 
 	list_push(list, instruction);
+
+	// All integers will be 4 bytes long
+	if (node->var_type == DATA_INT)
+	{
+		instruction->arg2 = init_arg(dataToAsm(node->var_type), CHAR_P);
+	}	
+	// For strings however, we want to know the size of the string so we can later create a fitting size in the memory
+	else if (node->var_type == DATA_STRING)
+	{
+		buffer = calloc(1, numOfDigits(strlen(node->value->rightChild->name)) + 1);
+		sprintf(buffer, "%d", strlen(node->value->rightChild->name) + 1);
+		instruction->arg2 = init_arg(buffer, CHAR_P);
+
+		traversal_assignment(node->value, list);
+	}
 
 	return instruction;
 }
@@ -177,9 +193,13 @@ TAC* traversal_function_call(AST* node, TAC_list* list)
 	
 	instruction = calloc(1, sizeof(TAC));
 
-	instruction->op = node->type;
 	instruction->arg1 = init_arg(node->name, CHAR_P);
 
+	// Check if function is built in
+	if (!strcmp(node->name, "print"))
+		instruction->op = AST_PRINT;
+	else
+		instruction->op = node->type;
 
 	// Arg2 will be the number of arguments passing into the function
 	instruction->arg2 = init_arg(calloc(1, numOfDigits(node->size) + 1), CHAR_P);
@@ -348,7 +368,7 @@ char* dataToAsm(int type)
 	switch (type)
 	{
 	case DATA_INT: return "DWORD";
-
+	//case DATA_STRING: return "BYTE";
 	}
 
 }

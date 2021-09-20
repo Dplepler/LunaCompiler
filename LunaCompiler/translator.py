@@ -4,7 +4,7 @@ import enum
 hebrew_alphabet = "אבגדהוזחטיכלמנסעפצקרשתםןץףך"
 english_alphabet = "abcdefghijklmnopqrstuvxwyz"
 
-reserved_words = ["תדפיס", "אם", "אחרת", "בזמןש", "מספר", "תחזיר"]
+reserved_words = ["תדפיס", "אם", "אחרת", "בזמןש", "מספר", "תחזיר", "ראשי"]
 
 class Lexer(enum.Enum):
     data = 0
@@ -43,6 +43,8 @@ def replace_keyword(token):
         return "int"
     elif token == "תחזיר":
         return "return"
+    elif token == "ראשי":
+        return "main"
 
 def create_id(token):
 
@@ -75,8 +77,8 @@ def translator():
         file = open(sys.argv[1], 'r', encoding='utf-8')
     except:
         sys.exit("[ERROR]: File was not found")
-
-    translated_file = open("translated_" + sys.argv[1], 'w', encoding='utf-8')
+    filename = "translated_" + sys.argv[1]
+    translated_file = open(filename, 'w', encoding='utf-8')
     data = file.read()
     i = 0
     token = []

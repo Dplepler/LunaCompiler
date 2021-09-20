@@ -72,6 +72,7 @@ char* typeToString(int type)
 		case AST_FUNCTION: return "Function";
 		case AST_DEF_AMOUNT: return "Definition amount";
 		case AST_INT: return "Int";
+		case AST_STRING: return "String";
 		case AST_ADD: return "ADD";
 		case AST_SUB: return "SUB";
 		case AST_MUL: return "MUL";

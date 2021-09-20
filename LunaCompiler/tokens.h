@@ -42,5 +42,4 @@ typedef struct TOKEN_STRUCT
 token_T* init_token(int type, char* value);
 
 
-
 #endif

@@ -1,17 +1,6 @@
 #include "parser.h"
 
-const char* reserved[RESERVED_SIZE] = { "print", "if", "else", "while", "int", "return" };
 
-enum
-{
-	OUT_T,
-	IF_T,
-	ELSE_T,
-	WHILE_T,
-	INT_T,
-	RETURN_T,
-
-}reserved_T;
 
 /*
 init_parser initializes the parser
@@ -21,10 +10,22 @@ Output: Parser
 parser_T* init_parser(lexer_T* lexer)
 {
 	parser_T* parser = calloc(1, sizeof(parser_T));
+	unsigned int i = 0;
+
 	parser->lexer = lexer;
 	parser->token = lexer_get_next_token(parser->lexer);
 
 	parser->table = init_table(NULL);
+
+	table_add_entry(parser->table, "print", DATA_INT);		// Adding built in function to functions
+
+	parser->reserved = calloc(1, sizeof(char*) * RESERVED_SIZE);
+
+	for (i = 0; i < RESERVED_SIZE; i++)
+	{
+		parser->reserved[i] = reserved_to_string(i);
+
+	}
 	
 	return parser;
 }
@@ -43,9 +44,9 @@ token_T* parser_expect(parser_T* parser, int type)
 	else
 	{
 		if (parser->token->type == TOKEN_ID)
-			printf("[ERROR]: Missing token %s, got: %s", typeToString(type), parser->token->value);
+			printf("[Error in line %d]: Missing token %s, got: %s in line %d", parser->lexer->lineIndex, typeToString(type), parser->token->value);
 		else
-			printf("[ERROR]: Missing token %s, got: %s", typeToString(type), typeToString(parser->token->type));
+			printf("[Error in line %d]: Missing token %s, got: %s in line %d", parser->lexer->lineIndex, typeToString(type), typeToString(parser->token->type));
 		exit(1);													// Finish with error
 	}
 
@@ -102,7 +103,8 @@ AST* parser_function(parser_T* parser)
 	switch (parser_check_reserved(parser))
 	{
 		case INT_T: node->var_type = DATA_INT; break;
-		default: printf("[ERROR]: Bad function declaration\n"); 
+		case STRING_T: node->var_type = DATA_STRING; break;
+		default: printf("[Error in line %d]: Invalid return value", parser->lexer->lineIndex); 
 			exit(1);
 	}
 		
@@ -115,6 +117,12 @@ AST* parser_function(parser_T* parser)
 	parser->token = parser_expect(parser, TOKEN_LPAREN);
 
 	node->function_def_args = calloc(1, sizeof(AST*));
+
+	if (table_search_entry(parser->table, node->name))
+	{
+		printf("[Error in line %d]: Function redecleration", parser->lexer->lineIndex);
+		exit(1);
+	}
 
 	table_add_entry(parser->table, node->name, node->var_type);
 
@@ -167,16 +175,18 @@ AST* parser_statement(parser_T* parser)
 	// Checking all possible statement options
 	if (parser->token->type == TOKEN_ID)
 	{
-		if ((type = parser_check_reserved(parser)) > -1)
+		if ((type = parser_check_reserved(parser)) > -1 && type != OUT_T)
 		{
-			switch (type)
+			if (type == INT_T || type == STRING_T)
 			{
-				case INT_T: 
-					if (lexer_token_peek(parser->lexer, 2)->type == TOKEN_LPAREN)
-						node = parser_function(parser);
-					else
-						node = parser_var_dec(parser); 
-					break;
+				if (lexer_token_peek(parser->lexer, 2)->type == TOKEN_LPAREN)
+					node = parser_function(parser);
+				else
+					node = parser_var_dec(parser);
+			}
+
+			switch (type)
+			{		
 
 				case IF_T: node = parser_condition(parser); break;
 				case WHILE_T: node = parser_while(parser); break;
@@ -224,7 +234,7 @@ AST* parser_statement(parser_T* parser)
 	}
 	else
 	{
-		printf("[ERROR]: Invalid syntax\n"); exit(1);
+		printf("[Error in line %d]: Invalid syntax", parser->lexer->lineIndex); exit(1);
 	}
 
 	return node;
@@ -239,7 +249,15 @@ AST* parser_assignment(parser_T* parser)
 	if (parser->token->type == TOKEN_EQUALS)
 	{
 		parser->token = lexer_get_next_token(parser->lexer);
-		node = AST_initChildren(node, parser_expression(parser), AST_ASSIGNMENT);
+		
+		if (parser->token->type == TOKEN_STRING)
+		{
+			node = AST_initChildren(node, parser_string(parser), AST_ASSIGNMENT);
+		}
+		else
+		{
+			node = AST_initChildren(node, parser_expression(parser), AST_ASSIGNMENT);
+		}
 	}
 	// If variable was written without an assignment, reset it
 	else
@@ -248,6 +266,8 @@ AST* parser_assignment(parser_T* parser)
 		reset->int_value = "0";
 		node = AST_initChildren(node, reset, AST_ASSIGNMENT);		
 	}
+
+	return node;
 }
 
 AST* parser_func_call(parser_T* parser)
@@ -286,7 +306,8 @@ AST* parser_var_dec(parser_T* parser)
 		switch (parser_check_reserved(parser))
 		{
 			case INT_T: node->var_type = DATA_INT; break;
-			default: printf("[ERROR]: Variable decleration missing variable type value\n");
+			case STRING_T: node->var_type = DATA_STRING; break;
+			default: printf("[Error in line %d]: Variable decleration missing variable type value", parser->lexer->lineIndex);
 				exit(1);
 		}
 	}
@@ -294,12 +315,19 @@ AST* parser_var_dec(parser_T* parser)
 	parser->token = parser_expect(parser, TOKEN_ID);
 
 	node->name = parser->token->value;
+
 	table_add_entry(parser->table, node->name, node->var_type);
 
 	node->value = parser_assignment(parser);
 
-	return node;
+	// Raise error if declared string was not initialized with a value
+	if (node->var_type == DATA_STRING && node->value->rightChild->type == AST_INT)
+	{
+		printf("[Error in line %d]: String not initialized", parser->lexer->lineIndex);
+		exit(1);
+	}
 
+	return node;
 }
 
 /*
@@ -381,10 +409,19 @@ AST* parser_factor(parser_T* parser)
 		// Case for unary operators (e.g: -6, -2 etc)
 		case TOKEN_SUB: parser->token = lexer_get_next_token(parser->lexer);  node = AST_initChildren(0, parser_factor(parser), AST_SUB); break;
 
-		default: printf("[ERROR]: Syntax Error!, Token: %s was unexpected\n", parser->token->value);
+		default: printf("[Error in line %d]: Syntax Error!, token type: %s was unexpected", parser->lexer->lineIndex, typeToString(parser->token->type));
 			exit(1);
 
 	}
+	return node;
+}
+
+AST* parser_string(parser_T* parser)
+{
+	AST* node = init_AST(AST_STRING);
+	node->name = parser->token->value;
+	parser->token = parser_expect(parser, TOKEN_STRING);	// Skip string
+
 	return node;
 }
 
@@ -413,7 +450,7 @@ AST* parser_id(parser_T* parser)
 
 		if (!table_search_entry(parser->table, node->name))
 		{
-			printf("Variable %s was not declared in the current scope\n", node->name);
+			printf("[Error in line %d]: Variable %s was not declared in the current scope\n", parser->lexer->lineIndex, node->name);
 			exit(1);
 		}
 	}
@@ -460,7 +497,7 @@ AST* parser_condition(parser_T* parser)
 		node->if_body = parser_statement(parser);
 	else
 	{
-		printf("[ERROR]: If statement missing braces\n");
+		printf("[Error in line %d]: If statement missing braces", parser->lexer->lineIndex);
 		exit(1);
 	}
 		
@@ -473,7 +510,7 @@ AST* parser_condition(parser_T* parser)
 			node->else_body = parser_statement(parser);
 		else
 		{
-			printf("[ERROR]: else statement missing braces\n");
+			printf("[Error in line %d]: Else statement missing braces", parser->lexer->lineIndex);
 			exit(1);
 		}
 			
@@ -492,7 +529,7 @@ AST* parser_while(parser_T* parser)
 		node->if_body = parser_statement(parser);
 	else
 	{
-		printf("[ERROR]: While statement missing braces\n");
+		printf("[Error in line %d]: While statement missing braces", parser->lexer->lineIndex);
 		exit(1);
 	}
 	
@@ -508,6 +545,22 @@ AST* parser_return(parser_T* parser)
 	return node;
 }
 
+char* reserved_to_string(int type)
+{
+	switch (type)
+	{
+
+	case OUT_T: return "print";
+	case IF_T: return "if";
+	case ELSE_T: return "else";
+	case WHILE_T: return "while";
+	case INT_T: return "int";
+	case STRING_T: return "string";
+	case RETURN_T: return "return";
+
+	}
+}
+
 int parser_check_reserved(parser_T* parser)
 {
 	int type = -1;
@@ -518,7 +571,7 @@ int parser_check_reserved(parser_T* parser)
 	{
 		for (i = 0; i < RESERVED_SIZE && !found; i++)
 		{
-			if (!strcmp(parser->token->value, reserved[i]))
+			if (!strcmp(parser->token->value, parser->reserved[i]))
 			{
 				type = i;
 				found = true;

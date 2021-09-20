@@ -144,7 +144,7 @@ void write_asm(table_T* table, TAC* head, char* targetName)
 	}
 	else
 	{
-		printf("[ERROR]: No main file to start executing from\n");
+		printf("[ERROR]: No main file to start executing from");
 		exit(1);
 	}
 		
@@ -202,6 +202,7 @@ void generate_asm(asm_backend* backend)
 		case AST_LABEL: fprintf(backend->targetProg, "%s:\n", generate_get_label(backend, backend->instruction)); break;
 		case AST_LOOP_LABEL: fprintf(backend->targetProg, "%s:\n", generate_get_label(backend, backend->instruction)); generate_block_exit(backend); break;
 		case AST_FUNC_CALL: generate_func_call(backend); break;
+		case AST_PRINT: generate_print(backend); break;
 		case AST_RETURN: generate_return(backend); break;
 	
 		
@@ -355,8 +356,13 @@ void generate_unconditional_jump(asm_backend* backend)
 void generate_assignment(asm_backend* backend)
 {
 	register_T* reg1 = NULL;
-	register_T* reg2 = NULL;
 	entry_T* entry = table_search_entry(backend->table, backend->instruction->arg1->value);
+
+	if (entry->dtype == DATA_STRING)
+	{
+		printf("[Error]: String '%s' redeclaration is not allowed", entry->name);
+		exit(1);
+	}
 
 	// If variable equals a function call then the value will return in AX, therefore we know that the register will always be AX
 	if (backend->instruction->arg2->type == TAC_P && ((TAC*)backend->instruction->arg2->value)->op == AST_FUNC_CALL)
@@ -369,15 +375,12 @@ void generate_assignment(asm_backend* backend)
 		reg1 = generate_move_to_register(backend, backend->instruction->arg2);
 	}
 
-	reg2 = generate_check_variable_in_reg(backend, backend->instruction->arg1);
-
 	address_reset(entry);
 	
 	address_push(entry, reg1, ADDRESS_REG);
 	descriptor_push(reg1, backend->instruction->arg1);
 	
-	if (reg2)
-		generate_remove_descriptor(reg2, backend->instruction->arg1);
+	generate_remove_descriptor(generate_check_variable_in_reg(backend, backend->instruction->arg1), backend->instruction->arg1);
 	
 }
 
@@ -385,7 +388,16 @@ void generate_var_dec(asm_backend* backend)
 {
 	if (table_search_table(backend->table, backend->instruction->arg1->value)->prev)
 	{
-		fprintf(backend->targetProg, "LOCAL %s:%s\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
+		if (isNum(backend->instruction->arg2->value))
+		{
+			fprintf(backend->targetProg, "LOCAL %s[%s]:BYTE\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
+			backend->instruction = backend->instruction->next;
+			fprintf(backend->targetProg, "FN LSTRCPY, ADDR %s, \"%s\"\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
+		}
+		else
+		{
+			fprintf(backend->targetProg, "LOCAL %s:%s\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
+		}
 	}
 }
 
@@ -451,10 +463,11 @@ void generate_return(asm_backend* backend)
 
 void generate_func_call(asm_backend* backend)
 {
-	unsigned int i = 0;
-	size_t size = atoi(backend->instruction->arg2->value);
 	char* name = backend->instruction->arg1->value;
 
+	unsigned int i = 0;
+	size_t size = atoi(backend->instruction->arg2->value);
+	
 	for (i = 0; i < size; i++)
 	{
 		backend->instruction = backend->instruction->next;
@@ -478,6 +491,39 @@ void generate_func_call(asm_backend* backend)
 	}
 
 	fprintf(backend->targetProg, "CALL %s\n", name);
+}
+
+void generate_print(asm_backend* backend)
+{
+	entry_T* entry = NULL;
+
+	unsigned int i = 0;
+	size_t size = atoi(backend->instruction->arg2->value);
+
+	for (i = 0; i < size; i++)
+	{
+		backend->instruction = backend->instruction->next;
+
+		if (backend->instruction->op == AST_PARAM && backend->instruction->arg1->type == CHAR_P)
+		{
+			entry = table_search_entry(backend->table, backend->instruction->arg1->value);
+			if (!entry)
+			{
+				printf("[ERROR]: Can't use numbers as parameters for a print function\n");
+				exit(1);
+			}
+		}
+
+		if (backend->instruction->op == AST_PARAM && entry->dtype == DATA_STRING)
+		{
+			fprintf(backend->targetProg, "invoke StdOut, ADDR %s\n", entry->name);
+		}
+		else if (backend->instruction->op == AST_PARAM)
+		{
+			printf("[ERROR]: Built in function can only use strings as parameters");
+			exit(1);
+		}
+	}
 }
 
 /*
@@ -916,6 +962,9 @@ void generate_remove_descriptor(register_T* reg, arg_T* desc)
 {
 	unsigned int i = 0;
 	unsigned int index = 0;
+
+	if (!reg)
+		return;
 
 	while (i < reg->size)
 	{
