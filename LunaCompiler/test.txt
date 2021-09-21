@@ -1,4 +1,3 @@
-
 int globalVar;
 int anotherGlobal;
 
@@ -14,46 +13,46 @@ int bruhbruh;
 
 int main()
 {
-	int x = 101;
+	int hello;
+	int m = 101;
 	int z;
 	int y;
-	string str = "Hello, world!";
+	string str1 = "Hello, world!";
 	string str2 = "Hi again";
 	
-	if (x > 100)
+	if (m > 100)
 	{
-		print(str, str2);
+		print(str1, str2);
 	}
 	
-	if (x)
+	if (m)
 	{
-		while (x > 3)
+		while (m > 3)
 		{
 			y = y * y;
-			x = x - 1;
+			m = m - 1;
 		}
-		if (x < 3)
+		if (m < 3)
 		{
-			x = y;
+			m = y;
 		}
 		else
 		{
-			y = x;
+			y = m;
 		}
 	}
 	else
 	{
-		y = x * x;
+		y = m * m;
 	}
 	
 	
 	
 
-	x = foo(x + y, y);
+	m = foo(m + y, y);
 	
-	y = x - 5;
+	y = m - 5;
 	~ return z + y;
 
 
 }
-

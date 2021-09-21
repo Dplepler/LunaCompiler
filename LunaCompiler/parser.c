@@ -362,12 +362,16 @@ AST* parser_var_dec(parser_T* parser)
 
 	table_add_entry(parser->table, node->name, node->var_type);		// Add symbol table entry for the new variable
 
-	node->value = parser_assignment(parser);	// Parse 
+	node->value = parser_assignment(parser);
 
-	// Raise error if declared string was not initialized with a value
 	if (node->var_type == DATA_STRING && node->value->rightChild->type == AST_INT)
 	{
-		printf("[Error in line %d]: String not initialized", parser->lexer->lineIndex);
+		printf("[Error in line %d]: Can't assign int value to a string", parser->lexer->lineIndex);
+		exit(1);
+	}
+	else if (node->var_type == DATA_INT && node->value->rightChild->type == AST_STRING)
+	{
+		printf("[Error in line %d]: Can't assign string value to an int", parser->lexer->lineIndex);
 		exit(1);
 	}
 

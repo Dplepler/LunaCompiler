@@ -30,14 +30,13 @@ char* read_file(FILE* file)
 }
 
 /*
-make_new_filename gets a file and changes it's extention to .asm
-Input: Filename
-Output: The same filename with a .asm extention
+make_new_filename gets a file and changes it's extention to the desired one
+Input: Filename, desired new extention
+Output: The same filename with a the desired extention
 */
-char* make_new_filename(char* name)
+char* make_new_filename(char* name, char* extention)
 {
     char* newFilename = calloc(1, sizeof(char));
-    const char* fileExtention = ".asm";
 
     unsigned int i = 0;
     size_t size = 0;
@@ -58,10 +57,10 @@ char* make_new_filename(char* name)
             newFilename = realloc(newFilename, ++size);
             newFilename[size - 1] = '\0';
 
-            size += strlen(fileExtention) + 1;
+            size += strlen(extention) + 1;
 
             newFilename = realloc(newFilename, size);
-            strcat(newFilename, fileExtention);
+            strcat(newFilename, extention);
             break;
         }
     }
@@ -108,6 +107,28 @@ bool isNum(char* value)
 
     return flag;
 }
+
+void assemble_file(char* filename)
+{
+    char* command = NULL;
+    char* objectFilename = make_new_filename(filename, ".obj");
+    char* exeFilename = make_new_filename(filename, ".exe");
+
+    command = calloc(1, strlen("\\masm32\\bin\\ml / c / Zd / coff %s") + strlen(filename) + 1);
+    sprintf(command, "\\masm32\\bin\\ml / c / Zd / coff %s", filename);
+    system(command);
+
+    free(command);
+
+    command = calloc(1, strlen("\\masm32\\bin\\Link /SUBSYSTEM:CONSOLE %s") + strlen(objectFilename) + 1);
+    sprintf(command, "\\masm32\\bin\\Link /SUBSYSTEM:CONSOLE %s", objectFilename);
+    system(command);
+
+    free(command);
+
+    system(exeFilename);
+}
+
 
 /*
 myFgets will perform the fgets command and also remove the newline

@@ -102,7 +102,10 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 
 		case AST_PROGRAM: 
 			for (i = 0; i < node->size; i++)	// Loop through global variables
-				instruction = traversal_build_instruction(node->children[i], list);
+			{
+				if (node->children[i]->type == AST_VARIABLE_DEC)
+					instruction = traversal_build_instruction(node->children[i], list);
+			}
 					
 			for (i = 0; i < node->functionsSize; i++)		// Loop through functions
 				instruction = traversal_build_instruction(node->function_list[i], list);
@@ -140,7 +143,7 @@ TAC* traversal_func_dec(AST* node, TAC_list* list)
 	// In this triple, arg1 will be the function name and arg2 will be the function return type
 	instruction->arg1 = init_arg(node->name, CHAR_P);
 	instruction->arg2 = init_arg(typeToString(node->var_type), CHAR_P);
-	
+
 	instruction->op = node->type;
 
 	list_push(list, instruction);
@@ -149,7 +152,7 @@ TAC* traversal_func_dec(AST* node, TAC_list* list)
 	defAmount->op = AST_DEF_AMOUNT;
 	value = _itoa(node->size, (char*)calloc(1, numOfDigits(node->size) + 1), 10);
 	defAmount->arg1 = init_arg(value, CHAR_P);
-	
+
 	list_push(list, defAmount);
 
 	traversal_statements(node->function_body, list);
@@ -184,12 +187,18 @@ TAC* traversal_var_dec(AST* node, TAC_list* list)
 	// For strings however, we want to know the size of the string so we can later create a fitting size in the memory
 	else if (node->var_type == DATA_STRING)
 	{
+		if (!node->value)
+		{
+			printf("[Error]: String must be initialized with a value");
+			exit(1);
+		}
+
 		buffer = calloc(1, numOfDigits(strlen(node->value->rightChild->name)) + 1);
 		sprintf(buffer, "%d", strlen(node->value->rightChild->name) + 1);
 		instruction->arg2 = init_arg(buffer, CHAR_P);
-
-		traversal_assignment(node->value, list);
 	}
+
+	traversal_build_instruction(node->value, list);
 
 	return instruction;
 }

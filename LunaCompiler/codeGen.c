@@ -70,7 +70,6 @@ void descriptor_reset(register_T* r)
 			r->regDescList[i]->value = NULL;
 			r->regDescList[i] = NULL;
 		}
-
 	}
 
 	// Free the register descriptor list itself
@@ -108,7 +107,12 @@ void generate_global_vars(asm_backend* backend, TAC* triple)
 
 		case AST_VARIABLE_DEC:
 			if (!(table_search_table(table, triple->arg1->value)->prev))
-				fprintf(backend->targetProg, "%s %s 0\n", triple->arg1->value, triple->arg2->value);
+			{
+				// Declaring and assigning the global var the value of the next operation (which will be an assignment)
+				fprintf(backend->targetProg, "%s %s %s\n", triple->arg1->value, triple->arg2->value, triple->next->arg2->value);
+				triple = triple->next;
+			}
+		
 			break;
 
 		}
@@ -145,25 +149,16 @@ void write_asm(table_T* table, TAC* head, char* targetName)
 	// Main loop to generate code
 	while (backend->instruction)
 	{
-		// Skipping the main function to only generate it at the end
+		// Save main function start
 		if (backend->instruction->op == AST_FUNCTION && !strcmp(backend->instruction->arg1->value, "main"))
 		{
 			mainStart = backend->instruction;
-			mainTableIndex = backend->table->tableIndex;
-
-			backend->table->tableIndex++;
-
-			while (backend->instruction->op != TOKEN_FUNC_END)
-				backend->instruction = backend->instruction->next;
 		}
 
 		generate_asm(backend);
 		backend->instruction = backend->instruction->next;
 	}
-	
-	// Go back the first symbol table and start generating the main function
-	backend->table->tableIndex = mainTableIndex;
-	backend->table = table;
+
 	backend->instruction = mainStart;
 
 	if (mainStart)
@@ -193,6 +188,11 @@ void generate_asm(asm_backend* backend)
 	char* op = NULL;
 	char* arg1 = NULL;
 	char* arg2 = NULL;
+
+	// We do not want to generate code for statements made outside of a function
+	if (backend->instruction->op != AST_VARIABLE_DEC && backend->instruction->op != TOKEN_LBRACE 
+		&& backend->instruction->op != TOKEN_RBRACE && backend->instruction->op != AST_FUNCTION && !backend->table->prev)
+		return;
 
 	op = typeToString(backend->instruction->op);	// Get type of operation in a string form
 
@@ -425,15 +425,14 @@ void generate_assignment(asm_backend* backend)
 	register_T* reg1 = NULL;
 	entry_T* entry = table_search_entry(backend->table, backend->instruction->arg1->value);
 
-	// Cannot change a string value
 	if (entry->dtype == DATA_STRING)
 	{
-		printf("[Error]: String '%s' redeclaration is not allowed", entry->name);
-		exit(1);
+		// MASM macro to copy a string value onto the string array
+		fprintf(backend->targetProg, "fn lstrcpy, ADDR %s, \"%s\"\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
 	}
 
 	// If variable equals a function call then the value will return in AX, therefore we know that the register will always be AX
-	if (backend->instruction->arg2->type == TAC_P && ((TAC*)backend->instruction->arg2->value)->op == AST_FUNC_CALL)
+	else if (entry->dtype != DATA_STRING && backend->instruction->arg2->type == TAC_P && ((TAC*)backend->instruction->arg2->value)->op == AST_FUNC_CALL)
 	{
 		reg1 = backend->registers[REG_AX];
 	}
@@ -443,13 +442,15 @@ void generate_assignment(asm_backend* backend)
 		reg1 = generate_move_to_register(backend, backend->instruction->arg2);
 	}
 
-	address_reset(entry);
-	
-	address_push(entry, reg1, ADDRESS_REG);
-	descriptor_push(reg1, backend->instruction->arg1);
-	
-	generate_remove_descriptor(generate_check_variable_in_reg(backend, backend->instruction->arg1), backend->instruction->arg1);
-	
+	if (entry->dtype != DATA_STRING)
+	{
+		address_reset(entry);
+
+		address_push(entry, reg1, ADDRESS_REG);
+		descriptor_push(reg1, backend->instruction->arg1);
+
+		generate_remove_descriptor(generate_check_variable_in_reg(backend, backend->instruction->arg1), backend->instruction->arg1);
+	}
 }
 
 /*
@@ -465,9 +466,6 @@ void generate_var_dec(asm_backend* backend)
 		if (isNum(backend->instruction->arg2->value))
 		{
 			fprintf(backend->targetProg, "LOCAL %s[%s]:BYTE\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
-			backend->instruction = backend->instruction->next;
-			// MASM macro to copy a string value onto the string array
-			fprintf(backend->targetProg, "FN LSTRCPY, ADDR %s, \"%s\"\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
 		}
 		// For other types, just declare them normally
 		else
@@ -484,21 +482,14 @@ Output: None
 */
 void generate_main(asm_backend* backend)
 {
+	TAC* triple = NULL;
+
 	char* name = backend->instruction->arg1->value;
 
-	fprintf(backend->targetProg, "%s:\n", name);
-
-	backend->instruction = backend->instruction->next->next;
-
-	while (backend->instruction->op != TOKEN_FUNC_END)
-	{
-		generate_asm(backend);
-		backend->instruction = backend->instruction->next;
-	}
-
-	generate_block_exit(backend);
-
-	fprintf(backend->targetProg, "end %s\n", name);
+	fprintf(backend->targetProg, "main_start:\n");
+	fprintf(backend->targetProg, "CALL main\n");	// Call the actual main procedure
+	fprintf(backend->targetProg, "invoke ExitProcess, 0\n");
+	fprintf(backend->targetProg, "end main_start\n");
 }
 
 /*
@@ -509,6 +500,8 @@ Output: None
 */
 void generate_function(asm_backend* backend)
 {
+	TAC* triple = NULL;
+
 	size_t counter = atoi(backend->instruction->next->arg1->value);
 	char* name = backend->instruction->arg1->value;
 	unsigned int i = 0;
@@ -521,6 +514,8 @@ void generate_function(asm_backend* backend)
 	// Skipping number of local vars and start of block
 	backend->instruction = backend->instruction->next->next->next;
 
+	triple = backend->instruction;
+
 	// Generate all the local variables for the function
 	if (counter > 0)
 		fprintf(backend->targetProg, "%s:%s", backend->table->entries[i]->name, dataToAsm(backend->table->entries[i]->dtype));
@@ -532,10 +527,27 @@ void generate_function(asm_backend* backend)
 
 	fprintf(backend->targetProg, "\n");
 
+	//generate_asm(backend);		// For the opening braces
+
+	// First generate only the variable declarations
+	while (backend->instruction->op != TOKEN_FUNC_END)
+	{
+		if (backend->instruction->op == AST_VARIABLE_DEC)
+		{
+			generate_asm(backend);
+		}
+
+		backend->instruction = backend->instruction->next;
+	}
+
+	backend->instruction = triple;
+
 	// Loop through the function and generate code for the statements
 	while (backend->instruction->op != TOKEN_FUNC_END)
 	{
-		generate_asm(backend);
+		if (backend->instruction->op != AST_VARIABLE_DEC)
+			generate_asm(backend);
+
 		backend->instruction = backend->instruction->next;
 	}
 
@@ -766,7 +778,7 @@ register_T* generate_move_to_register(asm_backend* backend, arg_T* arg)
 		{
 			
 			if (!strcmp(arg->value, "0"))
-				fprintf(backend->targetProg, "XOR %s %s\n", name, name);
+				fprintf(backend->targetProg, "XOR %s, %s\n", name, name);
 			else
 				fprintf(backend->targetProg, "MOV %s, %s\n", name, arg->value);
 		}

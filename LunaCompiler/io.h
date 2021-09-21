@@ -8,17 +8,16 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include <setjmp.h>
-
 
 char* read_file(FILE* file);
-char* make_new_filename(char* name);
+char* make_new_filename(char* name, char* extention);
 
 bool isNum(char* value);
 
-void myFgets(char str[], int n);
-
 size_t numOfDigits(int num);
+
+void assemble_file(char* filename);
+void myFgets(char str[], int n);
 
 
 #endif

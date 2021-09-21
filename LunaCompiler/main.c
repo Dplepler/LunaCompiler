@@ -13,7 +13,8 @@ int main(int argc, char** argv)
 
 	char* command = NULL;
 	char* fileChoice = NULL;
-	char* newFilename = make_new_filename(argv[1]);
+	char* newFilename = make_new_filename(argv[1], ".asm");
+	
 
 	unsigned int i = 0;
 
@@ -66,7 +67,9 @@ int main(int argc, char** argv)
 		traversal_print_instructions(instructions);
 			
 		// Write the Assembly code from the given IR
-		write_asm(parser->table, instructions->head, newFilename);		
+		write_asm(parser->table, instructions->head, newFilename);
+
+		assemble_file(newFilename);
 
 		// Free everything
 		lexer_free_tokens(lexer);
