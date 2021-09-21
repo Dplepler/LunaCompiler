@@ -1,3 +1,8 @@
+/*
+This is the Assembly MASM template that includes all necessary libraries and sets all the correct modes
+*/
+
+
 const char* asm_template[] = { ".386",
 ".model flat, stdcall",
 "option casemap: none",

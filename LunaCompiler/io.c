@@ -1,6 +1,10 @@
 #include "io.h"
 
-
+/*
+read_file takes a file and returns it's contents in a string
+Input: File
+Output: Contents of the file
+*/
 char* read_file(FILE* file)
 {
 	char* contents = NULL;
@@ -9,22 +13,27 @@ char* read_file(FILE* file)
 
     contents = calloc(1, sizeof(char));
 
+    // While end of file is not reached, advance file string data and put the current char in it
     while ((ch = fgetc(file)) != EOF)
     {
         contents = realloc(contents, ++i);
         contents[i - 1] = ch;
     } 
 
+    // Terminate string with a 0
     contents = realloc(contents, ++i);
     contents[i - 1] = '\0';       
-
-    printf("contents:%s\n", contents);
 
     fclose(file);
 
     return contents;
 }
 
+/*
+make_new_filename gets a file and changes it's extention to .asm
+Input: Filename
+Output: The same filename with a .asm extention
+*/
 char* make_new_filename(char* name)
 {
     char* newFilename = calloc(1, sizeof(char));
@@ -32,20 +41,26 @@ char* make_new_filename(char* name)
 
     unsigned int i = 0;
     size_t size = 0;
+    size_t length = strlen(name);
 
-    for (i = 0; i < strlen(name); i++)
+    for (i = 0; i < length; i++)
     {
+        // For every normal character, we copy it as is
         if (name[i] != '.')
         {
             newFilename = realloc(newFilename, ++size);
             newFilename[size - 1] = name[i];
         }
+        // When extention reached we copy the .asm extention instead
         else
         {
-            newFilename = realloc(newFilename, size + 1);
-            newFilename[size] = '\0';
+            // Before using strcat, we have to terminate the current string
+            newFilename = realloc(newFilename, ++size);
+            newFilename[size - 1] = '\0';
 
-            newFilename = realloc(newFilename, size + strlen(fileExtention));
+            size += strlen(fileExtention) + 1;
+
+            newFilename = realloc(newFilename, size);
             strcat(newFilename, fileExtention);
             break;
         }
@@ -54,6 +69,11 @@ char* make_new_filename(char* name)
     return newFilename;
 }
 
+/*
+numOfDigits returns the amount of digits in a number
+Input: Number
+Output: Amount of digits
+*/
 size_t numOfDigits(int num)
 {
     size_t counter = 0;
@@ -79,7 +99,7 @@ bool isNum(char* value)
     unsigned int i = 0;
     size_t size = strlen(value);
 
-
+    // Loop through the string, if we find 1 character that is not a num we can return false
     for (i = 0; i < size && flag; i++)
     {
         if (!isdigit(value[i]))
@@ -90,7 +110,7 @@ bool isNum(char* value)
 }
 
 /*
-Function will perform the fgets command and also remove the newline
+myFgets will perform the fgets command and also remove the newline
 that might be at the end of the string - a known issue with fgets.
 input: the buffer to read into, the number of chars to read
 */

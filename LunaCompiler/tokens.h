@@ -2,7 +2,6 @@
 #define TOKEN_H
 #include "io.h"
 
-
 typedef struct TOKEN_STRUCT
 {
 	char* value;
@@ -37,9 +36,6 @@ typedef struct TOKEN_STRUCT
 
 } token_T;
 
-
-
 token_T* init_token(int type, char* value);
-
 
 #endif

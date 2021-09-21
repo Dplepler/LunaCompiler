@@ -14,12 +14,16 @@ int bruhbruh;
 
 int main()
 {
-	int x;
+	int x = 101;
 	int z;
 	int y;
 	string str = "Hello, world!";
 	string str2 = "Hi again";
-	print(str, str2);
+	
+	if (x > 100)
+	{
+		print(str, str2);
+	}
 	
 	if (x)
 	{

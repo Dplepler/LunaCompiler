@@ -13,16 +13,20 @@ int main(int argc, char** argv)
 
 	char* command = NULL;
 	char* fileChoice = NULL;
+	char* newFilename = make_new_filename(argv[1]);
 
 	unsigned int i = 0;
 
 	char* contents = NULL;
+
+	// Raise error if user didn't input filename or compile mode
 	if (!argv[1] || !argv[2])
 	{
-		printf("Some file input is missing\n");
+		printf("[Error]: Some file input is missing");
 		exit(1);
 	}
 	
+	// If user wants to compile in Hebrew, run the translator and replace the file with the translated file
 	if (!strcmp(argv[2], "-h"))
 	{
 		command = calloc(1, strlen("python translator.py ") + strlen(argv[1]) + 1);
@@ -34,50 +38,52 @@ int main(int argc, char** argv)
 
 		free(command);
 	}
+	// Otherwise, we just want to use the normal filename
 	else
 	{
 		fileChoice = calloc(1, strlen(argv[1]) + 1);
 		strcpy(fileChoice, argv[1]);
 	}
 
-	if (file = fopen(fileChoice, "r"))
+	if (file = fopen(fileChoice, "r"))		// Read file
 	{
-		contents = read_file(file);
+		contents = read_file(file);			// Read contents of file
 
 		if (!contents)
 		{
-			printf("[ERROR]: Couldn't read file");
+			printf("[Error]: Couldn't read file contents");
 			exit(1);
 		}
 		
-		lexer = init_lexer(contents);
+		lexer = init_lexer(contents);		// Initialize lexer
+		parser = init_parser(lexer);		// Initialize Parser
 
-		parser = init_parser(lexer);
-		root = parser_parse(parser);
-		instructions = traversal_visit(root);
+		root = parser_parse(parser);		// Parse the tokens into an AST
+
+		instructions = traversal_visit(root);	// Visit the AST and generate an intermidiate representation
 	
 		//table_print_table(parser->table, 0);
-
 		traversal_print_instructions(instructions);
 			
-		write_asm(parser->table, instructions->head, make_new_filename(argv[1]));
+		// Write the Assembly code from the given IR
+		write_asm(parser->table, instructions->head, newFilename);		
 
-
-
+		// Free everything
 		lexer_free_tokens(lexer);
 		AST_free_AST(root);
 		traversal_free_array(instructions);
 		table_free_table(parser->table);
 		free(contents);
 		free(lexer);
+		free(parser->reserved);
 		free(parser);
 
+		// If we made a new file for the translated version from Hebrew, delete that file
 		if (!strcmp(argv[2], "-h"))
 			remove(fileChoice);
 
+		free(newFilename);
 		free(fileChoice);
-
-		
 	}
 	else
 		printf("File does not exist\n");

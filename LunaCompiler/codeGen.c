@@ -1,6 +1,11 @@
 #include "codeGen.h"
 #include "template.h"
 
+/*
+init_asm_backend initializes the asm backend
+Input: Program symbol table, Head of the TAC instructions list, target name for the produced file (.asm)
+Output: The asm backend
+*/
 asm_backend* init_asm_backend(table_T* table, TAC* head, char* targetName)
 {
 	asm_backend* backend = calloc(1, sizeof(asm_backend));
@@ -10,12 +15,13 @@ asm_backend* init_asm_backend(table_T* table, TAC* head, char* targetName)
 	backend->registers = calloc(REG_AMOUNT, sizeof(register_T*));
 	backend->labelList = calloc(1, sizeof(label_list));
 	
+	// Allocate all registers for the backend
 	for (i = 0; i < REG_AMOUNT; i++)
 	{
 		backend->registers[i] = calloc(1, sizeof(register_T));
 		backend->registers[i]->reg = i;		// Assigning each register it's name
 	}  
-	  
+	
 	backend->table = table;
 	backend->instruction = head;
 
@@ -24,6 +30,11 @@ asm_backend* init_asm_backend(table_T* table, TAC* head, char* targetName)
 	return backend;
 }
 
+/*
+descriptor_push pushes an argument to the register descriptor
+Input: Register to push to, argument to push
+Output: None
+*/
 void descriptor_push(register_T* reg, arg_T* descriptor)
 {
 	reg->regDescList = realloc(reg->regDescList, sizeof(arg_T*) * ++reg->size);
@@ -41,10 +52,16 @@ void descriptor_push_tac(register_T* reg, TAC* instruction)
 	descriptor_push(reg, init_arg(instruction, TEMP_P));
 }
 
+/*
+descriptor_reset resets the register descriptor to not include any arguments
+Input: Register to reset
+Output: None
+*/
 void descriptor_reset(register_T* r)
 {
 	unsigned int i = 0;
 
+	// Free all arguments
 	for (i = 0; i < r->size; i++)
 	{
 		if (r->regDescList[i]->type == TEMP_P)
@@ -56,6 +73,7 @@ void descriptor_reset(register_T* r)
 
 	}
 
+	// Free the register descriptor list itself
 	if (r->regDescList)
 	{
 		free(r->regDescList);
@@ -64,6 +82,11 @@ void descriptor_reset(register_T* r)
 	}
 }
 
+/*
+generate_global_vars generates all the global variables of the program at the .data segment of the assembly file
+Input: Backend, head of TAC instructions
+Output: None
+*/
 void generate_global_vars(asm_backend* backend, TAC* triple)
 {
 	table_T* table = backend->table;
@@ -94,21 +117,25 @@ void generate_global_vars(asm_backend* backend, TAC* triple)
 	}
 }
 
-
+/*
+write_asm is the main code generator function that produces all the Assembly code
+Input: Symbol table, head of TAC list, target name for the file we want to produce
+*/
 void write_asm(table_T* table, TAC* head, char* targetName)
 {
-	asm_backend* backend = init_asm_backend(table, head, targetName);
+	asm_backend* backend = init_asm_backend(table, head, targetName);	// Initialize backend
 	TAC* triple = head;
 	TAC* mainStart = NULL;
 	int mainTableIndex = 0;
 	
 	unsigned int i = 0;
 
+	// Print the template for the MASM Assembly program
 	for (i = 0; i < TEMPLATE_SIZE; i++)
 		fprintf(backend->targetProg, "%s\n", asm_template[i]);
 	
+	// Generate the global variables in the .data section of the Assembly file
 	fprintf(backend->targetProg, ".data\n");
-	
 	generate_global_vars(backend, triple);
 
 	fprintf(backend->targetProg, ".code\n");
@@ -133,7 +160,8 @@ void write_asm(table_T* table, TAC* head, char* targetName)
 		generate_asm(backend);
 		backend->instruction = backend->instruction->next;
 	}
-
+	
+	// Go back the first symbol table and start generating the main function
 	backend->table->tableIndex = mainTableIndex;
 	backend->table = table;
 	backend->instruction = mainStart;
@@ -144,7 +172,7 @@ void write_asm(table_T* table, TAC* head, char* targetName)
 	}
 	else
 	{
-		printf("[ERROR]: No main file to start executing from");
+		printf("[Error]: No main file to start executing from");
 		exit(1);
 	}
 		
@@ -152,6 +180,11 @@ void write_asm(table_T* table, TAC* head, char* targetName)
 	free_registers(backend);
 }
 
+/*
+generate_asm checks for the operation in a TAC instruction and generates Assembly code for it
+Input: Backend
+Output: None
+*/
 void generate_asm(asm_backend* backend)
 {
 	register_T* reg1 = NULL;
@@ -161,12 +194,14 @@ void generate_asm(asm_backend* backend)
 	char* arg1 = NULL;
 	char* arg2 = NULL;
 
-	op = typeToString(backend->instruction->op);
+	op = typeToString(backend->instruction->op);	// Get type of operation in a string form
 
+	// Binary operations
 	if (backend->instruction->op == AST_ADD || backend->instruction->op == AST_SUB)
 	{
 		generate_binop(backend);
 	}
+	// Multiplications and divisions are different in Assembly 8086 sadly
 	else if (backend->instruction->op == AST_MUL || backend->instruction->op == AST_DIV)
 	{
 		generate_mul_div(backend);
@@ -194,6 +229,7 @@ void generate_asm(asm_backend* backend)
 			backend->table = backend->table->prev;
 			break;
 
+		// For each of the operation cases, generate fitting Assembly instructions
 		case AST_FUNCTION: generate_function(backend); break;
 		case AST_ASSIGNMENT: generate_assignment(backend); break;
 		case AST_VARIABLE_DEC: generate_var_dec(backend); break;
@@ -210,6 +246,11 @@ void generate_asm(asm_backend* backend)
 	}
 }
 
+/*
+generate_binop generates Assembly code for addition and substruction
+Input: Backend
+Output: None
+*/
 void generate_binop(asm_backend* backend)
 {
 	register_T* reg1 = NULL;
@@ -235,7 +276,7 @@ void generate_binop(asm_backend* backend)
 		return;
 	}
 
-
+	// Addition by 1 can be replaced by the instruction INC
 	if (backend->instruction->arg2->type == CHAR_P && !strcmp(backend->instruction->arg2->value, "1"))
 	{
 		reg1 = generate_move_to_register(backend, backend->instruction->arg1);
@@ -243,6 +284,7 @@ void generate_binop(asm_backend* backend)
 		backend->instruction->op == AST_ADD ? fprintf(backend->targetProg, "INC %s\n", generate_get_register_name(reg1)) : fprintf(backend->targetProg, "DEC %s\n", generate_get_register_name(reg1));
 		return;
 	}
+	// Substruction by 1 can be replaced by the instruction DEC
 	if (backend->instruction->op == AST_ADD && backend->instruction->arg1->type == CHAR_P && !strcmp(backend->instruction->arg1->value, "1"))
 	{
 		reg1 = generate_move_to_register(backend, backend->instruction->arg2);
@@ -251,7 +293,7 @@ void generate_binop(asm_backend* backend)
 		return;
 	}
 
-	reg1 = generate_move_to_register(backend, backend->instruction->arg1);
+	reg1 = generate_move_to_register(backend, backend->instruction->arg1);	// Get the first argument in a register
 
 	arg1 = generate_assign_reg(reg1, backend->instruction->arg1->value);
 	arg2 = NULL;
@@ -277,6 +319,11 @@ void generate_binop(asm_backend* backend)
 	fprintf(backend->targetProg, "%s %s, %s\n", typeToString(backend->instruction->op), arg1, arg2);
 }
 
+/*
+generate_mul_div generates Assembly code for multiplication and division
+Input: Backend
+Output: None
+*/
 void generate_mul_div(asm_backend* backend)
 {
 	register_T* reg1 = NULL;
@@ -298,7 +345,7 @@ void generate_mul_div(asm_backend* backend)
 		return;
 	}
 
-	reg1 = generate_move_to_ax(backend, backend->instruction->arg1);	
+	reg1 = generate_move_to_ax(backend, backend->instruction->arg1);	// Multiplication and division must use the AX register
 	
 	reg1->regLock = true;
 	reg2 = generate_move_to_register(backend, backend->instruction->arg2);
@@ -312,6 +359,11 @@ void generate_mul_div(asm_backend* backend)
 	descriptor_push_tac(backend->registers[REG_AX], backend->instruction);	// Now AX will hold the result value so we can reset it to that value
 }
 
+/*
+generate_condition generates Assembly code for a condition like <, == and more
+Input: Backend
+Output: None
+*/
 void generate_condition(asm_backend* backend)
 {
 	fprintf(backend->targetProg, "CMP %s, %s\n", generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg1)), generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg2)));
@@ -319,6 +371,11 @@ void generate_condition(asm_backend* backend)
 	
 }
 
+/*
+generate_if_false generates Assembly code for IFZ operations
+Input: Backend
+Output: None
+*/
 void generate_if_false(asm_backend* backend)
 {
 	char* jmpCondition = NULL;
@@ -348,16 +405,27 @@ void generate_if_false(asm_backend* backend)
 	}
 }
 
+/*
+generate_unconditional_jump generates an Assembly code for GOTO operations
+Input: Backend
+Outut: None
+*/
 void generate_unconditional_jump(asm_backend* backend)
 {
 	fprintf(backend->targetProg, "JMP %s\n", generate_get_label(backend, backend->instruction->arg1->value));
 }
 
+/*
+generate_assignment generates Assembly code for assignments
+Input: Backend
+Ouput: None
+*/
 void generate_assignment(asm_backend* backend)
 {
 	register_T* reg1 = NULL;
 	entry_T* entry = table_search_entry(backend->table, backend->instruction->arg1->value);
 
+	// Cannot change a string value
 	if (entry->dtype == DATA_STRING)
 	{
 		printf("[Error]: String '%s' redeclaration is not allowed", entry->name);
@@ -384,16 +452,24 @@ void generate_assignment(asm_backend* backend)
 	
 }
 
+/*
+generate_var_dec generates Assembly code for variable declarations
+Input: Backend
+Output: None
+*/
 void generate_var_dec(asm_backend* backend)
 {
 	if (table_search_table(backend->table, backend->instruction->arg1->value)->prev)
 	{
+		// If the second argument is a number, that means it's the amount of bytes to put in a string data
 		if (isNum(backend->instruction->arg2->value))
 		{
 			fprintf(backend->targetProg, "LOCAL %s[%s]:BYTE\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
 			backend->instruction = backend->instruction->next;
+			// MASM macro to copy a string value onto the string array
 			fprintf(backend->targetProg, "FN LSTRCPY, ADDR %s, \"%s\"\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
 		}
+		// For other types, just declare them normally
 		else
 		{
 			fprintf(backend->targetProg, "LOCAL %s:%s\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
@@ -401,6 +477,11 @@ void generate_var_dec(asm_backend* backend)
 	}
 }
 
+/*
+generate_main generates Assembly code for the main function of the source code
+Input: Backend
+Output: None
+*/
 void generate_main(asm_backend* backend)
 {
 	char* name = backend->instruction->arg1->value;
@@ -414,12 +495,18 @@ void generate_main(asm_backend* backend)
 		generate_asm(backend);
 		backend->instruction = backend->instruction->next;
 	}
+
 	generate_block_exit(backend);
 
 	fprintf(backend->targetProg, "end %s\n", name);
 }
 
-
+/*
+generate_function generates Assembly code for every function but the main one, which is a procedure that returns
+it's value in AX
+Input: Backend
+Output: None
+*/
 void generate_function(asm_backend* backend)
 {
 	size_t counter = atoi(backend->instruction->next->arg1->value);
@@ -434,7 +521,7 @@ void generate_function(asm_backend* backend)
 	// Skipping number of local vars and start of block
 	backend->instruction = backend->instruction->next->next->next;
 
-
+	// Generate all the local variables for the function
 	if (counter > 0)
 		fprintf(backend->targetProg, "%s:%s", backend->table->entries[i]->name, dataToAsm(backend->table->entries[i]->dtype));
 
@@ -445,6 +532,7 @@ void generate_function(asm_backend* backend)
 
 	fprintf(backend->targetProg, "\n");
 
+	// Loop through the function and generate code for the statements
 	while (backend->instruction->op != TOKEN_FUNC_END)
 	{
 		generate_asm(backend);
@@ -454,13 +542,23 @@ void generate_function(asm_backend* backend)
 	fprintf(backend->targetProg, "%s ENDP\n", name);
 }
 
+/*
+generate_return generates Assembly code for return operations
+Input: Backend
+Output: None
+*/
 void generate_return(asm_backend* backend)
 {
-	register_T* reg = generate_move_to_ax(backend, backend->instruction->arg1);
+	register_T* reg = generate_move_to_ax(backend, backend->instruction->arg1);		// Always return a value in AX
 
 	fprintf(backend->targetProg, "RET\n");
 }
 
+/*
+generate_func_call generates Assembly code for function calls
+Input: Backend
+Output: None
+*/
 void generate_func_call(asm_backend* backend)
 {
 	char* name = backend->instruction->arg1->value;
@@ -468,6 +566,7 @@ void generate_func_call(asm_backend* backend)
 	unsigned int i = 0;
 	size_t size = atoi(backend->instruction->arg2->value);
 	
+	// Push all the variables to the stack, from last to first
 	for (i = 0; i < size; i++)
 	{
 		backend->instruction = backend->instruction->next;
@@ -493,6 +592,11 @@ void generate_func_call(asm_backend* backend)
 	fprintf(backend->targetProg, "CALL %s\n", name);
 }
 
+/*
+generate_print generates Assembly code for the built in function print
+Input: Backend
+Output: None
+*/
 void generate_print(asm_backend* backend)
 {
 	entry_T* entry = NULL;
@@ -500,6 +604,7 @@ void generate_print(asm_backend* backend)
 	unsigned int i = 0;
 	size_t size = atoi(backend->instruction->arg2->value);
 
+	// For each pushed param, produce an Invoke StdOut instruction
 	for (i = 0; i < size; i++)
 	{
 		backend->instruction = backend->instruction->next;
@@ -507,6 +612,8 @@ void generate_print(asm_backend* backend)
 		if (backend->instruction->op == AST_PARAM && backend->instruction->arg1->type == CHAR_P)
 		{
 			entry = table_search_entry(backend->table, backend->instruction->arg1->value);
+
+			// Can't use numbers as parameters for print
 			if (!entry)
 			{
 				printf("[ERROR]: Can't use numbers as parameters for a print function\n");
@@ -514,10 +621,12 @@ void generate_print(asm_backend* backend)
 			}
 		}
 
+		// For strings being pushed, produce code
 		if (backend->instruction->op == AST_PARAM && entry->dtype == DATA_STRING)
 		{
 			fprintf(backend->targetProg, "invoke StdOut, ADDR %s\n", entry->name);
 		}
+		// Otherwise, any other data type is an error
 		else if (backend->instruction->op == AST_PARAM)
 		{
 			printf("[ERROR]: Built in function can only use strings as parameters");
@@ -573,6 +682,11 @@ register_T* generate_check_variable_in_reg(asm_backend* backend, arg_T* var)
 	return reg;
 }
 
+/*
+generate_find_free_reg finds a register that currently holds no values in it's descriptor
+Input: Backend
+Output: Free register if it exists, 0 if it doesn't
+*/
 register_T* generate_find_free_reg(asm_backend* backend)
 {
 	unsigned int i = 0;
@@ -601,7 +715,11 @@ register_T* generate_find_register(asm_backend* backend, arg_T* arg)
 	return reg;
 }
 
-
+/*
+generate_get_register uses all functions that try to find an available register to use and returns it
+Input: Backend
+Output: Available register
+*/
 register_T* generate_get_register(asm_backend* backend)
 {
 	register_T* reg = generate_find_free_reg(backend);
@@ -613,15 +731,21 @@ register_T* generate_get_register(asm_backend* backend)
 	return reg;
 }
 
+/*
+generate_move_to_register searches for an available register and produces Assembly code to 
+store a value in that register if it's not already there
+Input: Backend, Argument that contains a value we want to put in a register
+Output: Available register
+*/
 register_T* generate_move_to_register(asm_backend* backend, arg_T* arg)
 {
-	register_T* reg = generate_check_variable_in_reg(backend, arg);			// Check if variable is in a register
+	register_T* reg = generate_check_variable_in_reg(backend, arg);		// Check if variable is in a register
 	entry_T* entry = NULL;
 	char* name = NULL;
 
 	if (!reg)
 	{
-		entry = table_search_entry(backend->table, arg->value);
+		entry = table_search_entry(backend->table, arg->value);	// Search for the entry
 
 		reg = generate_get_register(backend);
 
@@ -630,11 +754,14 @@ register_T* generate_move_to_register(asm_backend* backend, arg_T* arg)
 		// Push the new variable descriptor onto the register
 		descriptor_push(reg, arg);
 
+		// If entry exists and value was not found in any register previously, store it in the found available register
 		if (entry)
 		{
 			address_push(entry, reg, ADDRESS_REG);
 			fprintf(backend->targetProg, "MOV %s, [%s]\n", name, arg->value);
 		}
+		// Otherwise, if we want to move a number to a register, check if that number is 0, if so generate a XOR
+		// instruction, and if it isn't just load it's value onto the register
 		else
 		{
 			
@@ -648,6 +775,12 @@ register_T* generate_move_to_register(asm_backend* backend, arg_T* arg)
 	return reg;
 }
 
+/*
+generate_move_new_value_to_register searches for an available register and puts the desired value in it
+but it doesn't search for a register that already contains the argument value
+Input: Backend, Argument to find register for
+Ouput: Available register
+*/
 register_T* generate_move_new_value_to_register(asm_backend* backend, arg_T* arg)
 {
 	register_T* reg = NULL;
@@ -682,16 +815,23 @@ register_T* generate_move_new_value_to_register(asm_backend* backend, arg_T* arg
 	return reg;
 }
 
+/*
+generate_move_to_ax moves a value only to to the AX register
+Input: Backend, argument to move to AX
+Output: AX register
+*/
 register_T* generate_move_to_ax(asm_backend* backend, arg_T* arg)
 {
 	register_T* reg = generate_check_variable_in_reg(backend, arg);
+	arg_T** regDescList = NULL;
+
 	unsigned int i = 0;
 
 	if (!reg)
 	{
+		// If the register found was not AX, copy AX's contents to it to free AX
 		if ((reg = generate_get_register(backend))->reg != REG_AX)
 		{
-			// Copying descriptors from available register to AX
 			for (i = 0; i < backend->registers[REG_AX]->size; i++)
 				descriptor_push(reg, backend->registers[REG_AX]->regDescList[i]);
 
@@ -708,7 +848,13 @@ register_T* generate_move_to_ax(asm_backend* backend, arg_T* arg)
 	}
 	else if (reg->reg != REG_AX)
 	{
-		fprintf(backend->targetProg, "MOV EAX, %s\n", generate_get_register_name(reg));
+		fprintf(backend->targetProg, "XCHG EAX, %s\n", generate_get_register_name(reg));
+
+		// Switch their register descriptors
+		regDescList = backend->registers[REG_AX]->regDescList;
+		backend->registers[REG_AX]->regDescList = reg->regDescList;
+		reg->regDescList = regDescList;
+		
 	}
 
 	return reg;
@@ -735,6 +881,11 @@ register_T* generate_find_lowest_values(asm_backend* backend)
 	return backend->registers[loc];
 }
 
+/*
+generate_find_used_reg finds an available register when all registers are used
+Input: Backend
+Output: Newly available register
+*/
 register_T* generate_find_used_reg(asm_backend* backend)
 {
 	unsigned int i = 0;
@@ -799,6 +950,11 @@ register_T* generate_find_used_reg(asm_backend* backend)
 	return reg;
 }
 
+/*
+generate_check_useless_value checks if the register holds a value that is going to disappear through an assignment instruction
+Input: Backend, register to search in
+Output: Returns the register if it contains useless value, NULL if it doesn't
+*/
 register_T* generate_check_useless_value(asm_backend* backend, register_T* r)
 {
 	register_T* reg = NULL;
@@ -819,7 +975,11 @@ register_T* generate_check_useless_value(asm_backend* backend, register_T* r)
 	return reg;
 }
 
-
+/*
+generate_check_variable_usabilty goes through a block to see if a value that a register holds will not be used again
+Input: Backend, register to search in
+Output: Returns the register if it contains unused values, NULL if not
+*/
 register_T* generate_check_variable_usabilty(asm_backend* backend, register_T* r)
 {
 	register_T* reg = NULL;
@@ -851,6 +1011,11 @@ register_T* generate_check_variable_usabilty(asm_backend* backend, register_T* r
 	return reg;
 }
 
+/*
+generate spill stores the actual value of a variable in it, after being changed by operations such as assignment
+Input: Backend, register to spill variables in
+Output: None
+*/
 void generate_spill(asm_backend* backend, register_T* r)
 {
 	unsigned int i = 0;
@@ -863,6 +1028,11 @@ void generate_spill(asm_backend* backend, register_T* r)
 	}
 }
 
+/*
+generate_block_exit generates Assembly code for when we exit a block
+Input: Backend
+Output: None
+*/
 void generate_block_exit(asm_backend* backend)
 {
 	unsigned int i = 0;
@@ -871,16 +1041,20 @@ void generate_block_exit(asm_backend* backend)
 
 	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
 	{
+		// For each value stored in the register, check if that value is different from what the actual variable
+		// holds, if it is, store the value in the variable before exiting
 		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
 		{
 			entry = table_search_entry(backend->table, backend->registers[i]->regDescList[i2]->value);
 
+			// For values that are live on exit
 			if (backend->registers[i]->regDescList[i2]->type == CHAR_P && !table_search_in_specific_table(backend->table, backend->registers[i]->regDescList[i2]->value)
 				&& !table_search_address(entry, backend->registers[i]->regDescList[i2]->value) && entry)
 			{
 				fprintf(backend->targetProg, "MOV [%s], %s\n", backend->registers[i]->regDescList[i2]->value, generate_get_register_name(backend->registers[i]));
 				address_push(entry, backend->registers[i]->regDescList[i2]->value, ADDRESS_VAR);
 			}
+			// We can reset the addresses for values that are not live on exit
 			else if (backend->registers[i]->regDescList[i2]->type == CHAR_P && entry && table_search_in_specific_table(backend->table, backend->registers[i]->regDescList[i2]->value))
 			{
 				address_reset(entry);
@@ -891,8 +1065,11 @@ void generate_block_exit(asm_backend* backend)
 	}
 }
 
-
-
+/*
+generate_get_label generates a label name from a TAC instruction address
+Input: Backend, label instruction
+Output: Label name
+*/
 char* generate_get_label(asm_backend* backend, TAC* label)
 {
 	unsigned int i = 0;
@@ -920,7 +1097,11 @@ char* generate_get_label(asm_backend* backend, TAC* label)
 	return name;
 }
 
-
+/*
+generate_get_register_name gets a name for a register from it's type
+Input: Register to get the name of
+Output: Register name
+*/
 char* generate_get_register_name(register_T* r)
 {
 	char* name = NULL;			
@@ -942,6 +1123,11 @@ char* generate_get_register_name(register_T* r)
 	}
 }
 
+/*
+generate_compare_arguments takes two arguments and compares them according to their types
+Input: First argument, second argument
+Output: True if they are equal, otherwise false
+*/
 bool generate_compare_arguments(arg_T* arg1, arg_T* arg2)
 {
 	bool flag = false;
@@ -958,6 +1144,11 @@ bool generate_compare_arguments(arg_T* arg1, arg_T* arg2)
 	return flag;
 }
 
+/*
+generate_remove_descriptor removes a specific address from the register descriptor
+Input: Register to remove from, address to remove
+Output: None
+*/
 void generate_remove_descriptor(register_T* reg, arg_T* desc)
 {
 	unsigned int i = 0;
@@ -980,6 +1171,11 @@ void generate_remove_descriptor(register_T* reg, arg_T* desc)
 	reg->regDescList = realloc(reg->regDescList, --reg->size * sizeof(arg_T*));
 }
 
+/*
+free_registers frees all the registers and their descriptors
+Input: Backend
+Output: None
+*/
 void free_registers(asm_backend* backend)
 {
 	unsigned int i = 0;

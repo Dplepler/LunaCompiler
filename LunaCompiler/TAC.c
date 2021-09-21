@@ -1,5 +1,10 @@
 #include "TAC.h"
 
+/*
+init_tac_list initializes a three address code list
+Input: None
+Output: Initialized list
+*/
 TAC_list* init_tac_list()
 {
 	TAC_list* list = calloc(1, sizeof(TAC_list));
@@ -7,6 +12,11 @@ TAC_list* init_tac_list()
 	return list;
 }
 
+/*
+init_arg initializes a tagged union argument with a value and type
+Input: Argument value and type
+Output: Tagged union of both the argument value and it's type
+*/
 arg_T* init_arg(void* arg, int type)
 {
 	arg_T* argument = calloc(1, sizeof(arg_T));
@@ -16,14 +26,25 @@ arg_T* init_arg(void* arg, int type)
 	return argument;
 }
 
+/*
+traversal_check_arg checks what type should the argument be, a char pointer of a three address code pointer
+Input: Node to check
+Output: What type should the argument be
+*/
 int traversal_check_arg(AST* node)
 {
+	// For variables, numbers and strings, the type is a string, for anything else, it's a three address code for some operation
 	if (node->type == AST_VARIABLE || node->type == AST_INT || node->type == AST_STRING)
 		return CHAR_P;
 	else
 		return TAC_P;
 }
 
+/*
+list_push pushes an instruction to the TAC list
+Input: List to push to, instruction to push
+Output: None
+*/
 void list_push(TAC_list* list, TAC* instruction)
 {
 	if (!list->size)
@@ -36,6 +57,11 @@ void list_push(TAC_list* list, TAC* instruction)
 	list->size++;
 }
 
+/*
+traversal_visit is the main function of the tree traversal which returns the optimized IR from the tree
+Input: Node to start visiting from (root node)
+Output: List of three address codes (IR)
+*/
 TAC_list* traversal_visit(AST* node)
 {
 	TAC_list* list = init_tac_list();
@@ -48,48 +74,62 @@ TAC_list* traversal_visit(AST* node)
 	return list;
 }
 
+/*
+traversal_build_instruction checks for the node type and builds a fitting TAC argument
+Input: Node to build an instruction from, list to push the instruction to
+Output: Instruction
+*/
 void* traversal_build_instruction(AST* node, TAC_list* list)
 {
 	void* instruction = NULL;
 	unsigned int i = 0;
 
-	if (node)
+	// If node is NULL we can exit this function
+	if (!node)
+		return;
+	
+	// Check for binary operation
+	if (node->type == AST_ADD || node->type == AST_SUB || node->type == AST_MUL || node->type == AST_DIV ||
+		node->type == AST_COMPARE)
 	{
-		if (node->type == AST_ADD || node->type == AST_SUB || node->type == AST_MUL || node->type == AST_DIV ||
-			node->type == AST_COMPARE)
+		instruction = traversal_binop(node, list);
+	}
+	else
+	{
+		// Match types and use fitting functions
+		switch (node->type)
 		{
-			instruction = traversal_binop(node, list);
-		}
-		else
-		{
-			switch (node->type)
-			{
-				case AST_PROGRAM: 
-					for (i = 0; i < node->size; i++)	// Loop through global variables
-						instruction = traversal_build_instruction(node->children[i], list);
+
+		case AST_PROGRAM: 
+			for (i = 0; i < node->size; i++)	// Loop through global variables
+				instruction = traversal_build_instruction(node->children[i], list);
 					
-					for (i = 0; i < node->functionsSize; i++)		// Loop through functions
-						instruction = traversal_build_instruction(node->function_list[i], list);
-					break;
-				case AST_FUNCTION: instruction = traversal_func_dec(node, list); break;
-				case AST_COMPOUND: traversal_statements(node, list); break;
-				case AST_ASSIGNMENT: instruction = traversal_assignment(node, list); break;
-				case AST_VARIABLE_DEC: instruction = traversal_var_dec(node, list); break;	// Variable declerations will become normal assignments
-				case AST_FUNC_CALL: instruction = traversal_function_call(node, list); break;
-				case AST_INT: instruction = (char*)node->int_value; break;
-				case AST_STRING: instruction = (char*)node->name; break;
-				case AST_VARIABLE: instruction = (char*)node->name; break;
-				case AST_IF: traversal_if(node, list); break;
-				case AST_WHILE: traversal_while(node, list); break;
-				case AST_RETURN: traversal_return(node, list); break;
+			for (i = 0; i < node->functionsSize; i++)		// Loop through functions
+				instruction = traversal_build_instruction(node->function_list[i], list);
+			break;
+		case AST_FUNCTION: instruction = traversal_func_dec(node, list); break;
+		case AST_COMPOUND: traversal_statements(node, list); break;
+		case AST_ASSIGNMENT: instruction = traversal_assignment(node, list); break;
+		case AST_VARIABLE_DEC: instruction = traversal_var_dec(node, list); break;	// Variable declerations will become normal assignments
+		case AST_FUNC_CALL: instruction = traversal_function_call(node, list); break;
+		case AST_INT: instruction = (char*)node->int_value; break;
+		case AST_STRING: instruction = (char*)node->name; break;
+		case AST_VARIABLE: instruction = (char*)node->name; break;
+		case AST_IF: traversal_if(node, list); break;
+		case AST_WHILE: traversal_while(node, list); break;
+		case AST_RETURN: traversal_return(node, list); break;
 					
-			}
 		}
 	}
-
+	
 	return instruction;
 }
 
+/*
+traversal_func_dec builds a TAC instruction for a function declaration
+Input: Function declaration node, List to push instruction to
+Output: TAC instruction that was made
+*/
 TAC* traversal_func_dec(AST* node, TAC_list* list)
 {
 	TAC* instruction = calloc(1, sizeof(TAC));
@@ -105,6 +145,7 @@ TAC* traversal_func_dec(AST* node, TAC_list* list)
 
 	list_push(list, instruction);
 
+	// We also want to push an TAC instruction that tells us how many parameters are there for the function
 	defAmount->op = AST_DEF_AMOUNT;
 	value = _itoa(node->size, (char*)calloc(1, numOfDigits(node->size) + 1), 10);
 	defAmount->arg1 = init_arg(value, CHAR_P);
@@ -113,12 +154,18 @@ TAC* traversal_func_dec(AST* node, TAC_list* list)
 
 	traversal_statements(node->function_body, list);
 
+	// Each function ends with a func end TAC instruction so we can generate code more efficiently
 	endFunc->op = TOKEN_FUNC_END;
 	list_push(list, endFunc);
 
 	return instruction;
 }
 
+/*
+traversal_var_dec builds a TAC instruction for variable declarations
+Input: Variable declaration node, list to push to
+Output: TAC instruction that was made
+*/
 TAC* traversal_var_dec(AST* node, TAC_list* list)
 {
 	TAC* instruction = calloc(1, sizeof(TAC));
@@ -169,6 +216,11 @@ TAC* traversal_binop(AST* node, TAC_list* list)
 	return instruction;
 }
 
+/*
+traversal_assignment builds a TAC instruction for variable assignments
+Input: Assignment node, list to push to
+Output: TAC instruction that was made
+*/
 TAC* traversal_assignment(AST* node, TAC_list* list)
 {
 	TAC* instruction = calloc(1, sizeof(TAC));
@@ -183,6 +235,10 @@ TAC* traversal_assignment(AST* node, TAC_list* list)
 	return instruction;
 }
 
+/*
+traversal_function_call builds a TAC instruction for function calls
+Input: Function call node, list to push to
+*/
 TAC* traversal_function_call(AST* node, TAC_list* list)
 {
 	TAC* instruction = NULL;
@@ -205,6 +261,7 @@ TAC* traversal_function_call(AST* node, TAC_list* list)
 	instruction->arg2 = init_arg(calloc(1, numOfDigits(node->size) + 1), CHAR_P);
 	_itoa(node->size, instruction->arg2->value, 10);
 
+	// The second argument of the instruction is going to be the amount of arguments passed to the function
 	list_push(list, instruction);
 
 	// Push params for function call
@@ -220,10 +277,17 @@ TAC* traversal_function_call(AST* node, TAC_list* list)
 
 }
 
+/*
+traversal_condition builds a TAC instruction for a condition
+Input: Condition node, list to push instruction to
+Output: Instruction that was made
+*/
 TAC* traversal_condition(AST* node, TAC_list* list)
 {
 	TAC* instruction = calloc(1, sizeof(TAC));
 
+	// For conditions we actually want to check if they are false rather than true to later generate
+	// a jump Assembly instruction if condition was not met
 	instruction->op = AST_IFZ;			// If zero (If false)
 
 	if (node->type_c == TOKEN_NOOP)		// If there's no relation operation (<, >, <= etc)
@@ -236,18 +300,25 @@ TAC* traversal_condition(AST* node, TAC_list* list)
 	return instruction;
 }
 
+/*
+traversal_if builds a TAC instruction for an if statement
+Input: If node, list to push instruction to
+Output: None
+*/
 void traversal_if(AST* node, TAC_list* list)
 {
-	TAC* instruction = traversal_condition(node->condition, list);
+	TAC* instruction = traversal_condition(node->condition, list);		// First push the condition of the statement
+
 	TAC* label1 = NULL;
 	TAC* label2 = calloc(1, sizeof(TAC));
 	TAC* gotoInstruction = NULL;
 
 	unsigned int i = 0;
 
-	traversal_statements(node->if_body, list);
+	traversal_statements(node->if_body, list);	// Then traversal through all the statements within the if block
 	
-	label2->op = AST_LABEL;
+	label2->op = AST_LABEL;			// Generate a label to jump to for after the if and optional else statements
+
 	
 	if (node->else_body)
 	{
@@ -258,22 +329,29 @@ void traversal_if(AST* node, TAC_list* list)
 		gotoInstruction->op = AST_GOTO;
 		list_push(list, gotoInstruction);
 
-		list_push(list, label1);
+		list_push(list, label1);	// Label to jump to if the if is false and there's an else statement
+
 		// Assign the goto of if to the start of the else
 		instruction->arg2 = init_arg(label1, TAC_P);
 
-		traversal_statements(node->else_body, list);
+		traversal_statements(node->else_body, list);	// Traversal through all the statements within the else block
 
 		list_push(list, label2);
 		gotoInstruction->arg1 = init_arg(label2, TAC_P);
 	}
 	else
 	{
+		// Label if there's no else, to jump to if the if is false
 		list_push(list, label2);
 		instruction->arg2 = init_arg(label2, TAC_P);
 	}	
 }
 
+/*
+traversal_while builds a TAC instruction for a while node
+Input: While node, list to push instruction to
+Output: None
+*/
 void traversal_while(AST* node, TAC_list* list)
 {
 	TAC* condition = NULL;
@@ -300,6 +378,11 @@ void traversal_while(AST* node, TAC_list* list)
 
 }
 
+/*
+traversal_return builds a TAC instruction for return statements
+Input: Return node, list to push instruction to
+Output: Instruction that was made
+*/
 TAC* traversal_return(AST* node, TAC_list* list)
 {
 	TAC* instruction = calloc(1, sizeof(TAC));
@@ -312,6 +395,11 @@ TAC* traversal_return(AST* node, TAC_list* list)
 	return instruction;
 }
 
+/*
+traversal_statements builds TAC instructions for a whole block
+Input: Compound node, list to push instructions to
+Output: None
+*/
 void traversal_statements(AST* node, TAC_list* list)
 {
 	unsigned int i = 0;
@@ -333,6 +421,11 @@ void traversal_statements(AST* node, TAC_list* list)
 	list_push(list, end);
 }
 
+/*
+traversal_print_instructions prints the list of instructions one by one
+Input: List of instructions to print
+Output: None
+*/
 void traversal_print_instructions(TAC_list* instructions)
 {
 	unsigned int i = 0;
@@ -344,6 +437,7 @@ void traversal_print_instructions(TAC_list* instructions)
 			printf("Operation: %s, ", typeToString(triple->op));
 		if (triple->arg1)
 		{
+			// Check if arg1 is a string or a pointer to another TAC
 			if (triple->arg1->type == CHAR_P)
 				printf("Arg1: %s, ", triple->arg1->value);
 			else
@@ -351,6 +445,7 @@ void traversal_print_instructions(TAC_list* instructions)
 		}
 		if (triple->arg2)
 		{
+			// Check if arg2 is a string or a pointer to another TAC
 			if (triple->arg2->type)
 				printf("Arg2: %s, ", triple->arg2->value);
 			else
@@ -363,6 +458,11 @@ void traversal_print_instructions(TAC_list* instructions)
 	}
 }
 
+/*
+dataToAsm takes a data type and returns the way we want to print it in the Assembly file
+Input: Data type
+Output: Assembly representation
+*/
 char* dataToAsm(int type)
 {
 	switch (type)
@@ -373,6 +473,11 @@ char* dataToAsm(int type)
 
 }
 
+/*
+traversal_optimize optimizes the TAC list that was made by the traversal
+Input: TAC instruction list
+Output: None
+*/
 void traversal_optimize(TAC_list* list)
 {
 	TAC* instruction = list->head;
@@ -385,7 +490,6 @@ void traversal_optimize(TAC_list* list)
 		// Sometimes we may create labels that jump to other labels, in that case we want the first label to instantly
 		// jump to the correct table
 
-		// TODO: implement this not only on if false statements
 		if (instruction->op == AST_IFZ)
 		{
 			label = instruction->arg2->value;
@@ -404,6 +508,7 @@ void traversal_optimize(TAC_list* list)
 				
 
 		}
+		// This is the same for ifz but this time for GOTO's that go to a label that jumps to another label
 		else if (instruction->op == AST_GOTO)
 		{
 			label = instruction->arg1->value;
@@ -426,6 +531,11 @@ void traversal_optimize(TAC_list* list)
 
 }
 
+/*
+traversal_remove_triple removes a TAC instruction from the list of instructions
+Input: List, triple to remove
+Output: None
+*/
 void traversal_remove_triple(TAC_list* list, TAC* triple)
 {
 	TAC* instruction = list->head;
@@ -434,6 +544,7 @@ void traversal_remove_triple(TAC_list* list, TAC* triple)
 	{
 		if (instruction->next == triple)
 		{
+			// Removing triple
 			instruction->next = triple->next;
 			list->size--;
 			free(triple);
@@ -443,8 +554,11 @@ void traversal_remove_triple(TAC_list* list, TAC* triple)
 	}
 }
 
-
-
+/*
+traversal_free_array frees the entire TAC list
+Input: TAC list
+Output: None
+*/
 void traversal_free_array(TAC_list* list)
 {
 	TAC* triple = list->head;
@@ -452,8 +566,8 @@ void traversal_free_array(TAC_list* list)
 
 	while (triple->next)
 	{
-
-		if (triple->op == AST_FUNC_CALL)
+		// Some special cases where we allocate a new string value rather than use already made one
+		if (triple->op == AST_FUNC_CALL || triple->op == AST_PRINT)
 		{
 			free(triple->arg2->value);
 		}
@@ -461,7 +575,10 @@ void traversal_free_array(TAC_list* list)
 		{
 			free(triple->arg1->value);
 		}
-		
+		if (triple->op == AST_VARIABLE_DEC && isNum(triple->arg2->value))
+		{
+			free(triple->arg2->value);
+		}
 		
 		if (triple->arg1)
 			free(triple->arg1);

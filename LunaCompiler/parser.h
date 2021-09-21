@@ -45,7 +45,7 @@ AST* parser_factor(parser_T* parser);
 AST* parser_int(parser_T* parser);
 AST* parser_string(parser_T* parser);
 AST* parser_id(parser_T* parser);
-AST* parser_binary_expression(parser_T* parser);
+AST* parser_compare_expressions(parser_T* parser);
 AST* parser_condition(parser_T* parser);
 AST* parser_while(parser_T* parser);
 AST* parser_return(parser_T* parser);

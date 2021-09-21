@@ -81,6 +81,7 @@ char* typeToString(int type)
 		case AST_VARIABLE_DEC: return "Declaration";
 		case AST_VARIABLE: return "Variable";
 		case AST_FUNC_CALL: return "Function Call";
+		case AST_PRINT: return "Print";
 		case AST_PARAM: return "Param";
 		case AST_IF: return "If";
 		case AST_IFZ: return "If false";
@@ -97,6 +98,11 @@ char* typeToString(int type)
 	}
 }
 
+/*
+AST_free_AST frees an entire Abstract Syntax Tree
+Input: Root of tree
+Output: None
+*/
 void AST_free_AST(AST* node)
 {
 	unsigned int i = 0;
@@ -116,7 +122,7 @@ void AST_free_AST(AST* node)
 
 		free(node);
 	}
-	else if (node->type == AST_INT || node->type == AST_VARIABLE)
+	else if (node->type == AST_INT || node->type == AST_VARIABLE || node->type == AST_STRING)
 	{
 		free(node);
 	}

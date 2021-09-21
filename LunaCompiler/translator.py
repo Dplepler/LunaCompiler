@@ -4,7 +4,7 @@ import enum
 hebrew_alphabet = "אבגדהוזחטיכלמנסעפצקרשתםןץףך"
 english_alphabet = "abcdefghijklmnopqrstuvxwyz"
 
-reserved_words = ["תדפיס", "אם", "אחרת", "בזמןש", "מספר", "תחזיר", "ראשי"]
+reserved_words = ["מחרוזת", "תדפיס", "אם", "אחרת", "בזמןש", "מספר", "תחזיר", "ראשי"]
 
 class Lexer(enum.Enum):
     data = 0
@@ -45,6 +45,8 @@ def replace_keyword(token):
         return "return"
     elif token == "ראשי":
         return "main"
+    elif token == "מחרוזת":
+        return "string"
 
 def create_id(token):
 
@@ -89,8 +91,6 @@ def translator():
     while (lexer[Lexer.index.value] < length):
         if lexer[Lexer.data.value][lexer[Lexer.index.value]] in hebrew_alphabet:
             collect_id(lexer)
-        elif lexer[Lexer.data.value][lexer[Lexer.index.value]] in english_alphabet:
-            sys.exit("[ERROR]: Cannot write in English when using Hebrew mode")
         else:
             # Skipping comments
             if lexer[Lexer.data.value][lexer[Lexer.index.value]] == '~':

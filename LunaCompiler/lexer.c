@@ -34,14 +34,19 @@ void lexer_advance(lexer_T* lexer)
 
 }
 
+/*
+lexer_peek returns the file character from the current index position of the lexer + the offset the function is given
+Input: Lexer, offset to add to current index
+Output: File character in the desired position
+*/
 char lexer_peek(lexer_T* lexer, size_t offset)
 {
-	char token = -1;
+	char lexeme = -1;
 
 	if (lexer->index + 1 < lexer->contentsLength)
-		token = lexer->contents[lexer->index + offset];
+		lexeme = lexer->contents[lexer->index + offset];
 
-	return token;
+	return lexeme;
 }
 
 /*
@@ -127,14 +132,14 @@ void lexer_skip_comments(lexer_T* lexer)
 			
 		lexer_advance(lexer);		// Skipping newline
 
-		lexer->lineIndex++;
+		lexer->lineIndex++;			// Advance newline index
 
 		lexer_skip_whitespace(lexer);
 	}
 }
 
 /*
-lexer_get_next_token gets the next token and uses other functions to initialize a value and type
+lexer_get_next_token gets the next token and initializes a value and type
 Input: Lexer
 Output: The new token
 */
@@ -194,11 +199,11 @@ token_T* lexer_get_next_token(lexer_T* lexer)
 			case '{': token = lexer_advance_current(lexer, TOKEN_LBRACE); break;
 			case '}': token = lexer_advance_current(lexer, TOKEN_RBRACE); break;
 			case '\0': token = lexer_advance_current(lexer, TOKEN_EOF);  break;
-			default: printf("Unknown lexeme: '%c' in line %s", lexer->c, lexer->lineIndex); exit(1);
+			default: printf("[Error in line %d]: Unknown lexeme: '%c'", lexer->lineIndex, lexer->c); exit(1);
 		}
 	}
 	
-	lexer_token_list_push(lexer, token);
+	lexer_token_list_push(lexer, token);	// Push token
 	return token;
 }
 
@@ -212,6 +217,7 @@ token_T* lexer_collect_id(lexer_T* lexer)
 	char* id = calloc(1, sizeof(char));
 	size_t size = 0;
 	
+	// An ID has to start with a letter but can contain numbers, letters and underscore
 	while (isalpha(lexer->c) || isdigit(lexer->c) || lexer->c == '_')
 	{
 		id = realloc(id, ++size);
@@ -219,6 +225,7 @@ token_T* lexer_collect_id(lexer_T* lexer)
 		lexer_advance(lexer);
 	}
 
+	// Terminate the string with a 0
 	id = realloc(id, size + 1);
 	id[size] = '\0';
 
@@ -236,12 +243,14 @@ token_T* lexer_collect_number(lexer_T* lexer)
 	char* num = calloc(1, sizeof(char));
 	size_t size = 0;
 
+	// Collect number
 	while (isdigit(lexer->c))
 	{
 		num = realloc(num, ++size);
 		num[size - 1] = lexer->c;
 		lexer_advance(lexer);
 	}
+	// Terminate string with a 0
 	num = realloc(num, size + 1);
 	num[size] = '\0';
 
@@ -262,8 +271,10 @@ token_T* lexer_collect_string(lexer_T* lexer)
 
 	lexer_advance(lexer);
 
+	// Collect quote
 	while (lexer->c != '"')
 	{
+		// If we reached the end of the file without getting an ending quote, raise error
 		if (lexer->c == '\0')
 		{
 			printf("[Error in line %d]: Start of string was never ended", line);
@@ -274,6 +285,7 @@ token_T* lexer_collect_string(lexer_T* lexer)
 		string[size - 1] = lexer->c;  
 		lexer_advance(lexer);
 	}
+	// Terminate string with a 0
 	string = realloc(string, size + 1);
 	string[size] = '\0';
 
@@ -282,12 +294,22 @@ token_T* lexer_collect_string(lexer_T* lexer)
 	return init_token(TOKEN_STRING, string, lexer->lineIndex);
 }
 
+/*
+lexer_token_list_push pushes a token to the list of tokens so we can free them later
+Input: Lexer, token to push
+Output: None
+*/
 void lexer_token_list_push(lexer_T* lexer, token_T* token)
 {
 	lexer->tokens = realloc(lexer->tokens, sizeof(token_T*) * ++lexer->tokensSize);
 	lexer->tokens[lexer->tokensSize - 1] = token;
 }
 
+/*
+lexer_free_tokens frees the list of tokens and their values
+Input: Lexer with the list of tokens
+Output: None
+*/
 void lexer_free_tokens(lexer_T* lexer)
 {
 	unsigned int i = 0;
