@@ -274,13 +274,30 @@ TAC* traversal_function_call(AST* node, TAC_list* list)
 	list_push(list, instruction);
 
 	// Push params for function call
-	for (i = node->size - 1; i >= 0; i--)
+	// If function call is a print, push the variables in order, otherwise, we push them in reverse to the stack 
+	// So we can pop them correctly in Assembly
+
+	if (instruction->op == AST_PRINT)
 	{
-		param = calloc(1, sizeof(TAC));
-		param->arg1 = init_arg(traversal_build_instruction(node->arguments[i], list), traversal_check_arg(node->arguments[i]));
-		param->op = AST_PARAM;
-		list_push(list, param);
+		for (i = 0; i < node->size; i++)
+		{
+			param = calloc(1, sizeof(TAC));
+			param->arg1 = init_arg(traversal_build_instruction(node->arguments[i], list), traversal_check_arg(node->arguments[i]));
+			param->op = AST_PARAM;
+			list_push(list, param);
+		}
 	}
+	else
+	{
+		for (i = node->size - 1; i >= 0; i--)
+		{
+			param = calloc(1, sizeof(TAC));
+			param->arg1 = init_arg(traversal_build_instruction(node->arguments[i], list), traversal_check_arg(node->arguments[i]));
+			param->op = AST_PARAM;
+			list_push(list, param);
+		}
+	}
+	
 	
 	return instruction;
 

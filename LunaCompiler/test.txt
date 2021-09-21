@@ -17,8 +17,8 @@ int main()
 	int m = 101;
 	int z;
 	int y;
-	string str1 = "Hello, world!";
-	string str2 = "Hi again";
+	string str1 = "Hello, world!\n";
+	string str2 = "Hi again\n";
 	
 	if (m > 100)
 	{

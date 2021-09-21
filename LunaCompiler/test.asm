@@ -27,18 +27,18 @@ LOCAL hello:DWORD
 LOCAL m:DWORD
 LOCAL z:DWORD
 LOCAL y:DWORD
-LOCAL str1[14]:BYTE
-LOCAL str2[9]:BYTE
+LOCAL str1[16]:BYTE
+LOCAL str2[11]:BYTE
 XOR EAX, EAX
 MOV EBX, 101
-fn lstrcpy, ADDR str1, "Hello, world!"
-fn lstrcpy, ADDR str2, "Hi again"
+fn lstrcpy, ADDR str1, "Hello, world!\n"
+fn lstrcpy, ADDR str2, "Hi again\n"
 MOV ECX, 100
 MOV EDX, [m]
 CMP EDX, ECX
 JLE label1
-invoke StdOut, ADDR str2
 invoke StdOut, ADDR str1
+invoke StdOut, ADDR str2
 MOV [m], EDX
 label1:
 MOV EAX, [m]

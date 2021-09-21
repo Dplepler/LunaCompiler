@@ -114,14 +114,14 @@ void assemble_file(char* filename)
     char* objectFilename = make_new_filename(filename, ".obj");
     char* exeFilename = make_new_filename(filename, ".exe");
 
-    command = calloc(1, strlen("\\masm32\\bin\\ml / c / Zd / coff %s") + strlen(filename) + 1);
-    sprintf(command, "\\masm32\\bin\\ml / c / Zd / coff %s", filename);
+    command = calloc(1, strlen("C:\\masm32\\bin\\ml /c /Zd /coff %s") + strlen(filename) + 1);
+    sprintf(command, "C:\\masm32\\bin\\ml /c /Zd /coff %s", filename);
     system(command);
 
     free(command);
 
-    command = calloc(1, strlen("\\masm32\\bin\\Link /SUBSYSTEM:CONSOLE %s") + strlen(objectFilename) + 1);
-    sprintf(command, "\\masm32\\bin\\Link /SUBSYSTEM:CONSOLE %s", objectFilename);
+    command = calloc(1, strlen("C:\\masm32\\bin\\Link /SUBSYSTEM:CONSOLE %s") + strlen(objectFilename) + 1);
+    sprintf(command, "C:\\masm32\\bin\\Link /SUBSYSTEM:CONSOLE %s", objectFilename);
     system(command);
 
     free(command);
