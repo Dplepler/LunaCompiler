@@ -82,6 +82,21 @@ void descriptor_reset(register_T* r)
 }
 
 /*
+descriptor_reset_all_registers just automatically resets all register descriptors from all general purpose registers
+Input: Backend
+Output: None
+*/
+void descriptor_reset_all_registers(asm_backend* backend)
+{
+	unsigned int i = 0;
+
+	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
+	{
+		descriptor_reset(backend->registers[i]);
+	}
+}
+
+/*
 generate_global_vars generates all the global variables of the program at the .data segment of the assembly file
 Input: Backend, head of TAC instructions
 Output: None
@@ -223,7 +238,9 @@ void generate_asm(asm_backend* backend)
 			backend->table = backend->table->nestedScopes[backend->table->tableIndex - 1];
 			break;
 
-		case TOKEN_RBRACE: generate_block_exit(backend); 
+		case TOKEN_RBRACE: generate_block_exit(backend);
+
+			descriptor_reset_all_registers(backend);
 			// When done with a block, reset the index of the table and go to the previous one break;
 			backend->table->tableIndex = 0;
 			backend->table = backend->table->prev;
@@ -236,7 +253,7 @@ void generate_asm(asm_backend* backend)
 		case AST_IFZ: generate_if_false(backend); break;
 		case AST_GOTO: generate_unconditional_jump(backend); break;
 		case AST_LABEL: fprintf(backend->targetProg, "%s:\n", generate_get_label(backend, backend->instruction)); break;
-		case AST_LOOP_LABEL: fprintf(backend->targetProg, "%s:\n", generate_get_label(backend, backend->instruction)); generate_block_exit(backend); break;
+		case AST_LOOP_LABEL: fprintf(backend->targetProg, "%s:\n", generate_get_label(backend, backend->instruction)); break;
 		case AST_FUNC_CALL: generate_func_call(backend); break;
 		case AST_PRINT: generate_print(backend); break;
 		case AST_RETURN: generate_return(backend); break;
@@ -360,15 +377,21 @@ void generate_mul_div(asm_backend* backend)
 }
 
 /*
-generate_condition generates Assembly code for a condition like <, == and more
+generate_condition generates Assembly code for a condition like <, == etc
 Input: Backend
 Output: None
 */
 void generate_condition(asm_backend* backend)
 {
+	// Generate a block exit operation because with the control flow that is occuring here,
+	// we don't know if the variables changed inside a loop or perhaps they did inside an if, but we do not want
+	// that to affect our else, so we save them
+	backend->table = backend->table->nestedScopes[backend->table->tableIndex];
+	generate_block_exit(backend);
+	backend->table = backend->table->prev;
+
 	fprintf(backend->targetProg, "CMP %s, %s\n", generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg1)), generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg2)));
-	descriptor_push_tac(generate_get_register(backend), backend->instruction);
-	
+	descriptor_push_tac(generate_get_register(backend), backend->instruction);	
 }
 
 /*
@@ -427,12 +450,16 @@ void generate_assignment(asm_backend* backend)
 
 	if (entry->dtype == DATA_STRING)
 	{
+		fprintf(backend->targetProg, "PUSHA\n");
+
 		// MASM macro to copy a string value onto the string array
-		fprintf(backend->targetProg, "fn lstrcpy, ADDR %s, \"%s\"\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
+		fprintf(backend->targetProg, "fnc lstrcpy, ADDR %s, \"%s\"\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
+
+		fprintf(backend->targetProg, "POPA\n");
 	}
 
 	// If variable equals a function call then the value will return in AX, therefore we know that the register will always be AX
-	else if (entry->dtype != DATA_STRING && backend->instruction->arg2->type == TAC_P && ((TAC*)backend->instruction->arg2->value)->op == AST_FUNC_CALL)
+	else if (backend->instruction->arg2->type == TAC_P && ((TAC*)backend->instruction->arg2->value)->op == AST_FUNC_CALL)
 	{
 		reg1 = backend->registers[REG_AX];
 	}
@@ -447,9 +474,10 @@ void generate_assignment(asm_backend* backend)
 		address_reset(entry);
 
 		address_push(entry, reg1, ADDRESS_REG);
-		descriptor_push(reg1, backend->instruction->arg1);
 
 		generate_remove_descriptor(generate_check_variable_in_reg(backend, backend->instruction->arg1), backend->instruction->arg1);
+		descriptor_push(reg1, backend->instruction->arg1);
+
 	}
 }
 
@@ -460,19 +488,24 @@ Output: None
 */
 void generate_var_dec(asm_backend* backend)
 {
-	if (table_search_table(backend->table, backend->instruction->arg1->value)->prev)
+	char* name = NULL;
+
+	if (!table_search_table(backend->table, backend->instruction->arg1->value)->prev)
+		return;
+
+	name = backend->instruction->arg1->value;
+
+	// If the second argument is a number, that means it's the amount of bytes to put in a string data
+	if (isNum(backend->instruction->arg2->value))
 	{
-		// If the second argument is a number, that means it's the amount of bytes to put in a string data
-		if (isNum(backend->instruction->arg2->value))
-		{
-			fprintf(backend->targetProg, "LOCAL %s[%s]:BYTE\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
-		}
-		// For other types, just declare them normally
-		else
-		{
-			fprintf(backend->targetProg, "LOCAL %s:%s\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
-		}
+		fprintf(backend->targetProg, "LOCAL %s[%s]:BYTE\n", name, backend->instruction->arg2->value);
 	}
+	// For other types, just declare them normally
+	else
+	{
+		fprintf(backend->targetProg, "LOCAL %s:%s\n", name, backend->instruction->arg2->value);
+	}
+	
 }
 
 /*
@@ -616,7 +649,7 @@ void generate_print(asm_backend* backend)
 	unsigned int i = 0;
 	size_t size = atoi(backend->instruction->arg2->value);
 
-	// For each pushed param, produce an Invoke StdOut instruction
+	// For each pushed param, produce an fnc StdOut instruction
 	for (i = 0; i < size; i++)
 	{
 		backend->instruction = backend->instruction->next;
@@ -624,26 +657,25 @@ void generate_print(asm_backend* backend)
 		if (backend->instruction->op == AST_PARAM && backend->instruction->arg1->type == CHAR_P)
 		{
 			entry = table_search_entry(backend->table, backend->instruction->arg1->value);
-
-			// Can't use numbers as parameters for print
-			if (!entry)
-			{
-				printf("[ERROR]: Can't use numbers as parameters for a print function\n");
-				exit(1);
-			}
 		}
 
-		// For strings being pushed, produce code
-		if (backend->instruction->op == AST_PARAM && entry->dtype == DATA_STRING)
+		fprintf(backend->targetProg, "PUSHA\n");	// fnc will change register values, save previous values before doing so
+
+		if (backend->instruction->op == AST_PARAM && !entry)
 		{
-			fprintf(backend->targetProg, "invoke StdOut, ADDR %s\n", entry->name);
+			fprintf(backend->targetProg, "fnc StdOut, \"%s\"\n", backend->instruction->arg1->value);
 		}
-		// Otherwise, any other data type is an error
-		else if (backend->instruction->op == AST_PARAM)
+		// For strings being pushed, produce fitting code
+		else if (backend->instruction->op == AST_PARAM && entry->dtype == DATA_STRING)
 		{
-			printf("[ERROR]: Built in function can only use strings as parameters");
-			exit(1);
+			fprintf(backend->targetProg, "fnc StdOut, ADDR %s\n", entry->name);
 		}
+		// For an integer, find or allocate a register to the value and print the value using the str$ macro
+		else if (backend->instruction->op == AST_PARAM && entry->dtype == DATA_INT)
+		{
+			fprintf(backend->targetProg, "fnc StdOut, str$(%s)\n", generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg1)));
+		}	
+		fprintf(backend->targetProg, "POPA\n");		// Return previous values
 	}
 }
 
@@ -1041,7 +1073,8 @@ void generate_spill(asm_backend* backend, register_T* r)
 }
 
 /*
-generate_block_exit generates Assembly code for when we exit a block
+generate_block_exit generates Assembly code for when we exit a block, it stores all later-needed values from the registers
+back to the variables
 Input: Backend
 Output: None
 */
@@ -1072,8 +1105,6 @@ void generate_block_exit(asm_backend* backend)
 				address_reset(entry);
 			}
 		}
-
-		descriptor_reset(backend->registers[i]);
 	}
 }
 

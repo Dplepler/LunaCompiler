@@ -457,6 +457,7 @@ AST* parser_factor(parser_T* parser)
 		// Parse the number or identifier
 		case TOKEN_NUMBER: node = parser_int(parser); break;
 		case TOKEN_ID: node = parser_id(parser); break;
+		case TOKEN_STRING: node = parser_string(parser); break;
 		// Case for unary operators (e.g: -6, -2 etc)
 		case TOKEN_SUB: parser->token = lexer_get_next_token(parser->lexer);  node = AST_initChildren(0, parser_factor(parser), AST_SUB); break;
 

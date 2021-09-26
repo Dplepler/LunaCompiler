@@ -620,3 +620,4 @@ void traversal_free_array(TAC_list* list)
 	free(list->last);
 	free(list);
 }
+ 

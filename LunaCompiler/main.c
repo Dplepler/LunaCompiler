@@ -14,9 +14,6 @@ int main(int argc, char** argv)
 	char* command = NULL;
 	char* fileChoice = NULL;
 	char* newFilename = make_new_filename(argv[1], ".asm");
-	
-
-	unsigned int i = 0;
 
 	char* contents = NULL;
 

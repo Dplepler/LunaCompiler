@@ -16,3 +16,4 @@ const char* asm_template[] = { ".386",
 "includelib \\masm32\\lib\\user32.lib",
 "includelib \\masm32\\lib\\kernel32.lib",
 "includelib \\masm32\\lib\\masm32.lib" };
+ 

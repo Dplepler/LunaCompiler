@@ -77,6 +77,7 @@ void generate_func_call(asm_backend* backend);
 void generate_print(asm_backend* backend);
 void generate_spill(asm_backend* backend, register_T* r);
 void descriptor_reset(register_T* r);
+void descriptor_reset_all_registers(asm_backend* backend);
 void generate_remove_descriptor(register_T* reg, arg_T* desc);
 
 register_T* generate_find_register(asm_backend* backend, arg_T* arg);

@@ -25,6 +25,7 @@ typedef struct ADDRESS_STRUCT
 typedef struct STRUCT_SYMBOL_ENTRY
 {
 	char* name;
+	char* value;
 	dtype dtype;
 
 	address_T** addressDesc;	// Address descriptor: Keeping track of which addresses keep the current value of entry

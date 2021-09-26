@@ -82,3 +82,4 @@ char* typeToString(int type);
 void AST_free_AST(AST* node);
 
 #endif
+ 

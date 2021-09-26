@@ -140,3 +140,4 @@ void myFgets(char str[], int n)
     fgets(str, n, stdin);
     str[strcspn(str, "\n")] = 0;
 }
+ 

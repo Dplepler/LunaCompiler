@@ -7,39 +7,27 @@ int foo(int x, int y) 		~ Comment comment blah blah blah
 }
 
 
-
 int bruhbruh;
 
 
 int main()
 {
-	int hello;
-	int m = 101;
-	int z;
+	int m = 10;
 	int y;
-	string str1 = "Hello, world!\n";
+	string str1 = "Hello, world\n";
 	string str2 = "Hi again\n";
 	
-	if (m > 100)
+	while (m > 0)
 	{
 		print(str1, str2);
+		m = m - 1;
 	}
 	
-	if (m)
+	m = 10;
+	
+	if (m != 0)
 	{
-		while (m > 3)
-		{
-			y = y * y;
-			m = m - 1;
-		}
-		if (m < 3)
-		{
-			m = y;
-		}
-		else
-		{
-			y = m;
-		}
+		y = m + m;
 	}
 	else
 	{
@@ -47,12 +35,10 @@ int main()
 	}
 	
 	
-	
-
+	print(y);
 	m = foo(m + y, y);
 	
 	y = m - 5;
-	~ return z + y;
-
-
+	
+	return 0;
 }
