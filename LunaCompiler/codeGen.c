@@ -43,22 +43,24 @@ void descriptor_push(register_T* reg, arg_T* descriptor)
 
 /*
 descriptor_push_tac pushes a temporary into the register
-Input: Desired register, instruction to push
+Input: Backend, desired register, instruction to push
 Output: None
 */
-void descriptor_push_tac(register_T* reg, TAC* instruction)
+void descriptor_push_tac(asm_backend* backend, register_T* reg, TAC* instruction)
 {
-	descriptor_reset(reg);		
+	descriptor_reset(backend, reg);		
 	descriptor_push(reg, init_arg(instruction, TEMP_P));
 }
 
 /*
 descriptor_reset resets the register descriptor to not include any arguments
-Input: Register to reset
+Input: Backend, register to reset
 Output: None
 */
-void descriptor_reset(register_T* r)
+void descriptor_reset(asm_backend* backend, register_T* r)
 {
+	entry_T* entry = NULL;
+
 	unsigned int i = 0;
 
 	// Free all arguments
@@ -69,6 +71,10 @@ void descriptor_reset(register_T* r)
 			free(r->regDescList[i]);
 			r->regDescList[i]->value = NULL;
 			r->regDescList[i] = NULL;
+		}
+		else if (r->regDescList[i]->type == CHAR_P && (entry = table_search_entry(backend->table, r->regDescList[i]->value)))
+		{
+			address_remove_register(entry, r);
 		}
 	}
 
@@ -92,7 +98,7 @@ void descriptor_reset_all_registers(asm_backend* backend)
 
 	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
 	{
-		descriptor_reset(backend->registers[i]);
+		descriptor_reset(backend, backend->registers[i]);
 	}
 }
 
@@ -252,8 +258,8 @@ void generate_asm(asm_backend* backend)
 		case AST_VARIABLE_DEC: generate_var_dec(backend); break;
 		case AST_IFZ: generate_if_false(backend); break;
 		case AST_GOTO: generate_unconditional_jump(backend); break;
-		case AST_LABEL: fprintf(backend->targetProg, "%s:\n", generate_get_label(backend, backend->instruction)); break;
-		case AST_LOOP_LABEL: fprintf(backend->targetProg, "%s:\n", generate_get_label(backend, backend->instruction)); break;
+		case AST_LABEL: fprintf(backend->targetProg, "%s:\n", generate_get_label(backend, backend->instruction)); descriptor_reset_all_registers(backend); break;
+		case AST_LOOP_LABEL: fprintf(backend->targetProg, "%s:\n", generate_get_label(backend, backend->instruction)); descriptor_reset_all_registers(backend); break;
 		case AST_FUNC_CALL: generate_func_call(backend); break;
 		case AST_PRINT: generate_print(backend); break;
 		case AST_RETURN: generate_return(backend); break;
@@ -284,12 +290,12 @@ void generate_binop(asm_backend* backend)
 	// If the operation is add or sub by 0 then we can do nothing 
 	if (backend->instruction->arg2->type == CHAR_P && !strcmp(backend->instruction->arg2->value, "0"))
 	{
-		descriptor_push_tac(generate_move_to_register(backend, backend->instruction->arg1), backend->instruction);
+		descriptor_push_tac(backend, generate_move_to_register(backend, backend->instruction->arg1), backend->instruction);
 		return;
 	}
 	if (backend->instruction->op == AST_ADD && backend->instruction->arg1->type == CHAR_P && !strcmp(backend->instruction->arg1->value, "0"))
 	{
-		descriptor_push_tac(generate_move_to_register(backend, backend->instruction->arg2), backend->instruction);
+		descriptor_push_tac(backend, generate_move_to_register(backend, backend->instruction->arg2), backend->instruction);
 		return;
 	}
 
@@ -297,7 +303,7 @@ void generate_binop(asm_backend* backend)
 	if (backend->instruction->arg2->type == CHAR_P && !strcmp(backend->instruction->arg2->value, "1"))
 	{
 		reg1 = generate_move_to_register(backend, backend->instruction->arg1);
-		descriptor_push_tac(reg1, backend->instruction);
+		descriptor_push_tac(backend, reg1, backend->instruction);
 		backend->instruction->op == AST_ADD ? fprintf(backend->targetProg, "INC %s\n", generate_get_register_name(reg1)) : fprintf(backend->targetProg, "DEC %s\n", generate_get_register_name(reg1));
 		return;
 	}
@@ -305,7 +311,7 @@ void generate_binop(asm_backend* backend)
 	if (backend->instruction->op == AST_ADD && backend->instruction->arg1->type == CHAR_P && !strcmp(backend->instruction->arg1->value, "1"))
 	{
 		reg1 = generate_move_to_register(backend, backend->instruction->arg2);
-		descriptor_push_tac(reg1, backend->instruction);
+		descriptor_push_tac(backend, reg1, backend->instruction);
 		fprintf(backend->targetProg, "INC %s\n", generate_get_register_name(reg1));
 		return;
 	}
@@ -331,7 +337,7 @@ void generate_binop(asm_backend* backend)
 		arg2 = backend->instruction->arg2->value;
 	}
 
-	descriptor_push_tac(reg1, backend->instruction);			// We treat the whole TAC as a temporary variable that is now in the register
+	descriptor_push_tac(backend, reg1, backend->instruction);			// We treat the whole TAC as a temporary variable that is now in the register
 
 	fprintf(backend->targetProg, "%s %s, %s\n", typeToString(backend->instruction->op), arg1, arg2);
 }
@@ -353,12 +359,12 @@ void generate_mul_div(asm_backend* backend)
 	// Also if the second argument is 1 and the operation is division we can do nothing as well for the same reason
 	if (backend->instruction->arg2->type == CHAR_P && !strcmp(backend->instruction->arg2->value, "1"))
 	{
-		descriptor_push_tac(generate_move_to_register(backend, backend->instruction->arg1), backend->instruction);	
+		descriptor_push_tac(backend, generate_move_to_register(backend, backend->instruction->arg1), backend->instruction);	
 		return;
 	}
 	if (backend->instruction->op == AST_MUL && backend->instruction->arg1->type == CHAR_P && !strcmp(backend->instruction->arg1->value, "1"))
 	{
-		descriptor_push_tac(generate_move_to_register(backend, backend->instruction->arg2), backend->instruction);	
+		descriptor_push_tac(backend, generate_move_to_register(backend, backend->instruction->arg2), backend->instruction);	
 		return;
 	}
 
@@ -373,7 +379,7 @@ void generate_mul_div(asm_backend* backend)
 	else
 		fprintf(backend->targetProg, "DIV %s\n", generate_get_register_name(reg2));
 
-	descriptor_push_tac(backend->registers[REG_AX], backend->instruction);	// Now AX will hold the result value so we can reset it to that value
+	descriptor_push_tac(backend, backend->registers[REG_AX], backend->instruction);	// Now AX will hold the result value so we can reset it to that value
 }
 
 /*
@@ -390,8 +396,9 @@ void generate_condition(asm_backend* backend)
 	generate_block_exit(backend);
 	backend->table = backend->table->prev;
 
+
 	fprintf(backend->targetProg, "CMP %s, %s\n", generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg1)), generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg2)));
-	descriptor_push_tac(generate_get_register(backend), backend->instruction);	
+	descriptor_push_tac(backend, generate_get_register(backend), backend->instruction);	
 }
 
 /*
@@ -506,7 +513,7 @@ void generate_var_dec(asm_backend* backend)
 		fprintf(backend->targetProg, "LOCAL %s:%s\n", name, backend->instruction->arg2->value);
 	}
 	
-}
+}  
 
 /*
 generate_main generates Assembly code for the main function of the source code
@@ -534,9 +541,15 @@ Output: None
 void generate_function(asm_backend* backend)
 {
 	TAC* triple = NULL;
+	arg_T* initValue = NULL;
+	entry_T* entry = NULL;
 
+	size_t variables = 0;
 	size_t counter = atoi(backend->instruction->next->arg1->value);
+
 	char* name = backend->instruction->arg1->value;
+	char* varName = NULL;
+
 	unsigned int i = 0;
 
 	fprintf(backend->targetProg, "%s PROC ", name);	// Generating function label
@@ -560,18 +573,44 @@ void generate_function(asm_backend* backend)
 
 	fprintf(backend->targetProg, "\n");
 
-	//generate_asm(backend);		// For the opening braces
-
 	// First generate only the variable declarations
 	while (backend->instruction->op != TOKEN_FUNC_END)
 	{
 		if (backend->instruction->op == AST_VARIABLE_DEC)
 		{
+			variables++;
 			generate_asm(backend);
 		}
 
 		backend->instruction = backend->instruction->next;
 	}
+
+	backend->instruction = triple;
+
+	
+	for (i = 0; i < variables; i++)
+	{
+
+		if (backend->instruction->op == AST_ASSIGNMENT)
+		{
+			entry = table_search_entry(backend->table, backend->instruction->arg1->value);
+			if (entry->dtype != DATA_STRING)
+			{
+				varName = backend->instruction->arg1->value;
+				initValue = backend->instruction->arg2;
+
+				generate_asm(backend);
+				fprintf(backend->targetProg, "MOV [%s], %s\n", varName, generate_get_register_name(generate_find_register(backend, initValue)));
+			}
+		}
+		else
+		{
+			i--;
+		}
+				
+		backend->instruction = backend->instruction->next;
+	}
+	
 
 	backend->instruction = triple;
 
@@ -647,7 +686,26 @@ void generate_print(asm_backend* backend)
 	entry_T* entry = NULL;
 
 	unsigned int i = 0;
+	unsigned int i2 = 0;
+
 	size_t size = atoi(backend->instruction->arg2->value);
+
+	fprintf(backend->targetProg, "PUSHA\n");	// fnc will change register values, save previous values before doing so
+
+	arg_T** regDescListList[GENERAL_REG_AMOUNT];
+	size_t regDescListSizes[GENERAL_REG_AMOUNT];
+
+	// Save the register values we will change because of the macros
+	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
+	{
+		regDescListList[i] = calloc(1, sizeof(arg_T*));
+		regDescListSizes[i] = backend->registers[i]->size;
+
+		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
+		{
+			regDescListList[i][i2] = backend->registers[i]->regDescList[i2];
+		}
+	}
 
 	// For each pushed param, produce an fnc StdOut instruction
 	for (i = 0; i < size; i++)
@@ -659,11 +717,13 @@ void generate_print(asm_backend* backend)
 			entry = table_search_entry(backend->table, backend->instruction->arg1->value);
 		}
 
-		fprintf(backend->targetProg, "PUSHA\n");	// fnc will change register values, save previous values before doing so
-
+		// For data literals we just want to print them as is
 		if (backend->instruction->op == AST_PARAM && !entry)
 		{
-			fprintf(backend->targetProg, "fnc StdOut, \"%s\"\n", backend->instruction->arg1->value);
+			if (!(backend->instruction->arg1->type == TAC_P || backend->instruction->arg1->type == TEMP_P))
+				fprintf(backend->targetProg, "fnc StdOut, \"%s\"\n", backend->instruction->arg1->value);
+			else
+				fprintf(backend->targetProg, "fnc StdOut, str$(%s)\n", generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg1)));
 		}
 		// For strings being pushed, produce fitting code
 		else if (backend->instruction->op == AST_PARAM && entry->dtype == DATA_STRING)
@@ -671,12 +731,33 @@ void generate_print(asm_backend* backend)
 			fprintf(backend->targetProg, "fnc StdOut, ADDR %s\n", entry->name);
 		}
 		// For an integer, find or allocate a register to the value and print the value using the str$ macro
+		// also for temporeries
 		else if (backend->instruction->op == AST_PARAM && entry->dtype == DATA_INT)
 		{
 			fprintf(backend->targetProg, "fnc StdOut, str$(%s)\n", generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg1)));
-		}	
-		fprintf(backend->targetProg, "POPA\n");		// Return previous values
+		}
+		else
+		{
+			generate_asm(backend);
+			i--;
+		}
 	}
+
+	// Return back the values before the PUSHA instruction
+	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
+	{
+		backend->registers[i]->size = regDescListSizes[i];
+
+		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
+		{
+			backend->registers[i]->regDescList[i2] = regDescListList[i][i2];
+		}
+
+		free(regDescListList[i]);
+	}
+
+	descriptor_reset_all_registers(backend);
+	fprintf(backend->targetProg, "POPA\n");		// Return previous values to registers in Assembly code
 }
 
 /*
@@ -806,7 +887,7 @@ register_T* generate_move_to_register(asm_backend* backend, arg_T* arg)
 		}
 		// Otherwise, if we want to move a number to a register, check if that number is 0, if so generate a XOR
 		// instruction, and if it isn't just load it's value onto the register
-		else
+		else if (arg->type == CHAR_P)
 		{
 			
 			if (!strcmp(arg->value, "0"))
@@ -988,7 +1069,7 @@ register_T* generate_find_used_reg(asm_backend* backend)
 	// Now that the variable is in a new register, we need to free the previous values stored in it and reset the size
 	if (reg->regDescList)
 	{
-		descriptor_reset(reg);
+		descriptor_reset(backend, reg);
 	}
 	
 	return reg;
@@ -1097,6 +1178,7 @@ void generate_block_exit(asm_backend* backend)
 				&& !table_search_address(entry, backend->registers[i]->regDescList[i2]->value) && entry)
 			{
 				fprintf(backend->targetProg, "MOV [%s], %s\n", backend->registers[i]->regDescList[i2]->value, generate_get_register_name(backend->registers[i]));
+				address_remove_registers(entry);
 				address_push(entry, backend->registers[i]->regDescList[i2]->value, ADDRESS_VAR);
 			}
 			// We can reset the addresses for values that are not live on exit
@@ -1214,6 +1296,7 @@ void generate_remove_descriptor(register_T* reg, arg_T* desc)
 	reg->regDescList = realloc(reg->regDescList, --reg->size * sizeof(arg_T*));
 }
 
+
 /*
 free_registers frees all the registers and their descriptors
 Input: Backend
@@ -1225,7 +1308,7 @@ void free_registers(asm_backend* backend)
 
 	for (i = 0; i < REG_AMOUNT; i++)
 	{	
-		descriptor_reset(backend->registers[i]);
+		descriptor_reset(backend, backend->registers[i]);
 		free(backend->registers[i]);
 	}
 	if (backend->labelList)

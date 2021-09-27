@@ -13,11 +13,11 @@ includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\masm32.lib
 .data
 .code
-main PROC a:DWORD, b:DWORD
+main PROC 
 PUSHA
 fnc StdOut, "Hello"
 POPA
-MOV EAX, 1
+XOR EAX, EAX
 RET
 main ENDP
 main_start:

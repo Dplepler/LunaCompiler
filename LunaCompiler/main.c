@@ -17,6 +17,7 @@ int main(int argc, char** argv)
 
 	char* contents = NULL;
 
+
 	// Raise error if user didn't input filename or compile mode
 	if (!argv[1] || !argv[2])
 	{

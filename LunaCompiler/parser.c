@@ -405,6 +405,11 @@ AST* parser_expression(parser_T* parser)
 			parser->token = lexer_get_next_token(parser->lexer);		// Skip Add/Minus signs
 			node = AST_initChildren(node, parser_term(parser), AST_SUB);
 		}	
+		if (node->rightChild->type == AST_STRING || node->leftChild->type == AST_STRING)
+		{
+			printf("[Error in line %d]: Cannot use strings in binary operations", parser->lexer->lineIndex);
+			exit(1);
+		}
 	}
 
 	return node;
@@ -430,6 +435,11 @@ AST* parser_term(parser_T* parser)
 		{
 			parser->token = lexer_get_next_token(parser->lexer);		// Skip multiplication/division signs
 			node = AST_initChildren(node, parser_factor(parser), AST_DIV);
+		}
+		if (node->rightChild->type == AST_STRING || node->leftChild->type == AST_STRING)
+		{
+			printf("[Error in line %d]: Cannot use strings in binary operations", parser->lexer->lineIndex);
+			exit(1);
 		}
 	}
 

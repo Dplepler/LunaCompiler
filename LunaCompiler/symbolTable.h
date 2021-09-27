@@ -61,6 +61,8 @@ bool table_search_address(entry_T* entry, char* name);
 
 void address_push(entry_T* entry, void* location, int type);
 void address_reset(entry_T* entry);
+void address_remove_registers(entry_T* entry);
+void address_remove_register(entry_T* entry, void* reg);
 void table_add_entry(table_T* table, char* name, int type);
 void table_print_table(table_T* table, int level);
 void table_free_table(table_T* table);

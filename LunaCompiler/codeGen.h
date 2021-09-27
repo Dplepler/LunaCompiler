@@ -60,7 +60,7 @@ void write_asm(table_T* table, TAC* head, char* targetName);
 void generate_asm(asm_backend* backend);
 void generate_global_vars(asm_backend* backend, TAC* triple);
 void descriptor_push(register_T* reg, arg_T* descriptor);
-void descriptor_push_tac(register_T* reg, TAC* instruction);
+void descriptor_push_tac(asm_backend* backend, register_T* reg, TAC* instruction);
 void free_registers(asm_backend* registers_list);
 void generate_var_dec(asm_backend* backend);
 void generate_binop(asm_backend* backend);
@@ -76,7 +76,7 @@ void generate_return(asm_backend* backend);
 void generate_func_call(asm_backend* backend);
 void generate_print(asm_backend* backend);
 void generate_spill(asm_backend* backend, register_T* r);
-void descriptor_reset(register_T* r);
+void descriptor_reset(asm_backend* backend, register_T* r);
 void descriptor_reset_all_registers(asm_backend* backend);
 void generate_remove_descriptor(register_T* reg, arg_T* desc);
 

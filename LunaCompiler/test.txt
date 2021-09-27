@@ -12,20 +12,30 @@ int bruhbruh;
 
 int main()
 {
-	int m = 10;
+
+	
+	
+	int m;
 	int y;
+	int counter;
 	string str1 = "Hello, world\n";
 	string str2 = "Hi again\n";
 	
-	while (m > 0)
+	while (m < 10)
 	{
-		print(str1, str2);
-		m = m - 1;
+		while (y < 10)
+		{
+		    print(counter, "\n");
+			counter = counter + 1;
+			y = y + 1;
+		}
+		m = m + 1;
+		y = 0;
 	}
 	
 	m = 10;
 	
-	if (m != 0)
+	if (m == 10)
 	{
 		y = m + m;
 	}
@@ -36,9 +46,6 @@ int main()
 	
 	
 	print(y);
-	m = foo(m + y, y);
-	
-	y = m - 5;
 	
 	return 0;
 }

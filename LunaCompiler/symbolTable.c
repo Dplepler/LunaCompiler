@@ -40,19 +40,69 @@ void address_reset(entry_T* entry)
 {
 	unsigned int i = 0;
 
-	if (entry->addressDesc)
+	if (!entry->addressDesc)
+		return;
+
+	// Go through and free all addresses stored in the descriptor
+	for (i = 0; i < entry->size; i++)
 	{
-		// Go through and free all addresses stored in the descriptor
-		for (i = 0; i < entry->size; i++)
+		free(entry->addressDesc[i]);
+		entry->addressDesc[i] = NULL;
+	}
+			
+	// Free descriptor
+	free(entry->addressDesc);
+	entry->addressDesc = NULL;
+	entry->size = 0;
+	
+}
+
+/*
+address_remove_registers removes all descriptors of type register from an entry
+Input: Entry to remove registers from
+Output: None
+*/
+void address_remove_registers(entry_T* entry)
+{
+	unsigned int i = 0;
+	size_t size = entry->size;
+
+	if (!entry->addressDesc)
+		return;
+
+	for (i = 0; i < size; i++)
+	{
+		if (entry->addressDesc[i]->type == ADDRESS_REG)
 		{
+			entry->size--;
 			free(entry->addressDesc[i]);
 			entry->addressDesc[i] = NULL;
 		}
-			
-		// Free descriptor
-		free(entry->addressDesc);
-		entry->addressDesc = NULL;
-		entry->size = 0;
+	}
+}
+
+/*
+address_remove_register removes a specific register from a variable descriptor
+Input: Entry to remove register from, address of register to remove
+Output: None
+*/
+void address_remove_register(entry_T* entry, void* reg)
+{
+	unsigned int i = 0;
+	size_t size = entry->size;
+
+	if (!entry->addressDesc)
+		return;
+
+	for (i = 0; i < size; i++)
+	{
+		if (entry->addressDesc[i]->type == ADDRESS_REG && entry->addressDesc[i]->address == reg)
+		{
+			entry->size--;
+			free(entry->addressDesc[i]);
+			entry->addressDesc[i] = NULL;
+			break;
+		}
 	}
 }
 
