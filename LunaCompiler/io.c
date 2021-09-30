@@ -127,6 +127,9 @@ void assemble_file(char* filename)
     free(command);
     //system("cls");
     system(exeFilename);
+
+    free(objectFilename);
+    free(exeFilename);
 }
 
 

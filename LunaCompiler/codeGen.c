@@ -698,7 +698,7 @@ void generate_print(asm_backend* backend)
 	// Save the register values we will change because of the macros
 	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
 	{
-		regDescListList[i] = calloc(1, sizeof(arg_T*));
+		regDescListList[i] = calloc(1, sizeof(arg_T));
 		regDescListSizes[i] = backend->registers[i]->size;
 
 		for (i2 = 0; i2 < backend->registers[i]->size; i2++)

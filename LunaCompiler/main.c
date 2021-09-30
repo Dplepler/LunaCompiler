@@ -13,7 +13,7 @@ int main(int argc, char** argv)
 
 	char* command = NULL;
 	char* fileChoice = NULL;
-	char* newFilename = make_new_filename(argv[1], ".asm");
+	char* newFilename = NULL;
 
 	char* contents = NULL;
 
@@ -24,10 +24,15 @@ int main(int argc, char** argv)
 		printf("[Error]: Some file input is missing");
 		exit(1);
 	}
+
+	newFilename = make_new_filename(argv[1], ".asm");	// Set output filename to be the code filename with a .asm extention
 	
 	// If user wants to compile in Hebrew, run the translator and replace the file with the translated file
 	if (!strcmp(argv[2], "-h"))
 	{
+		// Allocate a string to run the python translator file
+		// The translator takes a source code and replaces Hebrew keywords with English keywords
+		// NOTE: Hebrew words that are not reserved get translated to a gibberish English word
 		command = calloc(1, strlen("python translator.py ") + strlen(argv[1]) + 1);
 		sprintf(command, "python translator.py %s", argv[1]);
 		system(command);
