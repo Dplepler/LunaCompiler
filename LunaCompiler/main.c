@@ -86,7 +86,7 @@ int main(int argc, char** argv)
 
 		// If we made a new file for the translated version from Hebrew, delete that file
 		if (!strcmp(argv[2], "-h"))
-			remove(fileChoice);
+			//remove(fileChoice);
 
 		free(newFilename);
 		free(fileChoice);

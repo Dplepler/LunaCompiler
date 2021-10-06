@@ -368,17 +368,32 @@ void generate_mul_div(asm_backend* backend)
 		return;
 	}
 
+	backend->registers[REG_DX]->regLock = true;		// Do not temper with DX since it can hold a carry 
+
 	reg1 = generate_move_to_ax(backend, backend->instruction->arg1);	// Multiplication and division must use the AX register
 	
 	reg1->regLock = true;
 	reg2 = generate_move_to_register(backend, backend->instruction->arg2);
 	reg1->regLock = false;
+	
+	// Save the value of EDX before xoring it
+	// NOTE: We have to reset the value of EDX since it's value will become the carry of the operation
+	fprintf(backend->targetProg, "PUSH EDX\n");
+	fprintf(backend->targetProg, "XOR EDX, EDX\n");
 
 	if (backend->instruction->op == AST_MUL)
 		fprintf(backend->targetProg, "MUL %s\n", generate_get_register_name(reg2));
 	else
+	{
+		// Xoring EDX is necessary because in division we divide EDX:EAX with the other register which means any 
+		// value in EDX can ruin our calculations
+		fprintf(backend->targetProg, "PUSH EDX\n");
+		fprintf(backend->targetProg, "XOR EDX, EDX\n");
 		fprintf(backend->targetProg, "DIV %s\n", generate_get_register_name(reg2));
+		fprintf(backend->targetProg, "POP EDX\n");
+	}
 
+	backend->registers[REG_DX]->regLock = false;		// Remove lock on EDX after we're done
 	descriptor_push_tac(backend, backend->registers[REG_AX], backend->instruction);	// Now AX will hold the result value so we can reset it to that value
 }
 
@@ -389,16 +404,25 @@ Output: None
 */
 void generate_condition(asm_backend* backend)
 {
+	register_T* reg1 = NULL;
+	register_T* reg2 = NULL;
+
+	reg1 = generate_move_to_register(backend, backend->instruction->arg1);
+
+	reg1->regLock = true;
+	reg2 = generate_move_to_register(backend, backend->instruction->arg2);
+	reg1->regLock = false;
+
 	// Generate a block exit operation because with the control flow that is occuring here,
-	// we don't know if the variables changed inside a loop or perhaps they did inside an if, but we do not want
-	// that to affect our else, so we save them
+	// we don't know if the variables changed inside a loop. For if statements we don't want the
+	// change to affect our else statement
 	backend->table = backend->table->nestedScopes[backend->table->tableIndex];
 	generate_block_exit(backend);
 	backend->table = backend->table->prev;
 
 
-	fprintf(backend->targetProg, "CMP %s, %s\n", generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg1)), generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg2)));
-	descriptor_push_tac(backend, generate_get_register(backend), backend->instruction);	
+	fprintf(backend->targetProg, "CMP %s, %s\n", generate_get_register_name(reg1), generate_get_register_name(reg2));
+	descriptor_push_tac(backend, generate_get_register(backend), backend->instruction);
 }
 
 /*
@@ -453,6 +477,7 @@ Ouput: None
 void generate_assignment(asm_backend* backend)
 {
 	register_T* reg1 = NULL;
+	register_T* reg2 = NULL;
 	entry_T* entry = table_search_entry(backend->table, backend->instruction->arg1->value);
 
 	if (entry->dtype == DATA_STRING)
@@ -482,7 +507,12 @@ void generate_assignment(asm_backend* backend)
 
 		address_push(entry, reg1, ADDRESS_REG);
 
-		generate_remove_descriptor(generate_check_variable_in_reg(backend, backend->instruction->arg1), backend->instruction->arg1);
+		// Remove variable from all registers that held it's value
+		while ((reg2 = generate_check_variable_in_reg(backend, backend->instruction->arg1)))
+		{
+			generate_remove_descriptor(reg2, backend->instruction->arg1);
+		}
+		
 		descriptor_push(reg1, backend->instruction->arg1);
 
 	}
@@ -578,7 +608,9 @@ void generate_function(asm_backend* backend)
 	{
 		if (backend->instruction->op == AST_VARIABLE_DEC)
 		{
-			variables++;
+			if (table_search_entry(backend->table, backend->instruction->arg1->value)->dtype != DATA_STRING)
+				variables++;
+
 			generate_asm(backend);
 		}
 
@@ -591,17 +623,16 @@ void generate_function(asm_backend* backend)
 	for (i = 0; i < variables; i++)
 	{
 
-		if (backend->instruction->op == AST_ASSIGNMENT)
+		if (backend->instruction->op == AST_ASSIGNMENT 
+			&& table_search_entry(backend->table, backend->instruction->arg1->value)->dtype != DATA_STRING)
 		{
-			entry = table_search_entry(backend->table, backend->instruction->arg1->value);
-			if (entry->dtype != DATA_STRING)
-			{
-				varName = backend->instruction->arg1->value;
-				initValue = backend->instruction->arg2;
 
-				generate_asm(backend);
-				fprintf(backend->targetProg, "MOV [%s], %s\n", varName, generate_get_register_name(generate_find_register(backend, initValue)));
-			}
+			varName = backend->instruction->arg1->value;
+			initValue = backend->instruction->arg2;
+
+			generate_asm(backend);
+			fprintf(backend->targetProg, "MOV [%s], %s\n", varName, generate_get_register_name(generate_find_register(backend, initValue)));
+			
 		}
 		else
 		{
@@ -693,13 +724,11 @@ void generate_print(asm_backend* backend)
 	fprintf(backend->targetProg, "PUSHA\n");	// fnc will change register values, save previous values before doing so
 
 	arg_T** regDescListList[GENERAL_REG_AMOUNT];
-	size_t regDescListSizes[GENERAL_REG_AMOUNT];
 
 	// Save the register values we will change because of the macros
 	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
 	{
 		regDescListList[i] = calloc(1, sizeof(arg_T));
-		regDescListSizes[i] = backend->registers[i]->size;
 
 		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
 		{
@@ -744,19 +773,18 @@ void generate_print(asm_backend* backend)
 	}
 
 	// Return back the values before the PUSHA instruction
+	descriptor_reset_all_registers(backend);
+
 	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
 	{
-		backend->registers[i]->size = regDescListSizes[i];
-
 		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
 		{
-			backend->registers[i]->regDescList[i2] = regDescListList[i][i2];
+			descriptor_push(backend->registers[i], regDescListList[i][i2]);
 		}
 
 		free(regDescListList[i]);
 	}
 
-	descriptor_reset_all_registers(backend);
 	fprintf(backend->targetProg, "POPA\n");		// Return previous values to registers in Assembly code
 }
 
@@ -819,7 +847,7 @@ register_T* generate_find_free_reg(asm_backend* backend)
 
 	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
-		if (!backend->registers[i]->size)
+		if (!backend->registers[i]->size && !backend->registers[i]->regLock)
 			reg = backend->registers[i];
 	}
 

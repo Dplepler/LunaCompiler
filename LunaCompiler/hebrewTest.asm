@@ -14,8 +14,55 @@ includelib \masm32\lib\masm32.lib
 .data
 .code
 main PROC 
+LOCAL btfk_pflm[14]:BYTE
+LOCAL a:DWORD
+LOCAL b:DWORD
+XOR EAX, EAX
+MOV [a], EAX
+MOV EBX, 5
+MOV [b], EBX
 PUSHA
-fnc StdOut, "Hello"
+fnc lstrcpy, ADDR btfk_pflm, "Hello, World!"
+POPA
+label1:
+MOV EAX, [a]
+MOV EBX, 10
+MOV [a], EAX
+CMP EAX, EBX
+JG label2
+PUSH EDX
+XOR EDX, EDX
+MUL EAX
+MOV EBX, 81
+PUSH EDX
+XOR EDX, EDX
+PUSH EDX
+XOR EDX, EDX
+DIV EBX
+POP EDX
+MOV EDX, 1
+MOV [b], EAX
+CMP EAX, EDX
+JNE label3
+PUSHA
+fnc StdOut, str$(EAX)
+fnc StdOut, "\n"
+POPA
+JMP label4
+label3:
+PUSHA
+MOV EAX, [a]
+fnc StdOut, str$(EAX)
+fnc StdOut, "Weird\n"
+POPA
+label4:
+MOV EAX, [a]
+INC EAX
+MOV [a], EAX
+JMP label1
+label2:
+PUSHA
+fnc StdOut, ADDR btfk_pflm
 POPA
 XOR EAX, EAX
 RET
