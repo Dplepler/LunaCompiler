@@ -56,14 +56,17 @@ Output: Next token
 */
 token_T* lexer_token_peek(lexer_T* lexer, unsigned int offset)
 {
-	unsigned int saveLoc = lexer->index;
-	unsigned int i = 0;
 	token_T* token = NULL;
+
+	unsigned int saveLoc = lexer->index;
+	unsigned int saveLine = lexer->lineIndex;
+	unsigned int i = 0;
 
 	for (i = 0; i < offset; i++)
 		token = lexer_get_next_token(lexer);
 
 	lexer->index = saveLoc;		// Return previous index
+	lexer->lineIndex = saveLine;
 	lexer->c = lexer->contents[lexer->index];
 
 	return token;

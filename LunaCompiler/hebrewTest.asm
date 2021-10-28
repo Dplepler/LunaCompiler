@@ -53,7 +53,7 @@ label3:
 PUSHA
 MOV EAX, [a]
 fnc StdOut, str$(EAX)
-fnc StdOut, "Weird\n"
+fnc StdOut, "\n"
 POPA
 label4:
 MOV EAX, [a]

@@ -78,20 +78,24 @@ AST* parser_lib(parser_T* parser)
 
 	do 
 	{
-		// Statements don't have to be inside functions, they can be global as well
+		// Global statements only include functions and global declarations
 		node = parser_statement(parser);
 
-		// For functions, advance function list of program
+		// For functions, advance function list of the program
 		if (node->type == AST_FUNCTION)
 		{
 			root->function_list = realloc(root->function_list, sizeof(AST*) * ++funcCounter);
 			root->function_list[funcCounter - 1] = node;
 		}
-		// For anything global that is not a function, advance children of program
-		else
+		// For anything global that is not a function, advance children component of program
+		else if (node->type == AST_VARIABLE_DEC)
 		{	
 			root->children = realloc(root->children, sizeof(AST*) * ++globalCounter);
 			root->children[globalCounter - 1] = node;
+		}
+		else
+		{
+			printf("Error in line [%d]: Statment was found outisde of a function", parser->lexer->lineIndex); exit(1);
 		}
 
 	} while (parser->token->type != TOKEN_EOF);
