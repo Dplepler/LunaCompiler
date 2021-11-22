@@ -222,11 +222,9 @@ bool table_search_address(entry_T* entry, char* name)
 	// Go through all addresses of entry
 	for (i = 0; entry && i < entry->size && !flag; i++)
 	{
-		if (entry->addressDesc[i]->type == ADDRESS_VAR)
+		if (entry->addressDesc[i]->type == ADDRESS_VAR && !strcmp(entry->addressDesc[i]->address, name))
 		{
-			if (!strcmp(entry->addressDesc[i]->address, name))
-				flag = true;
-
+			flag = true;
 		}
 	}
 	
@@ -243,22 +241,26 @@ void table_print_table(table_T* table, int level)
 	unsigned int i = 0;
 	unsigned int i2 = 0;
 
-	if (table)
+	if (!table)
 	{
-		for (i = 0; i < table->entrySize; i++)
+		return;
+	}
+
+	for (i = 0; i < table->entrySize; i++)
+	{
+		printf("[Level]: %d, [Entry]: %s\n", level, table->entries[i]->name);
+		printf("Address descriptors\n");
+
+		for (i2 = 0; i2 < table->entries[i]->size; i2++)
 		{
-			printf("[Level]: %d, [Entry]: %s\n", level, table->entries[i]->name);
-			printf("Address descriptors\n");
-			for (i2 = 0; i2 < table->entries[i]->size; i2++)
-			{
-				printf("%s\n", table->entries[i]->addressDesc[i2]->address);
-			}
-		}
-		for (i = 0; i < table->nestedSize; i++)
-		{
-			table_print_table(table->nestedScopes[i], level + 1);
+			printf("%s\n", table->entries[i]->addressDesc[i2]->address);
 		}
 	}
+	for (i = 0; i < table->nestedSize; i++)
+	{
+		table_print_table(table->nestedScopes[i], level + 1);
+	}
+	
 }
 
 

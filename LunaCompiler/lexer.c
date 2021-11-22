@@ -116,7 +116,6 @@ void lexer_skip_whitespace(lexer_T* lexer)
 
 		lexer_advance(lexer);
 	}
-		
 
 	lexer_skip_comments(lexer);
 }
