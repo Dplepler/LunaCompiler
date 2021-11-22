@@ -19,6 +19,8 @@ bruhbruh DWORD 0
 foo PROC x:DWORD, y:DWORD
 MOV EAX, [y]
 MOV EBX, [x]
+PUSH EDX
+XOR EDX, EDX
 MUL EBX
 RET
 foo ENDP
@@ -39,14 +41,16 @@ PUSHA
 fnc lstrcpy, ADDR str2, "Hi again\n"
 POPA
 label1:
-MOV EAX, 10
-MOV EBX, [m]
-CMP EBX, EAX
+MOV EAX, [m]
+MOV EBX, 10
+MOV [m], EAX
+CMP EAX, EBX
 JGE label2
 label3:
-MOV EAX, 10
-MOV EBX, [y]
-CMP EBX, EAX
+MOV EAX, [y]
+MOV EBX, 10
+MOV [y], EAX
+CMP EAX, EBX
 JGE label4
 PUSHA
 MOV EDX, [counter]
@@ -77,6 +81,8 @@ MOV [y], EAX
 JMP label6
 label5:
 MOV EAX, [m]
+PUSH EDX
+XOR EDX, EDX
 MUL EAX
 MOV [y], EAX
 label6:

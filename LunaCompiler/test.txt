@@ -15,7 +15,7 @@ int main()
 
 	int m;
 	int y;
-	int counter
+	int counter;
 	string str1 = "Hello, world\n";
 	string str2 = "Hi again\n";
 	
