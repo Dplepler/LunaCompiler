@@ -203,38 +203,12 @@ AST* parser_statement(parser_T* parser)
 	// Checking all possible statement options
 	if (parser->token->type == TOKEN_ID)
 	{
-		if ((type = parser_check_reserved(parser)) > -1 && type != OUT_T)
-		{
-			if (type == INT_T || type == STRING_T)
-			{
-				if (lexer_token_peek(parser->lexer, 2)->type == TOKEN_LPAREN)
-					node = parser_function(parser);
-				else
-					node = parser_var_dec(parser);
-			}
-
-			switch (type)
-			{		
-
-				case IF_T: node = parser_condition(parser); break;
-				case WHILE_T: node = parser_while(parser); break;
-				case RETURN_T: node = parser_return(parser); break;
-
-			}
-			if (node)
-			{
-				if (node->type == AST_VARIABLE_DEC || node->type == AST_RETURN)
-				{
-					parser->token = parser_expect(parser, TOKEN_SEMI);
-
-					if (type == RETURN_T)
-						while (parser->token->type != TOKEN_RBRACE)					// Skipping all code after the return in the block, because it can never be reached
-							parser->token = lexer_get_next_token(parser->lexer);
-				}
-			}
-		}
+		// For reserved keywords
+		if (node = parser_parse_id_reserved_statement(parser, parser_check_reserved(parser)))
+			return node;
+		
 		// Variable assignment
-		else if (lexer_token_peek(parser->lexer, 1)->type == TOKEN_EQUALS)
+		if (lexer_token_peek(parser->lexer, 1)->type == TOKEN_EQUALS)
 		{
 			node = parser_assignment(parser);
 			parser->token = parser_expect(parser, TOKEN_SEMI);
@@ -270,6 +244,57 @@ AST* parser_statement(parser_T* parser)
 	}
 
 	return node;
+}
+
+AST* parser_parse_id_reserved_statement(parser_T* parser, int type)
+{
+	AST* node = NULL;
+
+	// Check if the data type indicates a variable declaration or a function call
+	if (type == INT_T || type == STRING_T)
+		node = parser_parse_data_type(parser, type);
+	
+	switch (type)
+	{
+
+	case IF_T: node = parser_condition(parser); break;
+	case WHILE_T: node = parser_while(parser); break;
+	case RETURN_T: node = parser_return(parser); break;
+
+	}
+	 
+	if (node && (node->type == AST_VARIABLE_DEC || node->type == AST_RETURN))
+		parser_expect_semi(parser, node);
+
+	return node;
+}
+
+void parser_expect_semi(parser_T* parser, AST* node)
+{
+	if (node && (node->type == AST_VARIABLE_DEC || node->type == AST_RETURN))
+	{
+		parser->token = parser_expect(parser, TOKEN_SEMI);
+
+		parser_skip_code(parser, node);
+	}
+}
+
+void parser_skip_code(parser_T* parser, AST* node)
+{
+	if (node->type != AST_RETURN)
+		return;
+
+	// Skipping all code after the return in the block, because it can never be reached
+	while (parser->token->type != TOKEN_RBRACE)					
+		parser->token = lexer_get_next_token(parser->lexer);
+}
+
+AST* parser_parse_data_type(parser_T* parser, int type)
+{
+	if (lexer_token_peek(parser->lexer, 2)->type == TOKEN_LPAREN)
+		return parser_function(parser);
+	else
+		return parser_var_dec(parser);
 }
 
 /*

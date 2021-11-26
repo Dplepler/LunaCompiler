@@ -50,6 +50,11 @@ AST* parser_condition(parser_T* parser);
 AST* parser_while(parser_T* parser);
 AST* parser_return(parser_T* parser);
 
+AST* parser_parse_id_reserved_statement(parser_T* parser, int type);
+AST* parser_parse_data_type(parser_T* parser, int type);
+void parser_expect_semi(parser_T* parser, AST* node);
+void parser_skip_code(parser_T* parser, AST* node);
+
 char* reserved_to_string(int type);
 
 int parser_check_reserved(parser_T* parser);

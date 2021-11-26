@@ -72,12 +72,13 @@ void address_remove_registers(entry_T* entry)
 
 	for (i = 0; i < size; i++)
 	{
-		if (entry->addressDesc[i]->type == ADDRESS_REG)
-		{
-			entry->size--;
-			free(entry->addressDesc[i]);
-			entry->addressDesc[i] = NULL;
-		}
+		if (entry->addressDesc[i]->type != ADDRESS_REG)
+			continue;
+
+		entry->size--;
+		free(entry->addressDesc[i]);
+		entry->addressDesc[i] = NULL;
+		
 	}
 }
 
@@ -96,13 +97,13 @@ void address_remove_register(entry_T* entry, void* reg)
 
 	for (i = 0; i < size; i++)
 	{
-		if (entry->addressDesc[i]->type == ADDRESS_REG && entry->addressDesc[i]->address == reg)
-		{
-			entry->size--;
-			free(entry->addressDesc[i]);
-			entry->addressDesc[i] = NULL;
-			break;
-		}
+		if (entry->addressDesc[i]->type != ADDRESS_REG || entry->addressDesc[i]->address != reg)
+			continue;
+			
+		entry->size--;
+		free(entry->addressDesc[i]);
+		entry->addressDesc[i] = NULL;
+		break;
 	}
 }
 
