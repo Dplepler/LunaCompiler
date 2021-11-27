@@ -374,19 +374,16 @@ AST* parser_var_dec(parser_T* parser)
 {
 	AST* node = init_AST(AST_VARIABLE_DEC); 
 
-	if (parser->token->type == TOKEN_ID)
+	switch (parser_check_reserved(parser))
 	{
-		switch (parser_check_reserved(parser))
-		{
 
-		case INT_T: node->var_type = DATA_INT; break;
-		case STRING_T: node->var_type = DATA_STRING; break;
-		default: printf("[Error in line %d]: Variable decleration missing variable type value", parser->lexer->lineIndex);
-			exit(1);
+	case INT_T: node->var_type = DATA_INT; break;
+	case STRING_T: node->var_type = DATA_STRING; break;
+	default: printf("[Error in line %d]: Variable decleration missing variable type value", parser->lexer->lineIndex);
+		exit(1);
 
-		}
 	}
-
+	
 	parser->token = parser_expect(parser, TOKEN_ID);
 
 	node->name = parser->token->value;
@@ -436,9 +433,10 @@ AST* parser_expression(parser_T* parser)
 			parser->token = lexer_get_next_token(parser->lexer);		// Skip Add/Minus signs
 			node = AST_initChildren(node, parser_term(parser), AST_SUB);
 		}	
+
 		if (node->rightChild->type == AST_STRING || node->leftChild->type == AST_STRING)
 		{
-			printf("[Error in line %d]: Cannot use strings in binary operations", parser->lexer->lineIndex);
+			printf("[Error in line %d]: Cannot use strings in arithmetic operations", parser->lexer->lineIndex);
 			exit(1);
 		}
 	}
@@ -712,19 +710,19 @@ Output: Type of reserved keyword, -1 if it is not reserved
 */
 int parser_check_reserved(parser_T* parser)
 {
-	int type = -1;
 	unsigned int i = 0;
+	int type = -1;
 	bool found = false;
 
-	if (parser->token->type == TOKEN_ID)
+	if (parser->token->type != TOKEN_ID)
+		return type;
+
+	for (i = 0; i < RESERVED_SIZE && !found; i++)
 	{
-		for (i = 0; i < RESERVED_SIZE && !found; i++)
+		if (!strcmp(parser->token->value, parser->reserved[i]))
 		{
-			if (!strcmp(parser->token->value, parser->reserved[i]))
-			{
-				type = i;
-				found = true;
-			}
+			type = i;
+			found = true;
 		}
 	}
 	
