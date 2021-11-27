@@ -90,7 +90,8 @@ register_T* generate_check_useless_value(asm_backend* backend, register_T* r);
 register_T* generate_find_free_reg(asm_backend* backend);
 register_T* generate_find_lowest_values(asm_backend* backend);
 register_T* generate_find_used_reg(asm_backend* backend);
-register_T* generate_check_variable_usabilty(asm_backend* backend, register_T* r);
+register_T* generate_check_register_usability(asm_backend* backend, register_T* r);
+register_T* generate_check_variable_usability(asm_backend* backend, register_T* r, arg_T* arg);
 
 char* generate_get_label(asm_backend* backend, TAC* label);
 char* generate_get_register_name(register_T* r);

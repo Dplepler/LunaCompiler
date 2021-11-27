@@ -619,10 +619,11 @@ void generate_function(asm_backend* backend)
 
 	backend->instruction = triple;
 
-	
-	for (i = 0; i < variables; i++)
-	{
+	i = 0;
 
+	// Go and assign a starting value to each declared variable
+	while (i < variables) 
+	{
 		if (backend->instruction->op == AST_ASSIGNMENT 
 			&& table_search_entry(backend->table, backend->instruction->arg1->value)->dtype != DATA_STRING)
 		{
@@ -633,16 +634,12 @@ void generate_function(asm_backend* backend)
 			generate_asm(backend);
 			fprintf(backend->targetProg, "MOV [%s], %s\n", varName, generate_get_register_name(generate_find_register(backend, initValue)));
 			
-		}
-		else
-		{
-			i--;
+			i++;
 		}
 				
 		backend->instruction = backend->instruction->next;
 	}
 	
-
 	backend->instruction = triple;
 
 	// Loop through the function and generate code for the statements
@@ -896,35 +893,32 @@ register_T* generate_move_to_register(asm_backend* backend, arg_T* arg)
 	entry_T* entry = NULL;
 	char* name = NULL;
 
-	if (!reg)
+	if (reg)
+		return reg;
+	
+	entry = table_search_entry(backend->table, arg->value);	// Search for the entry
+
+	reg = generate_get_register(backend);
+
+	name = generate_get_register_name(reg);
+
+	// Push the new variable descriptor onto the register
+	descriptor_push(reg, arg);
+
+	// If entry exists and value was not found in any register previously, store it in the found available register
+	if (entry)
 	{
-		entry = table_search_entry(backend->table, arg->value);	// Search for the entry
-
-		reg = generate_get_register(backend);
-
-		name = generate_get_register_name(reg);
-
-		// Push the new variable descriptor onto the register
-		descriptor_push(reg, arg);
-
-		// If entry exists and value was not found in any register previously, store it in the found available register
-		if (entry)
-		{
-			address_push(entry, reg, ADDRESS_REG);
-			fprintf(backend->targetProg, "MOV %s, [%s]\n", name, arg->value);
-		}
-		// Otherwise, if we want to move a number to a register, check if that number is 0, if so generate a XOR
-		// instruction, and if it isn't just load it's value onto the register
-		else if (arg->type == CHAR_P)
-		{
-			
-			if (!strcmp(arg->value, "0"))
-				fprintf(backend->targetProg, "XOR %s, %s\n", name, name);
-			else
-				fprintf(backend->targetProg, "MOV %s, %s\n", name, arg->value);
-		}
+		address_push(entry, reg, ADDRESS_REG);
+		fprintf(backend->targetProg, "MOV %s, [%s]\n", name, arg->value);
 	}
-
+	// Otherwise, if we want to move a number to a register, check if that number is 0, if so generate a XOR
+	// instruction, and if it isn't just load it's value onto the register
+	else if (arg->type == CHAR_P)
+	{
+		!strcmp(arg->value, "0") ? fprintf(backend->targetProg, "XOR %s, %s\n", name, name)
+			: fprintf(backend->targetProg, "MOV %s, %s\n", name, arg->value);	
+	}
+	
 	return reg;
 }
 
@@ -940,7 +934,6 @@ register_T* generate_move_new_value_to_register(asm_backend* backend, arg_T* arg
 	entry_T* entry = NULL;
 	char* name = NULL;
 
-	
 	entry = table_search_entry(backend->table, arg->value);
 
 	reg = generate_get_register(backend);
@@ -957,13 +950,9 @@ register_T* generate_move_new_value_to_register(asm_backend* backend, arg_T* arg
 	}
 	else
 	{
-
-		if (!strcmp(arg->value, "0"))
-			fprintf(backend->targetProg, "XOR %s %s\n", name, name);
-		else
-			fprintf(backend->targetProg, "MOV %s, %s\n", name, arg->value);
+		!strcmp(arg->value, "0") ? fprintf(backend->targetProg, "XOR %s %s\n", name, name)
+			: fprintf(backend->targetProg, "MOV %s, %s\n", name, arg->value);		
 	}
-	
 
 	return reg;
 }
@@ -1086,7 +1075,7 @@ register_T* generate_find_used_reg(asm_backend* backend)
 		if (!backend->registers[i]->regLock)
 			continue;
 
-		reg = generate_check_variable_usabilty(backend, backend->registers[i]);	
+		reg = generate_check_register_usability(backend, backend->registers[i]);	
 	}
 	// If there are no usable registers, we need to spill the values of one of the registers
 	if (!reg)
@@ -1129,36 +1118,44 @@ register_T* generate_check_useless_value(asm_backend* backend, register_T* r)
 }
 
 /*
-generate_check_variable_usabilty goes through a block to see if a value that a register holds will not be used again
+generate_check_register_usability goes through a block to see if the values that a register holds will not be used again
 Input: Backend, register to search in
 Output: Returns the register if it contains unused values, NULL if not
 */
-register_T* generate_check_variable_usabilty(asm_backend* backend, register_T* r)
+register_T* generate_check_register_usability(asm_backend* backend, register_T* r)
 {
 	register_T* reg = NULL;
-	TAC* triple = backend->instruction;
 	unsigned int i = 0;
 
-	reg = r;
-
 	for (i = 0; i < r->size && reg; i++)
-	{
-		// Loop through instructions until the end of the block to see if we can use a register that holds
-		// a value that will not be used
-		while (triple->op != TOKEN_RBRACE && reg)
-		{
-			if (triple->op != AST_ASSIGNMENT)
-			{
-				// If arg1 or arg2 equals the variable then it will be used
-				if (triple->arg1 && generate_compare_arguments(triple->arg1, r->regDescList[i]))
-					reg = NULL;
-				if (triple->arg2 && generate_compare_arguments(triple->arg2, r->regDescList[i]))
-					reg = NULL;
-				
-			}
+		reg = generate_check_variable_usability(backend, r, r->regDescList[i]);
 
-			triple = triple->next;
-		}
+
+	return reg;
+}
+
+/*
+generate_check_variable_usability goes through a block to see if a specific value that a register holds will not be used again
+Input: Backend, register to search in
+Output: Returns the register if it contains an unused value, NULL if not
+*/
+register_T* generate_check_variable_usability(asm_backend* backend, register_T* r, arg_T* arg)
+{
+	TAC* triple = backend->instruction;
+	register_T* reg = r;
+
+	// Loop through instructions until the end of the block to see if we can use a register that holds
+	// a value that will not be used
+	while (triple->op != TOKEN_RBRACE && reg)
+	{
+		// For the first argument, if we are assigning to the variable, then we are okay to use register
+		if (triple->op != AST_ASSIGNMENT && triple->arg1 && generate_compare_arguments(triple->arg1, arg))
+			reg = NULL;
+			
+		if (triple->arg2 && generate_compare_arguments(triple->arg2, arg))
+			reg = NULL;
+
+		triple = triple->next;
 	}
 
 	return reg;
