@@ -43,16 +43,15 @@ token_T* parser_expect(parser_T* parser, int type)
 	else
 	{
 		// For ID tokens print the wrong ID token and the one missing and for other tokens just print them as is
-		if (parser->token->type == TOKEN_ID)
-			printf("[Error in line %d]: Missing token %s, got: %s", parser->lexer->lineIndex, typeToString(type), parser->token->value);
-		else
-			printf("[Error in line %d]: Missing token %s, got: %s", parser->lexer->lineIndex, typeToString(type), typeToString(parser->token->type));
-		exit(1);													// Finish with error
+		parser->token->type == TOKEN_ID ? printf("[Error in line %d]: Missing token %s, got: %s", parser->lexer->lineIndex, typeToString(type), parser->token->value) 
+			: printf("[Error in line %d]: Missing token %s, got: %s", parser->lexer->lineIndex, typeToString(type), typeToString(parser->token->type));
+
+		exit(1);	// Terminate with error
 	}
 
 	return parser->token;
-
 }
+
 /*
 parser_parse is the main function of the parser which begins the parsing process
 Input: Parser
@@ -60,8 +59,7 @@ Output: Root of the abstract syntax tree
 */
 AST* parser_parse(parser_T* parser)
 {
-	AST* root =  parser_lib(parser);	// Start parsing the tokens and set the root of the AST to be the start of the program
-	return root;
+	return parser_lib(parser);	// Start parsing the tokens and set the root of the AST to be the start of the program
 }
 
 /*
@@ -378,10 +376,12 @@ AST* parser_var_dec(parser_T* parser)
 	{
 		switch (parser_check_reserved(parser))
 		{
-			case INT_T: node->var_type = DATA_INT; break;
-			case STRING_T: node->var_type = DATA_STRING; break;
-			default: printf("[Error in line %d]: Variable decleration missing variable type value", parser->lexer->lineIndex);
-				exit(1);
+
+		case INT_T: node->var_type = DATA_INT; break;
+		case STRING_T: node->var_type = DATA_STRING; break;
+		default: printf("[Error in line %d]: Variable decleration missing variable type value", parser->lexer->lineIndex);
+			exit(1);
+
 		}
 	}
 
