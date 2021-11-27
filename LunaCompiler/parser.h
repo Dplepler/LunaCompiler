@@ -52,8 +52,12 @@ AST* parser_return(parser_T* parser);
 
 AST* parser_parse_id_reserved_statement(parser_T* parser, int type);
 AST* parser_parse_data_type(parser_T* parser);
+
 void parser_expect_semi(parser_T* parser, AST* node);
 void parser_skip_code(parser_T* parser, AST* node);
+void parser_check_current_scope(parser_T* parser, char* name, char* type);
+
+bool parser_check_comparsion_operators(parser_T* parser);
 
 char* reserved_to_string(int type);
 

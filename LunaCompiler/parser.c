@@ -343,6 +343,8 @@ AST* parser_func_call(parser_T* parser)
 	size_t counter = 0;
 
 	node->name = parser->token->value;		// Save function name
+	
+	parser_check_current_scope(parser, node->name, "Function");	// Check if the function was declared in the scope
 
 	parser->token = parser_expect(parser, TOKEN_ID);
 	parser->token = parser_expect(parser, TOKEN_LPAREN);
@@ -476,7 +478,7 @@ AST* parser_term(parser_T* parser)
 }
 /*
 parser_factor parses a factor which can be an expression within parenthesis, a number, an identifier or
-a unary operation like -5
+a unary operation like -n
 Input: Parser
 Output: AST node
 */
@@ -554,15 +556,13 @@ AST* parser_id(parser_T* parser)
 	{
 		node = init_AST(AST_VARIABLE);
 		node->name = parser->token->value;
-		parser->token = parser_expect(parser, TOKEN_ID);
-
-		// Check if the ID was declared in the scope
-		if (!table_search_entry(parser->table, node->name))
-		{
-			printf("[Error in line %d]: Variable %s was not declared in the current scope\n", parser->lexer->lineIndex, node->name);
-			exit(1);
-		}
+		parser->token = parser_expect(parser, TOKEN_ID);	
 	}
+
+	// Check if the ID was declared in the scope
+	parser_check_current_scope(parser, node->name, "Variable");
+
+	
 
 	return node;
 }
@@ -582,8 +582,7 @@ AST* parser_compare_expressions(parser_T* parser)
 	node->leftChild = parser_expression(parser);	// Getting first expression
 
 	// Check for comparison operators
-	if (parser->token->type == TOKEN_MORE || parser->token->type == TOKEN_EMORE || parser->token->type == TOKEN_LESS 
-		|| parser->token->type == TOKEN_ELESS || parser->token->type == TOKEN_DEQUAL || parser->token->type == TOKEN_NEQUAL)
+	if (parser_check_comparsion_operators(parser))
 	{
 		node->type_c = parser->token->type;
 		parser->token = lexer_get_next_token(parser->lexer);
@@ -618,7 +617,9 @@ AST* parser_condition(parser_T* parser)
 	node->condition = parser_compare_expressions(parser);		// Parse the condition
 
 	if (parser->token->type == TOKEN_LBRACE)
+	{
 		node->if_body = parser_statement(parser);
+	}	
 	else
 	{
 		printf("[Error in line %d]: If statement missing braces", parser->lexer->lineIndex);
@@ -631,7 +632,9 @@ AST* parser_condition(parser_T* parser)
 		parser->token = lexer_get_next_token(parser->lexer);
 
 		if (parser->token->type == TOKEN_LBRACE)
+		{
 			node->else_body = parser_statement(parser);
+		}	
 		else
 		{
 			printf("[Error in line %d]: Else statement missing braces", parser->lexer->lineIndex);
@@ -657,7 +660,9 @@ AST* parser_while(parser_T* parser)
 	node->condition = parser_compare_expressions(parser);
 
 	if (parser->token->type == TOKEN_LBRACE)
+	{
 		node->if_body = parser_statement(parser);
+	}	
 	else
 	{
 		printf("[Error in line %d]: While statement missing braces", parser->lexer->lineIndex);
@@ -681,6 +686,33 @@ AST* parser_return(parser_T* parser)
 
 	return node;
 }
+
+/*
+parser_check_comparsion_operators returns true if the current token is a comparsion
+operator, otherwise it returns false
+
+Input: Parser
+Output: True if current token is a comparsion operator, otherwise false
+*/
+bool parser_check_comparsion_operators(parser_T* parser)
+{
+	return parser->token->type == TOKEN_MORE || parser->token->type == TOKEN_EMORE || parser->token->type == TOKEN_LESS
+		|| parser->token->type == TOKEN_ELESS || parser->token->type == TOKEN_DEQUAL || parser->token->type == TOKEN_NEQUAL;
+}
+
+/*
+parser_check_current_scope checks and exists if a variable or a function doesn't exist in the current scope
+Input: Parser, name of identifier to check, type of identifier
+Output: None
+*/
+void parser_check_current_scope(parser_T* parser, char* name, char* type)
+{
+	if (!table_search_entry(parser->table, name)) {
+		printf("[Error in line %d]: %s '%s' was not declared in the current scope\n", parser->lexer->lineIndex, type, name);
+		exit(1);
+	}
+}
+
 
 /*
 reserved_to_string takes a reserved type and returns it's meaning in a string form
@@ -712,17 +744,13 @@ int parser_check_reserved(parser_T* parser)
 {
 	unsigned int i = 0;
 	int type = -1;
-	bool found = false;
 
-	if (parser->token->type != TOKEN_ID)
-		return type;
-
-	for (i = 0; i < RESERVED_SIZE && !found; i++)
+	for (i = 0; i < RESERVED_SIZE && parser->token->type == TOKEN_ID; i++)
 	{
 		if (!strcmp(parser->token->value, parser->reserved[i]))
 		{
 			type = i;
-			found = true;
+			break;
 		}
 	}
 	

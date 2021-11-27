@@ -12,7 +12,6 @@ int bruhbruh;
 
 int main()
 {
-
 	int m;
 	int y;
 	int counter;
