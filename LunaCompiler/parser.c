@@ -250,7 +250,7 @@ AST* parser_parse_id_reserved_statement(parser_T* parser, int type)
 
 	// Check if the data type indicates a variable declaration or a function call
 	if (type == INT_T || type == STRING_T)
-		node = parser_parse_data_type(parser, type);
+		node = parser_parse_data_type(parser);
 	
 	switch (type)
 	{
@@ -267,32 +267,40 @@ AST* parser_parse_id_reserved_statement(parser_T* parser, int type)
 	return node;
 }
 
+/*
+parser_expect_semi expects a semi colon, and then skips code if a return statement has appeared
+Input: Parser, node
+Output: None
+*/
 void parser_expect_semi(parser_T* parser, AST* node)
 {
-	if (node && (node->type == AST_VARIABLE_DEC || node->type == AST_RETURN))
-	{
-		parser->token = parser_expect(parser, TOKEN_SEMI);
-
-		parser_skip_code(parser, node);
-	}
+	parser->token = parser_expect(parser, TOKEN_SEMI);
+	parser_skip_code(parser, node);	
 }
 
+/*
+parser_skip_code checks that the current node is a return statement
+if so, it skips all code that can never be reached
+
+Input: Parser, node
+Output: None
+*/
 void parser_skip_code(parser_T* parser, AST* node)
 {
-	if (node->type != AST_RETURN)
-		return;
-
 	// Skipping all code after the return in the block, because it can never be reached
-	while (parser->token->type != TOKEN_RBRACE)					
+	while (node->type == AST_RETURN && parser->token->type != TOKEN_RBRACE)
 		parser->token = lexer_get_next_token(parser->lexer);
 }
 
-AST* parser_parse_data_type(parser_T* parser, int type)
+/*
+parser_parse_data_type parses a statement that starts with a datatype (Can be a variable or function declaration)
+Input: Parser
+Output: Declaration node
+*/
+AST* parser_parse_data_type(parser_T* parser)
 {
-	if (lexer_token_peek(parser->lexer, 2)->type == TOKEN_LPAREN)
-		return parser_function(parser);
-	else
-		return parser_var_dec(parser);
+	return (lexer_token_peek(parser->lexer, 2)->type == TOKEN_LPAREN) ? parser_function(parser) 
+		: parser_var_dec(parser);		
 }
 
 /*
@@ -310,14 +318,8 @@ AST* parser_assignment(parser_T* parser)
 	{
 		parser->token = lexer_get_next_token(parser->lexer);
 		
-		if (parser->token->type == TOKEN_STRING)
-		{
-			node = AST_initChildren(node, parser_string(parser), AST_ASSIGNMENT);
-		}
-		else
-		{
-			node = AST_initChildren(node, parser_expression(parser), AST_ASSIGNMENT);
-		}
+		node = parser->token->type == TOKEN_STRING ? AST_initChildren(node, parser_string(parser), AST_ASSIGNMENT)
+			: AST_initChildren(node, parser_expression(parser), AST_ASSIGNMENT);
 	}
 	// If variable was written without an assignment, reset it
 	else
