@@ -1259,17 +1259,19 @@ char* generate_get_register_name(register_T* r)
 	// Switch types
 	switch (r->reg)
 	{
-		case REG_AX: return "EAX";
-		case REG_BX: return "EBX";
-		case REG_CX: return "ECX";
-		case REG_DX: return "EDX";
-		case REG_CS: return "CS";
-		case REG_DS: return "DS";
-		case REG_SS: return "SS";
-		case REG_SP: return "ESP";
-		case REG_SI: return "ESI";
-		case REG_DI: return "EDI";
-		case REG_BP: return "EBP";
+
+	case REG_AX: return "EAX";
+	case REG_BX: return "EBX";
+	case REG_CX: return "ECX";
+	case REG_DX: return "EDX";
+	case REG_CS: return "CS";
+	case REG_DS: return "DS";
+	case REG_SS: return "SS";
+	case REG_SP: return "ESP";
+	case REG_SI: return "ESI";
+	case REG_DI: return "EDI";
+	case REG_BP: return "EBP";
+
 	}
 }
 

@@ -92,8 +92,10 @@ token_T* lexer_advance_current(lexer_T* lexer, int type)
 		value[1] = lexer->c;
 		value[2] = '\0';
 	}
-	else
+	else {
 		value[1] = '\0';
+	}
+		
 	
 	token = init_token(type, value, lexer->lineIndex);
 	lexer_advance(lexer);

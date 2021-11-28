@@ -202,10 +202,8 @@ bool table_search_in_specific_table(table_T* table, char* entry)
 	unsigned int i = 0;
 
 	for (i = 0; i < table->entrySize && !flag; i++)
-	{
-		if (!strcmp(table->entries[i]->name, entry))
-			flag = true;
-	}
+		flag = !strcmp(table->entries[i]->name, entry);
+	
 
 	return flag;
 }
@@ -222,12 +220,8 @@ bool table_search_address(entry_T* entry, char* name)
 
 	// Go through all addresses of entry
 	for (i = 0; entry && i < entry->size && !flag; i++)
-	{
-		if (entry->addressDesc[i]->type == ADDRESS_VAR && !strcmp(entry->addressDesc[i]->address, name))
-		{
-			flag = true;
-		}
-	}
+		flag = entry->addressDesc[i]->type == ADDRESS_VAR && !strcmp(entry->addressDesc[i]->address, name);
+	
 	
 	return flag;
 }
@@ -243,24 +237,19 @@ void table_print_table(table_T* table, int level)
 	unsigned int i2 = 0;
 
 	if (!table)
-	{
 		return;
-	}
-
+	
 	for (i = 0; i < table->entrySize; i++)
 	{
 		printf("[Level]: %d, [Entry]: %s\n", level, table->entries[i]->name);
 		printf("Address descriptors\n");
 
 		for (i2 = 0; i2 < table->entries[i]->size; i2++)
-		{
 			printf("%s\n", table->entries[i]->addressDesc[i2]->address);
-		}
+		
 	}
 	for (i = 0; i < table->nestedSize; i++)
-	{
 		table_print_table(table->nestedScopes[i], level + 1);
-	}
 	
 }
 
@@ -275,25 +264,25 @@ void table_free_table(table_T* table)
 	unsigned int i = 0;
 	unsigned int i2 = 0;
 
-	if (table)
+	if (!table)
+		return;
+	
+	for (i = 0; i < table->nestedSize; i++)
+		table_free_table(table->nestedScopes[i]);
+	
+
+	for (i = 0; i < table->entrySize; i++)
 	{
-		for (i = 0; i < table->nestedSize; i++)
-		{
-			table_free_table(table->nestedScopes[i]);
-		}
-		for (i = 0; i < table->entrySize; i++)
-		{
-			for (i2 = 0; i2 < table->entries[i]->size; i2++)
-				if (table->entries[i]->addressDesc[i2]) { free(table->entries[i]->addressDesc[i2]); }
+		for (i2 = 0; i2 < table->entries[i]->size; i2++)
+			if (table->entries[i]->addressDesc[i2]) free(table->entries[i]->addressDesc[i2]); 
 			
-
-			free(table->entries[i]->addressDesc);
-			free(table->entries[i]);
-		}
-
-		free(table->entries);
-		free(table->nestedScopes);
-		free(table);
+		free(table->entries[i]->addressDesc);
+		free(table->entries[i]);
 	}
+
+	free(table->entries);
+	free(table->nestedScopes);
+	free(table);
+	
 }
  
