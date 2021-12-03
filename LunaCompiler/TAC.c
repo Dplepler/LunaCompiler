@@ -42,11 +42,15 @@ Output: None
 */
 void list_push(TAC_list* list, TAC* instruction)
 {
-	if (!list->size)
+	if (!list->size) 
+	{
 		list->head = instruction;
+	}
 	else
+	{
 		list->last->next = instruction;
-
+	}
+		
 	list->last = instruction;    
 
 	list->size++;
@@ -63,9 +67,10 @@ TAC_list* traversal_visit(AST* node)
 
 	traversal_build_instruction(node, list);
 
-	if (list->head)
+	if (list->head) {
 		traversal_optimize(list);
-	
+	}
+		
 	return list;
 }
 
@@ -80,8 +85,10 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 	unsigned int i = 0;
 
 	// If node is NULL we can exit this function
-	if (!node)
+	if (!node) {
 		return;
+	}
+		
 	
 	// Check for binary operation
 	if (node->type == AST_ADD || node->type == AST_SUB || node->type == AST_MUL || node->type == AST_DIV ||
@@ -97,13 +104,17 @@ void* traversal_build_instruction(AST* node, TAC_list* list)
 	case AST_PROGRAM: 
 		for (i = 0; i < node->size; i++)	// Loop through global variables
 		{
-			if (node->children[i]->type == AST_VARIABLE_DEC)
+			if (node->children[i]->type == AST_VARIABLE_DEC) {
 				instruction = traversal_build_instruction(node->children[i], list);
+			}
+				
 		}
 					
-		for (i = 0; i < node->functionsSize; i++)		// Loop through functions
+		for (i = 0; i < node->functionsSize; i++) {		// Loop through functions
 			instruction = traversal_build_instruction(node->function_list[i], list);
+		} 
 		break;
+		
 	case AST_FUNCTION: instruction = traversal_func_dec(node, list); break;
 	case AST_COMPOUND: traversal_statements(node, list); break;
 	case AST_ASSIGNMENT: instruction = traversal_assignment(node, list); break;
@@ -173,8 +184,7 @@ TAC* traversal_var_dec(AST* node, TAC_list* list)
 	list_push(list, instruction);
 
 	// All integers will be 4 bytes long
-	if (node->var_type == DATA_INT)
-	{
+	if (node->var_type == DATA_INT) {
 		instruction->arg2 = init_arg(dataToAsm(node->var_type), CHAR_P);
 	}	
 	// For strings however, we want to know the size of the string so we can later create a fitting size in the memory
@@ -242,9 +252,11 @@ TAC* traversal_function_call(AST* node, TAC_list* list)
 {
 	TAC* instruction = NULL;
 	TAC* param = NULL;
-	int i = 0;
+	
 	size_t counter = 0;
 	size_t size = 0;
+
+	int i = 0;
 	
 	instruction = calloc(1, sizeof(TAC));
 
@@ -281,9 +293,7 @@ TAC* traversal_function_call(AST* node, TAC_list* list)
 	}
 	
 	
-	
 	return instruction;
-
 }
 
 /*
@@ -420,10 +430,10 @@ void traversal_statements(AST* node, TAC_list* list)
 	end->op = TOKEN_RBRACE;
 
 	// For all the statements in the block, push them into the list
-	for (i = 0; i < node->size; i++)
-	{
+	for (i = 0; i < node->size; i++) {
 		traversal_build_instruction(node->children[i], list);
 	}
+		
 	
 	list_push(list, end);
 }
@@ -440,20 +450,18 @@ void traversal_print_instructions(TAC_list* instructions)
 
 	for (i = 0; i < instructions->size; i++)
 	{
-		if (triple->op)
+		if (triple->op) {
 			printf("Operation: %s, ", typeToString(triple->op));
-
-		if (triple->arg1)
-		{
-			// Check if arg1 is a string or a pointer to another TAC
+		}
+			
+		// Check if arg1 is a string or a pointer to another TAC
+		if (triple->arg1) {
 			triple->arg1->type == CHAR_P ? printf("Arg1: %s, ", triple->arg1->value) : printf("Arg1: %p, ", triple->arg1->value);	
 		}
 
-		if (triple->arg2)
-		{
-			// Check if arg2 is a string or a pointer to another TAC
+		// Check if arg2 is a string or a pointer to another TAC
+		if (triple->arg2) {
 			triple->arg2->type == CHAR_P ? printf("Arg2: %s, ", triple->arg2->value) : printf("Arg2: %p, ", triple->arg2->value);
-				
 		}
 
 		printf("Address: %p\n", triple);
@@ -499,8 +507,7 @@ void traversal_optimize(TAC_list* list)
 			label = instruction->arg2->value;
 			next = label->next;
 
-			while (next->op == TOKEN_LBRACE || next->op == TOKEN_RBRACE)
-			{
+			while (next->op == TOKEN_LBRACE || next->op == TOKEN_RBRACE) {
 				next = next->next;
 			}
 				
@@ -518,8 +525,7 @@ void traversal_optimize(TAC_list* list)
 			label = instruction->arg1->value;
 			next = label->next;
 
-			while (next->op == TOKEN_LBRACE || next->op == TOKEN_RBRACE)
-			{
+			while (next->op == TOKEN_LBRACE || next->op == TOKEN_RBRACE) {
 				next = next->next;
 			}
 
@@ -575,21 +581,26 @@ void traversal_free_array(TAC_list* list)
 		{
 			free(triple->arg2->value);
 		}
+
 		if (triple->op == AST_DEF_AMOUNT)
 		{
 			free(triple->arg1->value);
 		}
+
 		if (triple->op == AST_VARIABLE_DEC && isNum(triple->arg2->value))
 		{
 			free(triple->arg2->value);
 		}
 		
-		if (triple->arg1)
+		if (triple->arg1) {
 			free(triple->arg1);
+		}
+			
 	
-		if (triple->arg2)
+		if (triple->arg2) {
 			free(triple->arg2);
-		
+		}
+			
 		prev = triple;
 		triple = triple->next;
 		free(prev);
