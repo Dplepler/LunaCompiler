@@ -209,19 +209,19 @@ bool table_search_in_specific_table(table_T* table, char* entry)
 }
 
 /*
-table_search_address searches an address in an entry
-Input: Entry to search in, address name to search for
+entry_search_var searches for a variable in a given symbol table entry 
+Input: Entry to search in, variable name to search for
 Output: True if found, otherwise false
 */
-bool table_search_address(entry_T* entry, char* name)
+bool entry_search_var(entry_T* entry, char* name)
 {
-	bool flag = false;
+
 	unsigned int i = 0;
+	bool flag = false;
 
 	// Go through all addresses of entry
 	for (i = 0; entry && i < entry->size && !flag; i++)
 		flag = entry->addressDesc[i]->type == ADDRESS_VAR && !strcmp(entry->addressDesc[i]->address, name);
-	
 	
 	return flag;
 }

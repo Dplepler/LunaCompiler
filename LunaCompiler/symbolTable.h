@@ -29,7 +29,7 @@ typedef struct STRUCT_SYMBOL_ENTRY
 	dtype dtype;
 
 	address_T** addressDesc;	// Address descriptor: Keeping track of which addresses keep the current value of entry
-	size_t size;		// Size of addresses in array
+	size_t size;				// Size of addresses in array
 
 
 } entry_T;
@@ -57,7 +57,7 @@ table_T* table_add_table(table_T* table);
 table_T* table_search_table(table_T* table, char* name);
 
 bool table_search_in_specific_table(table_T* table, char* entry);
-bool table_search_address(entry_T* entry, char* name);
+bool entry_search_var(entry_T* entry, char* name);
 
 void address_push(entry_T* entry, void* location, int type);
 void address_reset(entry_T* entry);

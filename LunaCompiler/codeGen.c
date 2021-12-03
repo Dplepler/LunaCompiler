@@ -1193,6 +1193,11 @@ void generate_block_exit(asm_backend* backend)
 
 }
 
+/*
+register_block_exit checks if a variable currently holds it's correct data, if not, it loads it before exiting a scope
+Input: Backend, register to check variables in
+Output: None
+*/
 void register_block_exit(asm_backend* backend, register_T* reg)
 {
 	unsigned int i = 0;
@@ -1200,21 +1205,26 @@ void register_block_exit(asm_backend* backend, register_T* reg)
 	entry_T* entry = NULL;
 
 	// For each value stored in the register, check if that value is different from what the actual variable
-	// holds, if it is, store the value in the variable before exiting
+	// holds, if it is, store the correct value in the variable before exiting a scope
 	for (i = 0; i < reg->size; i++)
 	{
 		entry = table_search_entry(backend->table, reg->regDescList[i]->value);
 
-		// For values that are live on exit
-		if (reg->regDescList[i]->type == CHAR_P && !table_search_in_specific_table(backend->table, reg->regDescList[i]->value)
-			&& !table_search_address(entry, reg->regDescList[i]->value) && entry)
+		// Only check variables in registers, because only they can be live on exit
+		// Also if there is no entry, we can continue searching
+		if (reg->regDescList[i]->type != CHAR_P || !entry)
+			continue;
+
+		// For values that are live on exit (values that exist in some parent symbol table)
+		if (!table_search_in_specific_table(backend->table, reg->regDescList[i]->value)
+			&& !entry_search_var(entry, reg->regDescList[i]->value))		// Here we check if the variable doesn't hold it's own value
 		{
 			fprintf(backend->targetProg, "MOV [%s], %s\n", reg->regDescList[i]->value, generate_get_register_name(reg));
 			address_remove_registers(entry);
 			address_push(entry, reg->regDescList[i]->value, ADDRESS_VAR);
 		}
 		// We can reset the addresses for values that are not live on exit
-		else if (reg->regDescList[i]->type == CHAR_P && entry && table_search_in_specific_table(backend->table, reg->regDescList[i]->value))
+		else if (table_search_in_specific_table(backend->table, reg->regDescList[i]->value))
 		{
 			address_reset(entry);
 		}
