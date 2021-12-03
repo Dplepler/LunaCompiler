@@ -99,4 +99,6 @@ char* generate_assign_reg(register_T* r, void* argument);
 
 bool generate_compare_arguments(arg_T* arg1, arg_T* arg2);
 
+void register_block_exit(asm_backend* backend, register_T* reg);
+
 #endif

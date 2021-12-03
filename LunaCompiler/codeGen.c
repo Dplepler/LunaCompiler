@@ -1187,30 +1187,36 @@ Output: None
 void generate_block_exit(asm_backend* backend)
 {
 	unsigned int i = 0;
-	unsigned int i2 = 0;
-	entry_T* entry = NULL;
 
 	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
-	{
-		// For each value stored in the register, check if that value is different from what the actual variable
-		// holds, if it is, store the value in the variable before exiting
-		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
-		{
-			entry = table_search_entry(backend->table, backend->registers[i]->regDescList[i2]->value);
+		register_block_exit(backend, backend->registers[i]);
 
-			// For values that are live on exit
-			if (backend->registers[i]->regDescList[i2]->type == CHAR_P && !table_search_in_specific_table(backend->table, backend->registers[i]->regDescList[i2]->value)
-				&& !table_search_address(entry, backend->registers[i]->regDescList[i2]->value) && entry)
-			{
-				fprintf(backend->targetProg, "MOV [%s], %s\n", backend->registers[i]->regDescList[i2]->value, generate_get_register_name(backend->registers[i]));
-				address_remove_registers(entry);
-				address_push(entry, backend->registers[i]->regDescList[i2]->value, ADDRESS_VAR);
-			}
-			// We can reset the addresses for values that are not live on exit
-			else if (backend->registers[i]->regDescList[i2]->type == CHAR_P && entry && table_search_in_specific_table(backend->table, backend->registers[i]->regDescList[i2]->value))
-			{
-				address_reset(entry);
-			}
+}
+
+void register_block_exit(asm_backend* backend, register_T* reg)
+{
+	unsigned int i = 0;
+
+	entry_T* entry = NULL;
+
+	// For each value stored in the register, check if that value is different from what the actual variable
+	// holds, if it is, store the value in the variable before exiting
+	for (i = 0; i < reg->size; i++)
+	{
+		entry = table_search_entry(backend->table, reg->regDescList[i]->value);
+
+		// For values that are live on exit
+		if (reg->regDescList[i]->type == CHAR_P && !table_search_in_specific_table(backend->table, reg->regDescList[i]->value)
+			&& !table_search_address(entry, reg->regDescList[i]->value) && entry)
+		{
+			fprintf(backend->targetProg, "MOV [%s], %s\n", reg->regDescList[i]->value, generate_get_register_name(reg));
+			address_remove_registers(entry);
+			address_push(entry, reg->regDescList[i]->value, ADDRESS_VAR);
+		}
+		// We can reset the addresses for values that are not live on exit
+		else if (reg->regDescList[i]->type == CHAR_P && entry && table_search_in_specific_table(backend->table, reg->regDescList[i]->value))
+		{
+			address_reset(entry);
 		}
 	}
 }
@@ -1229,9 +1235,8 @@ char* generate_get_label(asm_backend* backend, TAC* label)
 	for (i = 0; i < backend->labelList->size && !name; i++)
 	{
 		if (label == backend->labelList->labels[i])
-		{
 			name = backend->labelList->names[i];
-		}
+		
 	}
 	// If label was not found, create a new one
 	if (!name)
@@ -1239,7 +1244,7 @@ char* generate_get_label(asm_backend* backend, TAC* label)
 		backend->labelList->labels = realloc(backend->labelList->labels, sizeof(TAC*) * ++backend->labelList->size);	// Appending list
 		backend->labelList->labels[backend->labelList->size - 1] = label;
 		backend->labelList->names = realloc(backend->labelList->names, sizeof(char*) * backend->labelList->size);
-		name = name = calloc(1, strlen("label") + numOfDigits(backend->labelList->size) + 1);
+		name = calloc(1, strlen("label") + numOfDigits(backend->labelList->size) + 1);
 		sprintf(name, "label%d", backend->labelList->size);
 		backend->labelList->names[backend->labelList->size - 1] = name;
 	}
@@ -1254,8 +1259,6 @@ Output: Register name
 */
 char* generate_get_register_name(register_T* r)
 {
-	char* name = NULL;			
-
 	// Switch types
 	switch (r->reg)
 	{
@@ -1284,14 +1287,10 @@ bool generate_compare_arguments(arg_T* arg1, arg_T* arg2)
 {
 	bool flag = false;
 
-	if ((arg1->type == TAC_P || arg1->type == TEMP_P) && (arg2->type == TAC_P || arg2->type == TEMP_P) && arg1->value == arg2->value)
-	{
-		flag = true;
-	}
-	else if (arg1->type == CHAR_P && arg2->type == CHAR_P && !strcmp(arg1->value, arg2->value))
-	{
-		flag = true;
-	}
+	flag = (arg1->type == TAC_P || arg1->type == TEMP_P) && (arg2->type == TAC_P || arg2->type == TEMP_P) && arg1->value == arg2->value;
+
+	if (!flag)
+		flag = arg1->type == CHAR_P && arg2->type == CHAR_P && !strcmp(arg1->value, arg2->value);
 
 	return flag;
 }
@@ -1309,15 +1308,13 @@ void generate_remove_descriptor(register_T* reg, arg_T* desc)
 	if (!reg)
 		return;
 
-	while (i < reg->size)
+	for (i = 0; i < reg->size; i++)
 	{
 		if (!generate_compare_arguments(reg->regDescList[i], desc))
 		{
 			reg->regDescList[index] = reg->regDescList[index];
 			index++;
 		}
-
-		i++;
 	}
 
 	reg->regDescList = realloc(reg->regDescList, --reg->size * sizeof(arg_T*));
@@ -1338,6 +1335,9 @@ void free_registers(asm_backend* backend)
 		descriptor_reset(backend, backend->registers[i]);
 		free(backend->registers[i]);
 	}
+
+	free(backend->registers);
+
 	if (backend->labelList)
 	{
 		for (i = 0; i < backend->labelList->size; i++)
@@ -1348,6 +1348,5 @@ void free_registers(asm_backend* backend)
 		free(backend->labelList);
 	}
 	
-	free(backend->registers);
 	free(backend);
 }
