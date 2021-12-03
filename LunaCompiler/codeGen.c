@@ -509,9 +509,8 @@ void generate_assignment(asm_backend* backend)
 
 		// Remove variable from all registers that held it's value
 		while ((reg2 = generate_check_variable_in_reg(backend, backend->instruction->arg1)))
-		{
 			generate_remove_descriptor(reg2, backend->instruction->arg1);
-		}
+		
 		
 		descriptor_push(reg1, backend->instruction->arg1);
 
@@ -533,15 +532,9 @@ void generate_var_dec(asm_backend* backend)
 	name = backend->instruction->arg1->value;
 
 	// If the second argument is a number, that means it's the amount of bytes to put in a string data
-	if (isNum(backend->instruction->arg2->value))
-	{
-		fprintf(backend->targetProg, "LOCAL %s[%s]:BYTE\n", name, backend->instruction->arg2->value);
-	}
 	// For other types, just declare them normally
-	else
-	{
-		fprintf(backend->targetProg, "LOCAL %s:%s\n", name, backend->instruction->arg2->value);
-	}
+	isNum(backend->instruction->arg2->value) ? fprintf(backend->targetProg, "LOCAL %s[%s]:BYTE\n", name, backend->instruction->arg2->value)
+		: fprintf(backend->targetProg, "LOCAL %s:%s\n", name, backend->instruction->arg2->value);
 	
 }  
 
@@ -679,7 +672,7 @@ void generate_func_call(asm_backend* backend)
 	size_t size = atoi(backend->instruction->arg2->value);
 	
 	// Push all the variables to the stack, from last to first
-	for (i = 0; i < size; i++)
+	while (i < size)
 	{
 		backend->instruction = backend->instruction->next;
 
@@ -687,17 +680,18 @@ void generate_func_call(asm_backend* backend)
 		if (backend->instruction->op == AST_PARAM && backend->instruction->arg1->type == CHAR_P)
 		{
 			fprintf(backend->targetProg, "PUSH %s\n", backend->instruction->arg1->value);
+			i++;
 		}
 		// For TAC operations we need to allocate a register before pushing
 		else if (backend->instruction->op == AST_PARAM && (backend->instruction->arg1->type == TAC_P || backend->instruction->arg1->type == TEMP_P))
 		{
 			fprintf(backend->targetProg, "PUSH %s\n", generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg1)));
+			i++;
 		}
 		// There can be expression operations between parameters, so we need to generate code for them but make the loop longer
 		else
 		{
 			generate_asm(backend);
-			i--;
 		}
 	}
 
@@ -769,16 +763,15 @@ void generate_print(asm_backend* backend)
 		}
 	}
 
-	// Return back the values before the PUSHA instruction
+	/* Return back the values before the PUSHA instruction */
+
 	descriptor_reset_all_registers(backend);
 
 	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
 	{
 		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
-		{
 			descriptor_push(backend->registers[i], regDescListList[i][i2]);
-		}
-
+		
 		free(regDescListList[i]);
 	}
 
@@ -792,18 +785,7 @@ Output: A string that can either represent the given register or the given value
 */
 char* generate_assign_reg(register_T* r, void* argument)
 {
-	char* arg = NULL;
-	
-	if (r)
-	{
-		arg = generate_get_register_name(r);
-	}
-	else
-	{
-		arg = argument;
-	}
-
-	return arg;
+	return r ? generate_get_register_name(r) : argument;
 }
 
 /*
@@ -1130,7 +1112,6 @@ register_T* generate_check_register_usability(asm_backend* backend, register_T* 
 	for (i = 0; i < r->size && reg; i++)
 		reg = generate_check_variable_usability(backend, r, r->regDescList[i]);
 
-
 	return reg;
 }
 
@@ -1149,12 +1130,12 @@ register_T* generate_check_variable_usability(asm_backend* backend, register_T* 
 	while (triple->op != TOKEN_RBRACE && reg)
 	{
 		// For the first argument, if we are assigning to the variable, then we are okay to use register
-		if (triple->op != AST_ASSIGNMENT && triple->arg1 && generate_compare_arguments(triple->arg1, arg))
+		if ((triple->op != AST_ASSIGNMENT && triple->arg1 && generate_compare_arguments(triple->arg1, arg))
+			|| (triple->arg2 && generate_compare_arguments(triple->arg2, arg)))
+		{
 			reg = NULL;
-			
-		if (triple->arg2 && generate_compare_arguments(triple->arg2, arg))
-			reg = NULL;
-
+		}
+		
 		triple = triple->next;
 	}
 
