@@ -244,6 +244,11 @@ AST* parser_statement(parser_T* parser)
 	return node;
 }
 
+/*
+parser_parse_id_reserved_statement parses a statement that contains a keyword of the language
+Input: Parser, reserved keyword type
+Output: Node
+*/
 AST* parser_parse_id_reserved_statement(parser_T* parser, int type)
 {
 	AST* node = NULL;
