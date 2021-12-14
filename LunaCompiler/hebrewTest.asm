@@ -30,32 +30,9 @@ MOV EBX, 10
 MOV [a], EAX
 CMP EAX, EBX
 JG label2
-PUSH EDX
-XOR EDX, EDX
-MUL EAX
-MOV EBX, 81
-PUSH EDX
-XOR EDX, EDX
-PUSH EDX
-XOR EDX, EDX
-DIV EBX
-POP EDX
-MOV EDX, 1
-MOV [b], EAX
-CMP EAX, EDX
-JNE label3
 PUSHA
-fnc StdOut, str$(EAX)
-fnc StdOut, "\n"
+fnc StdOut, "Hello friends! Dr.Exposition is here to fuck your mom!\n"
 POPA
-JMP label4
-label3:
-PUSHA
-MOV EAX, [a]
-fnc StdOut, str$(EAX)
-fnc StdOut, "\n"
-POPA
-label4:
 MOV EAX, [a]
 INC EAX
 MOV [a], EAX

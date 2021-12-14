@@ -5,17 +5,9 @@ int main()
 	int b = 5;
 	while(a <= 10)
 	{
-		b = a * a / 81;
+		print("Hello friends! Dr.Exposition is here to fuck your mom!\n");
 		
-		if (b == 1)
-		{
-			print( b, "\n");
-		}
-		else
-		{
-			print(a, "\n");
-		}
-		a = a+ 1;
+		a = a + 1;
 	
 	}
 	
