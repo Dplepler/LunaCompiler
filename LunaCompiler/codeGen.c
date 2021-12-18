@@ -985,7 +985,7 @@ register_T* generate_move_to_ax(asm_backend* backend, arg_T* arg)
 }
 
 /*
-generate_find_lowest_values finds and returns the register with the lowest amount of values it stores
+generate_find_lowest_values finds and returns the register with the lowest amount of values stored
 Input: Register list
 Output: Register with lowest variables
 */
@@ -994,9 +994,14 @@ register_T* generate_find_lowest_values(asm_backend* backend)
 	unsigned int i = 0;
 	size_t loc = 0;
 
-	for (i = 1; i < GENERAL_REG_AMOUNT && !backend->registers[i]->regLock; i++)
+	// Start comparing to the first available register
+	while (backend->registers[loc]->regLock) { loc++; }		
+
+	// Start comparing all registers to find the lowest value
+	for (i = 1; i < GENERAL_REG_AMOUNT; i++)
 	{
-		if (backend->registers[i]->size < backend->registers[loc]->size)
+		if (backend->registers[i]->size < backend->registers[loc]->size
+			&& !backend->registers[i]->regLock)
 		{
 			loc = i;
 		}
@@ -1065,7 +1070,7 @@ register_T* generate_find_used_reg(asm_backend* backend)
 		reg = generate_find_lowest_values(backend);
 		generate_spill(backend, reg);
 	}
-	// Now that the variable is in a new register, we need to free the previous values stored in it and reset the size
+	// Now that the variable is saved somewhere else, we need to free the previous values stored in it and reset the size
 	if (reg->regDescList)
 	{
 		descriptor_reset(backend, reg);
@@ -1081,10 +1086,12 @@ Output: Returns the register if it contains useless value, NULL if it doesn't
 */
 register_T* generate_check_useless_value(asm_backend* backend, register_T* r)
 {
-	register_T* reg = NULL;
+	register_T* reg = r;
 	unsigned int i = 0;
-
-	reg = r;
+	
+	// If we specified earlier to not use that register
+	if (r->regLock)
+		return NULL;
 
 	for (i = 0; i < r->size && reg; i++)
 	{
@@ -1100,7 +1107,7 @@ register_T* generate_check_useless_value(asm_backend* backend, register_T* r)
 }
 
 /*
-generate_check_register_usability goes through a block to see if the values that a register holds will not be used again
+generate_check_register_usability goes through a given register's descriptor list to see if the values that a register holds will not be used again
 Input: Backend, register to search in
 Output: Returns the register if it contains unused values, NULL if not
 */
@@ -1109,8 +1116,14 @@ register_T* generate_check_register_usability(asm_backend* backend, register_T* 
 	register_T* reg = NULL;
 	unsigned int i = 0;
 
-	for (i = 0; i < r->size && reg; i++)
+	for (i = 0; i < r->size; i++)
+	{
 		reg = generate_check_variable_usability(backend, r, r->regDescList[i]);
+
+		if (!reg)
+			break;
+	}
+		
 
 	return reg;
 }
@@ -1131,7 +1144,7 @@ register_T* generate_check_variable_usability(asm_backend* backend, register_T* 
 	{
 		// For the first argument, if we are assigning to the variable, then we are okay to use register
 		if ((triple->op != AST_ASSIGNMENT && triple->arg1 && generate_compare_arguments(triple->arg1, arg))
-			|| (triple->arg2 && generate_compare_arguments(triple->arg2, arg)))
+			|| (triple->arg2 && generate_compare_arguments(triple->arg2, arg)) || reg->regLock)
 		{
 			reg = NULL;
 		}
@@ -1149,13 +1162,19 @@ Output: None
 */
 void generate_spill(asm_backend* backend, register_T* r)
 {
+	entry_T* entry = NULL;
+
 	unsigned int i = 0;
 
 	// For each value, store the value of the variable in itself
 	for (i = 0; i < r->size; i++)
 	{
-		fprintf(backend->targetProg, "MOV [%s], %s\n", r->regDescList[i]->value, generate_get_register_name(r));
-		address_push(table_search_entry(backend->table, r->regDescList[i]->value), r->regDescList[i]->value, ADDRESS_VAR);
+		if ((entry = table_search_entry(backend->table, r->regDescList[i]->value)))
+		{
+			fprintf(backend->targetProg, "MOV [%s], %s\n", r->regDescList[i]->value, generate_get_register_name(r));
+			address_push(entry, r->regDescList[i]->value, ADDRESS_VAR);
+		}
+		
 	}
 }
 
@@ -1182,7 +1201,6 @@ Output: None
 void register_block_exit(asm_backend* backend, register_T* reg)
 {
 	unsigned int i = 0;
-
 	entry_T* entry = NULL;
 
 	// For each value stored in the register, check if that value is different from what the actual variable

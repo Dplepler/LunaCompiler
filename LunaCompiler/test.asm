@@ -12,84 +12,25 @@ includelib \masm32\lib\user32.lib
 includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\masm32.lib
 .data
-globalVar DWORD 0
-anotherGlobal DWORD 0
-bruhbruh DWORD 0
 .code
-foo PROC x:DWORD, y:DWORD
-MOV EAX, [y]
-MOV EBX, [x]
+main PROC 
+LOCAL x:DWORD
+LOCAL y:DWORD
+LOCAL z:DWORD
+XOR EAX, EAX
+MOV [x], EAX
+MOV EBX, 10
+MOV [y], EBX
+MOV ECX, 20
+MOV [z], ECX
+SUB EBX, ECX
+MOV EBX, EAX
+MOV EAX, 3
+MOV [x], EBX
 PUSH EDX
 XOR EDX, EDX
 MUL EBX
-RET
-foo ENDP
-main PROC 
-LOCAL m:DWORD
-LOCAL y:DWORD
-LOCAL counter:DWORD
-LOCAL str1[15]:BYTE
-LOCAL str2[11]:BYTE
-XOR EAX, EAX
-MOV [m], EAX
-MOV [y], EAX
-MOV [counter], EAX
-PUSHA
-fnc lstrcpy, ADDR str1, "Hello, world\n"
-POPA
-PUSHA
-fnc lstrcpy, ADDR str2, "Hi again\n"
-POPA
-label1:
-MOV EAX, [m]
-MOV EBX, 10
-MOV [m], EAX
-CMP EAX, EBX
-JGE label2
-label3:
-MOV EAX, [y]
-MOV EBX, 10
-MOV [y], EAX
-CMP EAX, EBX
-JGE label4
-PUSHA
-MOV EDX, [counter]
-fnc StdOut, str$(EDX)
-fnc StdOut, "\n"
-POPA
-MOV EAX, [counter]
-INC EAX
-MOV EBX, [y]
-INC EBX
-MOV [counter], EAX
-MOV [y], EBX
-JMP label3
-label4:
-MOV EAX, [m]
-INC EAX
-XOR EBX, EBX
-MOV [m], EAX
-MOV [y], EBX
-JMP label1
-label2:
-MOV EAX, 10
-MOV [m], EAX
-CMP EAX, EAX
-JNE label5
-ADD EAX, EAX
-MOV [y], EAX
-JMP label6
-label5:
-MOV EAX, [m]
-PUSH EDX
-XOR EDX, EDX
-MUL EAX
-MOV [y], EAX
-label6:
-PUSHA
-MOV EAX, [y]
-fnc StdOut, str$(EAX)
-POPA
+MOV EDX, EAX
 XOR EAX, EAX
 RET
 main ENDP
