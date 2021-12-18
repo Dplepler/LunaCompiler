@@ -282,11 +282,6 @@ void generate_binop(asm_backend* backend)
 	char* arg1 = NULL;
 	char* arg2 = NULL;
 
-	entry_T* entry = table_search_entry(backend->table, backend->instruction->arg1->value);
-
-	if (entry)
-		address_reset(entry);		// The variable being added to will not hold previous numbers anymore
-
 	// If the operation is add or sub by 0 then we can do nothing 
 	if (backend->instruction->arg2->type == CHAR_P && !strcmp(backend->instruction->arg2->value, "0"))
 	{
@@ -375,14 +370,11 @@ void generate_mul_div(asm_backend* backend)
 	reg1->regLock = true;
 	reg2 = generate_move_to_register(backend, backend->instruction->arg2);
 	reg1->regLock = false;
-	
-	// Save the value of EDX before xoring it
-	// NOTE: We have to reset the value of EDX since it's value will become the carry of the operation
-	fprintf(backend->targetProg, "PUSH EDX\n");
-	fprintf(backend->targetProg, "XOR EDX, EDX\n");
 
 	if (backend->instruction->op == AST_MUL)
+	{
 		fprintf(backend->targetProg, "MUL %s\n", generate_get_register_name(reg2));
+	}
 	else
 	{
 		// Xoring EDX is necessary because in division we divide EDX:EAX with the other register which means any 
@@ -1031,10 +1023,11 @@ register_T* generate_find_used_reg(asm_backend* backend)
 
 		reg = backend->registers[i];
 
-		for (i2 = 0; i2 < backend->registers[i]->size && reg ; i2++)
+		for (i2 = 0; i2 < backend->registers[i]->size && reg; i2++)
 		{
 			// If there's a temporary in the register, we cannot use the register
-			if (backend->registers[i]->regDescList[i2]->type == TAC_P)
+			if (backend->registers[i]->regDescList[i2]->type == TAC_P 
+				|| backend->registers[i]->regDescList[i2]->type == TEMP_P)
 			{
 				reg = NULL;
 			}
@@ -1059,7 +1052,7 @@ register_T* generate_find_used_reg(asm_backend* backend)
 	// Going through registers and checking if there's a register that holds values that won't be used again
 	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
-		if (!backend->registers[i]->regLock)
+		if (backend->registers[i]->regLock)
 			continue;
 
 		reg = generate_check_register_usability(backend, backend->registers[i]);	
@@ -1090,11 +1083,12 @@ register_T* generate_check_useless_value(asm_backend* backend, register_T* r)
 	unsigned int i = 0;
 	
 	// If we specified earlier to not use that register
-	if (r->regLock)
+	if (r->regLock || backend->instruction->next && backend->instruction->next->op != AST_ASSIGNMENT)
 		return NULL;
 
 	for (i = 0; i < r->size && reg; i++)
 	{
+	
 		if (generate_compare_arguments(backend->instruction->next->arg1->value, backend->instruction->arg1->value)
 			|| generate_compare_arguments(backend->instruction->next->arg1->value, backend->instruction->arg2->value)
 			|| !generate_compare_arguments(backend->instruction->next->arg1->value, r->regDescList[i]->value))
