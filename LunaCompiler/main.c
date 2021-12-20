@@ -1,6 +1,5 @@
 
 #include "codeGen.h"
-#define SIZE 100
 
 int main(int argc, char** argv)
 {
@@ -86,14 +85,16 @@ int main(int argc, char** argv)
 
 		// If we made a new file for the translated version from Hebrew, delete that file
 		if (!strcmp(argv[2], "-h"))
-			//remove(fileChoice);
+			remove(fileChoice);
 
 		free(newFilename);
 		free(fileChoice);
 	}
 	else
+	{
 		printf("File does not exist\n");
+	}
+		
 	
-	_CrtDumpMemoryLeaks();
 	return 0;
 }
