@@ -5,7 +5,7 @@
 	מספר ב = 5;
 	בזמןש(א <= 10)
 	{
-		תדפיס("Hello friends! Dr.Exposition is here to fuck your mom!\n");
+		תדפיס("Amazing!\n");
 		
 		א = א + 1;
 	
