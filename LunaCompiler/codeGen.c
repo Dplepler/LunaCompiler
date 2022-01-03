@@ -94,12 +94,8 @@ Output: None
 */
 void descriptor_reset_all_registers(asm_backend* backend)
 {
-	unsigned int i = 0;
-
-	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
-	{
+	for (unsigned int i = 0; i < GENERAL_REG_AMOUNT; i++)
 		descriptor_reset(backend, backend->registers[i]);
-	}
 }
 
 /*

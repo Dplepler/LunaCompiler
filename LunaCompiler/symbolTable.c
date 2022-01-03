@@ -38,14 +38,11 @@ Output: None
 */
 void address_reset(entry_T* entry)
 {
-	unsigned int i = 0;
-
-	if (!entry->addressDesc) {
+	if (!entry->addressDesc) 
 		return;
-	}
-
+	
 	// Go through and free all addresses stored in the descriptor
-	for (i = 0; i < entry->size; i++)
+	for (unsigned int i = 0; i < entry->size; i++)
 	{
 		free(entry->addressDesc[i]);
 		entry->addressDesc[i] = NULL;
@@ -65,20 +62,16 @@ Output: None
 */
 void address_remove_registers(entry_T* entry)
 {
-	unsigned int i = 0;
 	size_t size = entry->size;
 
-	if (!entry->addressDesc) {
+	if (!entry->addressDesc) 
 		return;
-	}
 		
-	for (i = 0; i < size; i++)
+	for (unsigned int i = 0; i < size; i++)
 	{
-		if (entry->addressDesc[i]->type != ADDRESS_REG) {
+		if (entry->addressDesc[i]->type != ADDRESS_REG) 
 			continue;
-		}
-			
-
+		
 		entry->size--;
 		free(entry->addressDesc[i]);
 		entry->addressDesc[i] = NULL;
@@ -93,21 +86,16 @@ Output: None
 */
 void address_remove_register(entry_T* entry, void* reg)
 {
-	unsigned int i = 0;
 	size_t size = entry->size;
 
-	if (!entry->addressDesc) {
+	if (!entry->addressDesc) 
 		return;
-	}
-		
 
-	for (i = 0; i < size; i++)
+	for (unsigned int i = 0; i < size; i++)
 	{
-		if (entry->addressDesc[i]->type != ADDRESS_REG || entry->addressDesc[i]->address != reg) {
+		if (entry->addressDesc[i]->type != ADDRESS_REG || entry->addressDesc[i]->address != reg)
 			continue;
-		}
-			
-			
+		
 		entry->size--;
 		free(entry->addressDesc[i]);
 		entry->addressDesc[i] = NULL;
@@ -161,20 +149,17 @@ Output: Entry that contains the variable, 0 if non of them do
 */
 entry_T* table_search_entry(table_T* table, char* name)
 {
-	unsigned int i = 0;
 	entry_T* entry = NULL;
 
-	for (i = 0; i < table->entrySize && !entry; i++)
+	for (unsigned int i = 0; i < table->entrySize && !entry; i++)
 	{
-		if (!strcmp(table->entries[i]->name, name)) {
+		if (!strcmp(table->entries[i]->name, name)) 
 			entry = table->entries[i];
-		}	
 	}
 		
 	// If entry was not found, go to the parent table
-	if (!entry && table->prev) {
+	if (!entry && table->prev) 
 		entry = table_search_entry(table->prev, name);
-	}
 
 	return entry;
 }
@@ -186,18 +171,14 @@ Output: Table that contains the variable
 */
 table_T* table_search_table(table_T* table, char* name)
 {
-	unsigned int i = 0;
-
-	for (i = 0; i < table->entrySize; i++)
+	for (unsigned int i = 0; i < table->entrySize; i++)
 	{
-		if (!strcmp(table->entries[i]->name, name)) {
+		if (!strcmp(table->entries[i]->name, name)) 
 			return table;
-		}
 	}
 
-	if (table->prev) {
+	if (table->prev) 
 		table_search_table(table->prev, name);
-	}
 		
 	return NULL;
 }
@@ -211,12 +192,9 @@ bool table_search_in_specific_table(table_T* table, char* entry)
 {
 	bool flag = false;
 
-	unsigned int i = 0;
-
-	for (i = 0; i < table->entrySize && !flag; i++) {
+	for (unsigned int i = 0; i < table->entrySize && !flag; i++)
 		flag = !strcmp(table->entries[i]->name, entry);
-	}
-		
+	
 	return flag;
 }
 
@@ -227,13 +205,11 @@ Output: True if found, otherwise false
 */
 bool entry_search_var(entry_T* entry, char* name)
 {
-	unsigned int i = 0;
 	bool flag = false;
 
 	// Go through all addresses of entry
-	for (i = 0; entry && i < entry->size && !flag; i++) {
+	for (unsigned int i = 0; entry && i < entry->size && !flag; i++)
 		flag = entry->addressDesc[i]->type == ADDRESS_VAR && !strcmp(entry->addressDesc[i]->address, name);
-	}
 		
 	return flag;
 }
@@ -248,26 +224,22 @@ void table_print_table(table_T* table, int level)
 	unsigned int i = 0;
 	unsigned int i2 = 0;
 
-	if (!table) {
+	if (!table) 
 		return;
-	}
-		
 	
 	for (i = 0; i < table->entrySize; i++)
 	{
 		printf("[Level]: %d, [Entry]: %s\n", level, table->entries[i]->name);
 		printf("Address descriptors\n");
 
-		for (i2 = 0; i2 < table->entries[i]->size; i2++) {
+		for (i2 = 0; i2 < table->entries[i]->size; i2++) 
 			printf("%s\n", table->entries[i]->addressDesc[i2]->address);
-		}
-			
 		
 	}
 
-	for (i = 0; i < table->nestedSize; i++) {
+	for (i = 0; i < table->nestedSize; i++) 
 		table_print_table(table->nestedScopes[i], level + 1);
-	}
+	
 		
 	
 }
@@ -283,22 +255,22 @@ void table_free_table(table_T* table)
 	unsigned int i = 0;
 	unsigned int i2 = 0;
 
-	if (!table) {
+	if (!table) 
 		return;
-	}
+	
 		
-	for (i = 0; i < table->nestedSize; i++) {
+	for (i = 0; i < table->nestedSize; i++) 
 		table_free_table(table->nestedScopes[i]);
-	}
+	
 		
 
 	for (i = 0; i < table->entrySize; i++)
 	{
 		for (i2 = 0; i2 < table->entries[i]->size; i2++) 
 		{
-			if (table->entries[i]->addressDesc[i2]) {
+			if (table->entries[i]->addressDesc[i2]) 
 				free(table->entries[i]->addressDesc[i2]);
-			}
+			
 		}
 			
 		free(table->entries[i]->addressDesc);
