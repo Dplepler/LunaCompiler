@@ -247,7 +247,7 @@ void generate_asm(asm_backend* backend)
 		case TOKEN_RBRACE: generate_block_exit(backend);
 
 			descriptor_reset_all_registers(backend);
-			// When done with a block, reset the index of the table and go to the previous one break;
+			// When done with a block, reset the index of the table and go to the previous one
 			backend->table->tableIndex = 0;
 			backend->table = backend->table->prev;
 			break;
@@ -396,13 +396,10 @@ Output: None
 */
 void generate_condition(asm_backend* backend)
 {
-	register_T* reg1 = NULL;
-	register_T* reg2 = NULL;
-
-	reg1 = generate_move_to_register(backend, backend->instruction->arg1);
+	register_T* reg1 = generate_move_to_register(backend, backend->instruction->arg1);
 
 	reg1->regLock = true;
-	reg2 = generate_move_to_register(backend, backend->instruction->arg2);
+	register_T* reg2 = generate_move_to_register(backend, backend->instruction->arg2);
 	reg1->regLock = false;
 
 	// Generate a block exit operation because with the control flow that is occuring here,
