@@ -8,7 +8,6 @@ Output: Parser
 parser_T* init_parser(lexer_T* lexer)
 {
 	parser_T* parser = calloc(1, sizeof(parser_T));
-	unsigned int i = 0;
 
 	parser->lexer = lexer;
 	parser->token = lexer_get_next_token(parser->lexer);
@@ -20,10 +19,8 @@ parser_T* init_parser(lexer_T* lexer)
 	parser->reserved = calloc(1, sizeof(char*) * RESERVED_SIZE);	// Allocate an array for the reserved values
 
 	// For each reserved value, add it to the array
-	for (i = 0; i < RESERVED_SIZE; i++)
-	{
+	for (unsigned int i = 0; i < RESERVED_SIZE; i++)
 		parser->reserved[i] = reserved_to_string(i);
-	}
 	
 	return parser;
 }

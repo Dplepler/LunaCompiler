@@ -27,11 +27,7 @@ Output: None
 */
 void lexer_advance(lexer_T* lexer)
 {	
-	if (lexer->index < lexer->contentsLength)
-		lexer->c = lexer->contents[++lexer->index];
-	else
-		lexer->c = '\0';
-
+	lexer->c = lexer->index < lexer->contentsLength ? lexer->contents[++lexer->index] : '\0';
 }
 
 /*
@@ -60,9 +56,8 @@ token_T* lexer_token_peek(lexer_T* lexer, unsigned int offset)
 
 	unsigned int saveLoc = lexer->index;
 	unsigned int saveLine = lexer->lineIndex;
-	unsigned int i = 0;
 
-	for (i = 0; i < offset; i++)
+	for (unsigned int i = 0; i < offset; i++)
 		token = lexer_get_next_token(lexer);
 
 	lexer->index = saveLoc;		// Return previous index
@@ -92,7 +87,8 @@ token_T* lexer_advance_current(lexer_T* lexer, int type)
 		value[1] = lexer->c;
 		value[2] = '\0';
 	}
-	else {
+	else 
+	{
 		value[1] = '\0';
 	}
 		
@@ -226,7 +222,6 @@ Output: Number token
 */
 token_T* lexer_collect_number(lexer_T* lexer)
 {
-
 	char* num = calloc(1, sizeof(char));
 	size_t size = 0;
 
