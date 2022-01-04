@@ -168,10 +168,8 @@ void write_asm(table_T* table, TAC* head, char* targetName)
 	{
 		// Save main function start
 		if (backend->instruction->op == AST_FUNCTION && !strcmp(backend->instruction->arg1->value, "main"))
-		{
 			mainStart = backend->instruction;
-		}
-
+		
 		generate_asm(backend);
 		backend->instruction = backend->instruction->next;
 	}
@@ -640,7 +638,6 @@ Output: None
 void generate_return(asm_backend* backend)
 {
 	register_T* reg = generate_move_to_ax(backend, backend->instruction->arg1);		// Always return a value in AX
-
 	fprintf(backend->targetProg, "RET\n");
 }
 

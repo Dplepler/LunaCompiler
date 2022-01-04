@@ -75,7 +75,6 @@ void address_remove_registers(entry_T* entry)
 		entry->size--;
 		free(entry->addressDesc[i]);
 		entry->addressDesc[i] = NULL;
-		
 	}
 }
 
@@ -240,10 +239,7 @@ void table_print_table(table_T* table, int level)
 	for (i = 0; i < table->nestedSize; i++) 
 		table_print_table(table->nestedScopes[i], level + 1);
 	
-		
-	
 }
-
 
 /*
 table_free_table is a postorder tree traversal that frees all nodes of the symbol table
@@ -258,11 +254,8 @@ void table_free_table(table_T* table)
 	if (!table) 
 		return;
 	
-		
 	for (i = 0; i < table->nestedSize; i++) 
 		table_free_table(table->nestedScopes[i]);
-	
-		
 
 	for (i = 0; i < table->entrySize; i++)
 	{
