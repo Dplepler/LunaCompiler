@@ -162,34 +162,17 @@ token_T* lexer_get_next_token(lexer_T* lexer)
 	{
 		switch (lexer->c)
 		{
-			case '!':
-				if (lexer_peek(lexer, 1) == '=')
-					token = lexer_advance_current(lexer, TOKEN_NEQUAL);
-				else
-					token = lexer_advance_current(lexer, TOKEN_NOT);
-				break;
+			case '!': token = lexer_peek(lexer, 1) == '=' ? lexer_advance_current(lexer, TOKEN_NEQUAL)
+				: lexer_advance_current(lexer, TOKEN_NOT); break;
 
+			case '=': token = lexer_peek(lexer, 1) == '=' ? lexer_advance_current(lexer, TOKEN_DEQUAL) 
+				: lexer_advance_current(lexer, TOKEN_EQUALS); break;
 
-			case '=':
-				if (lexer_peek(lexer, 1) == '=')
-					token = lexer_advance_current(lexer, TOKEN_DEQUAL);
-				else
-					token = lexer_advance_current(lexer, TOKEN_EQUALS);
-				break;
+			case '<': token = lexer_peek(lexer, 1) == '=' ? lexer_advance_current(lexer, TOKEN_ELESS)
+				: lexer_advance_current(lexer, TOKEN_LESS); break;
 
-			case '<':
-				if (lexer_peek(lexer, 1) == '=')
-					token = lexer_advance_current(lexer, TOKEN_ELESS);
-				else
-					token = lexer_advance_current(lexer, TOKEN_LESS);
-				break;
-
-			case '>':
-				if (lexer_peek(lexer, 1) == '=')
-					token = lexer_advance_current(lexer, TOKEN_EMORE);
-				else
-					token = lexer_advance_current(lexer, TOKEN_MORE);
-				break;
+			case '>': token = lexer_peek(lexer, 1) == '=' ? lexer_advance_current(lexer, TOKEN_EMORE)
+				: lexer_advance_current(lexer, TOKEN_MORE); break;
 
 			case '"': token = lexer_collect_string(lexer); break;
 			case ';': token = lexer_advance_current(lexer, TOKEN_SEMI); break;
