@@ -560,9 +560,9 @@ void generate_function(asm_backend* backend)
 
 	// Generate all the local variables for the function
 	if (counter > 0)
-		fprintf(backend->targetProg, "%s:%s", backend->table->entries[i]->name, dataToAsm(backend->table->entries[i]->dtype));
+		fprintf(backend->targetProg, "%s:%s", backend->table->entries[0]->name, dataToAsm(backend->table->entries[0]->dtype));
 
-	for (i = 1; i < counter; i++)
+	for (unsigned int i = 1; i < counter; i++)
 	{
 		fprintf(backend->targetProg, ", %s:%s", backend->table->entries[i]->name, dataToAsm(backend->table->entries[i]->dtype));
 	}
@@ -584,8 +584,6 @@ void generate_function(asm_backend* backend)
 	}
 
 	backend->instruction = triple;
-
-	i = 0;
 
 	// Go and assign a starting value to each declared variable
 	for (unsigned int i = 0; i < variables;) 
@@ -688,7 +686,7 @@ void generate_print(asm_backend* backend)
 	{
 		regDescListList[i] = calloc(1, sizeof(arg_T));
 
-		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
+		for (unsigned int i2 = 0; i2 < backend->registers[i]->size; i2++)
 		{
 			regDescListList[i][i2] = backend->registers[i]->regDescList[i2];
 		}
@@ -762,13 +760,11 @@ Output: First register to contain the variable, NULL if none of them do
 */
 register_T* generate_check_variable_in_reg(asm_backend* backend, arg_T* var)
 {
-	unsigned int i = 0;
-	unsigned int i2 = 0;
 	register_T* reg = NULL;
 
-	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
+	for (unsigned int i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
-		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
+		for (unsigned int i2 = 0; i2 < backend->registers[i]->size; i2++)
 		{
 			if (generate_compare_arguments(var, backend->registers[i]->regDescList[i2]))
 			{
@@ -788,10 +784,9 @@ Output: Free register if it exists, 0 if it doesn't
 */
 register_T* generate_find_free_reg(asm_backend* backend)
 {
-	unsigned int i = 0;
 	register_T* reg = NULL;
 
-	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
+	for (unsigned int i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
 		if (!backend->registers[i]->size && !backend->registers[i]->regLock)
 			reg = backend->registers[i];
@@ -916,14 +911,12 @@ register_T* generate_move_to_ax(asm_backend* backend, arg_T* arg)
 	register_T* reg = generate_check_variable_in_reg(backend, arg);
 	arg_T** regDescList = NULL;
 
-	unsigned int i = 0;
-
 	if (!reg)
 	{
 		// If the register found was not AX, copy AX's contents to it to free AX
 		if ((reg = generate_get_register(backend))->reg != REG_AX)
 		{
-			for (i = 0; i < backend->registers[REG_AX]->size; i++)
+			for (unsigned int i = 0; i < backend->registers[REG_AX]->size; i++)
 				descriptor_push(reg, backend->registers[REG_AX]->regDescList[i]);
 
 			fprintf(backend->targetProg, "MOV %s, EAX\n", generate_get_register_name(reg));		// Move the value of AX to a different register
@@ -958,14 +951,13 @@ Output: Register with lowest variables
 */
 register_T* generate_find_lowest_values(asm_backend* backend)
 {
-	unsigned int i = 0;
 	size_t loc = 0;
 
 	// Start comparing to the first available register
-	while (backend->registers[loc]->regLock) { loc++; }		
+	while (backend->registers[loc]->regLock) loc++; 	
 
 	// Start comparing all registers to find the lowest value
-	for (i = 1; i < GENERAL_REG_AMOUNT; i++)
+	for (unsigned int i = 1; i < GENERAL_REG_AMOUNT; i++)
 	{
 		if (backend->registers[i]->size < backend->registers[loc]->size
 			&& !backend->registers[i]->regLock)
@@ -984,21 +976,19 @@ Output: Newly available register
 */
 register_T* generate_find_used_reg(asm_backend* backend)
 {
-	unsigned int i = 0;
-	unsigned int i2 = 0;
 	register_T* reg = NULL;
 	entry_T* entry = NULL;
 
 	// Going through all the variables in all the registers and searching to see if there's a register
 	// that has all it's values stored somewhere else as well, if so, we can use that register
-	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
+	for (unsigned int i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
 		if (backend->registers[i]->regLock)
 			continue;
 
 		reg = backend->registers[i];
 
-		for (i2 = 0; i2 < backend->registers[i]->size && reg; i2++)
+		for (unsigned int i2 = 0; i2 < backend->registers[i]->size && reg; i2++)
 		{
 			// If there's a temporary in the register, we cannot use the register
 			if (backend->registers[i]->regDescList[i2]->type == TAC_P 
@@ -1015,7 +1005,7 @@ register_T* generate_find_used_reg(asm_backend* backend)
 	}
 	// Check that the variable the program is assigning to doesn't equal both operands
 	// and if it doesn't, we can use a register that contains the variable
-	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
+	for (unsigned int i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
 		if (backend->instruction->next && backend->instruction->next->op == AST_ASSIGNMENT 
 			&& backend->instruction->next->arg1->type != TAC_P && !backend->registers[i]->regLock)
@@ -1025,7 +1015,7 @@ register_T* generate_find_used_reg(asm_backend* backend)
 	}
 	
 	// Going through registers and checking if there's a register that holds values that won't be used again
-	for (i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
+	for (unsigned int i = 0; i < GENERAL_REG_AMOUNT && !reg; i++)
 	{
 		if (backend->registers[i]->regLock)
 			continue;
@@ -1055,13 +1045,12 @@ Output: Returns the register if it contains useless value, NULL if it doesn't
 register_T* generate_check_useless_value(asm_backend* backend, register_T* r)
 {
 	register_T* reg = r;
-	unsigned int i = 0;
 	
 	// If we specified earlier to not use that register
 	if (r->regLock || backend->instruction->next && backend->instruction->next->op != AST_ASSIGNMENT)
 		return NULL;
 
-	for (i = 0; i < r->size && reg; i++)
+	for (unsigned int i = 0; i < r->size && reg; i++)
 	{
 	
 		if (generate_compare_arguments(backend->instruction->next->arg1->value, backend->instruction->arg1->value)
@@ -1083,16 +1072,14 @@ Output: Returns the register if it contains unused values, NULL if not
 register_T* generate_check_register_usability(asm_backend* backend, register_T* r)
 {
 	register_T* reg = NULL;
-	unsigned int i = 0;
 
-	for (i = 0; i < r->size; i++)
+	for (unsigned int i = 0; i < r->size; i++)
 	{
 		reg = generate_check_variable_usability(backend, r, r->regDescList[i]);
 
 		if (!reg)
 			break;
 	}
-		
 
 	return reg;
 }
@@ -1133,17 +1120,14 @@ void generate_spill(asm_backend* backend, register_T* r)
 {
 	entry_T* entry = NULL;
 
-	unsigned int i = 0;
-
 	// For each value, store the value of the variable in itself
-	for (i = 0; i < r->size; i++)
+	for (unsigned int i = 0; i < r->size; i++)
 	{
 		if ((entry = table_search_entry(backend->table, r->regDescList[i]->value)))
 		{
 			fprintf(backend->targetProg, "MOV [%s], %s\n", r->regDescList[i]->value, generate_get_register_name(r));
 			address_push(entry, r->regDescList[i]->value, ADDRESS_VAR);
 		}
-		
 	}
 }
 
@@ -1155,11 +1139,8 @@ Output: None
 */
 void generate_block_exit(asm_backend* backend)
 {
-	unsigned int i = 0;
-
-	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
+	for (unsigned int i = 0; i < GENERAL_REG_AMOUNT; i++)
 		register_block_exit(backend, backend->registers[i]);
-
 }
 
 /*
@@ -1169,12 +1150,11 @@ Output: None
 */
 void register_block_exit(asm_backend* backend, register_T* reg)
 {
-	unsigned int i = 0;
 	entry_T* entry = NULL;
 
 	// For each value stored in the register, check if that value is different from what the actual variable
 	// holds, if it is, store the correct value in the variable before exiting a scope
-	for (i = 0; i < reg->size; i++)
+	for (unsigned int i = 0; i < reg->size; i++)
 	{
 		entry = table_search_entry(backend->table, reg->regDescList[i]->value);
 
@@ -1206,11 +1186,10 @@ Output: Label name
 */
 char* generate_get_label(asm_backend* backend, TAC* label)
 {
-	unsigned int i = 0;
 	char* name = NULL;
 	
 	// Search for label and return it
-	for (i = 0; i < backend->labelList->size && !name; i++)
+	for (unsigned int i = 0; i < backend->labelList->size && !name; i++)
 	{
 		if (label == backend->labelList->labels[i])
 			name = backend->labelList->names[i];
@@ -1263,9 +1242,7 @@ Output: True if they are equal, otherwise false
 */
 bool generate_compare_arguments(arg_T* arg1, arg_T* arg2)
 {
-	bool flag = false;
-
-	flag = (arg1->type == TAC_P || arg1->type == TEMP_P) && (arg2->type == TAC_P || arg2->type == TEMP_P) && arg1->value == arg2->value;
+	bool flag = (arg1->type == TAC_P || arg1->type == TEMP_P) && (arg2->type == TAC_P || arg2->type == TEMP_P) && arg1->value == arg2->value;
 
 	if (!flag)
 		flag = arg1->type == CHAR_P && arg2->type == CHAR_P && !strcmp(arg1->value, arg2->value);
@@ -1280,13 +1257,12 @@ Output: None
 */
 void generate_remove_descriptor(register_T* reg, arg_T* desc)
 {
-	unsigned int i = 0;
 	unsigned int index = 0;
 
 	if (!reg)
 		return;
 
-	for (i = 0; i < reg->size; i++)
+	for (unsigned int i = 0; i < reg->size; i++)
 	{
 		if (!generate_compare_arguments(reg->regDescList[i], desc))
 		{
@@ -1306,9 +1282,7 @@ Output: None
 */
 void free_registers(asm_backend* backend)
 {
-	unsigned int i = 0;
-
-	for (i = 0; i < REG_AMOUNT; i++)
+	for (unsigned int i = 0; i < REG_AMOUNT; i++)
 	{	
 		descriptor_reset(backend, backend->registers[i]);
 		free(backend->registers[i]);
@@ -1318,7 +1292,7 @@ void free_registers(asm_backend* backend)
 
 	if (backend->labelList)
 	{
-		for (i = 0; i < backend->labelList->size; i++)
+		for (unsigned int i = 0; i < backend->labelList->size; i++)
 			free(backend->labelList->names[i]);
 
 		free(backend->labelList->names);
