@@ -10,13 +10,11 @@ asm_backend* init_asm_backend(table_T* table, TAC* head, char* targetName)
 {
 	asm_backend* backend = calloc(1, sizeof(asm_backend));
 
-	unsigned int i = 0;
-
 	backend->registers = calloc(REG_AMOUNT, sizeof(register_T*));
 	backend->labelList = calloc(1, sizeof(label_list));
 	
 	// Allocate all registers for the backend
-	for (i = 0; i < REG_AMOUNT; i++)
+	for (unsigned int i = 0; i < REG_AMOUNT; i++)
 	{
 		backend->registers[i] = calloc(1, sizeof(register_T));
 		backend->registers[i]->reg = i;		// Assigning each register it's name
@@ -61,10 +59,8 @@ void descriptor_reset(asm_backend* backend, register_T* r)
 {
 	entry_T* entry = NULL;
 
-	unsigned int i = 0;
-
 	// Free all arguments
-	for (i = 0; i < r->size; i++)
+	for (unsigned int i = 0; i < r->size; i++)
 	{
 		if (r->regDescList[i]->type == TEMP_P)
 		{
@@ -148,11 +144,9 @@ void write_asm(table_T* table, TAC* head, char* targetName)
 	TAC* triple = head;
 	TAC* mainStart = NULL;
 	int mainTableIndex = 0;
-	
-	unsigned int i = 0;
 
 	// Print the template for the MASM Assembly program
-	for (i = 0; i < TEMPLATE_SIZE; i++)
+	for (unsigned int i = 0; i < TEMPLATE_SIZE; i++)
 		fprintf(backend->targetProg, "%s\n", asm_template[i]);
 	
 	// Generate the global variables in the .data section of the Assembly file
@@ -341,8 +335,6 @@ void generate_mul_div(asm_backend* backend)
 	register_T* reg1 = NULL;
 	register_T* reg2 = NULL;
 	entry_T* entry = NULL;
-
-	unsigned int i = 0;
 
 	// If one of the operands is 1 and the operation is multiplication then do nothing as multiplication by 1 means nothing
 	// Also if the second argument is 1 and the operation is division we can do nothing as well for the same reason
@@ -556,8 +548,6 @@ void generate_function(asm_backend* backend)
 	char* name = backend->instruction->arg1->value;
 	char* varName = NULL;
 
-	unsigned int i = 0;
-
 	fprintf(backend->targetProg, "%s PROC ", name);	// Generating function label
 
 	backend->table->tableIndex++;
@@ -598,7 +588,7 @@ void generate_function(asm_backend* backend)
 	i = 0;
 
 	// Go and assign a starting value to each declared variable
-	while (i < variables) 
+	for (unsigned int i = 0; i < variables;) 
 	{
 		if (backend->instruction->op == AST_ASSIGNMENT 
 			&& table_search_entry(backend->table, backend->instruction->arg1->value)->dtype != DATA_STRING)
@@ -649,12 +639,10 @@ Output: None
 void generate_func_call(asm_backend* backend)
 {
 	char* name = backend->instruction->arg1->value;
-
-	unsigned int i = 0;
 	size_t size = atoi(backend->instruction->arg2->value);
 	
 	// Push all the variables to the stack, from last to first
-	while (i < size)
+	for (unsigned int i = 0; i < size;)
 	{
 		backend->instruction = backend->instruction->next;
 
