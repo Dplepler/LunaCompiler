@@ -687,10 +687,7 @@ Output: None
 */
 void generate_print(asm_backend* backend)
 {
-	entry_T* entry = NULL;
-
-	unsigned int i = 0;
-	unsigned int i2 = 0;
+	entry_T* entry = NULL;;
 
 	size_t size = atoi(backend->instruction->arg2->value);
 
@@ -699,7 +696,7 @@ void generate_print(asm_backend* backend)
 	arg_T** regDescListList[GENERAL_REG_AMOUNT];
 
 	// Save the register values we will change because of the macros
-	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
+	for (unsigned int i = 0; i < GENERAL_REG_AMOUNT; i++)
 	{
 		regDescListList[i] = calloc(1, sizeof(arg_T));
 
@@ -710,7 +707,7 @@ void generate_print(asm_backend* backend)
 	}
 
 	// For each pushed param, produce an fnc StdOut instruction
-	for (i = 0; i < size; i++)
+	for (unsigned int i = 0; i < size; i++)
 	{
 		backend->instruction = backend->instruction->next;
 
@@ -749,9 +746,9 @@ void generate_print(asm_backend* backend)
 
 	descriptor_reset_all_registers(backend);
 
-	for (i = 0; i < GENERAL_REG_AMOUNT; i++)
+	for (unsigned int i = 0; i < GENERAL_REG_AMOUNT; i++)
 	{
-		for (i2 = 0; i2 < backend->registers[i]->size; i2++)
+		for (unsigned int i2 = 0; i2 < backend->registers[i]->size; i2++)
 			descriptor_push(backend->registers[i], regDescListList[i][i2]);
 		
 		free(regDescListList[i]);
