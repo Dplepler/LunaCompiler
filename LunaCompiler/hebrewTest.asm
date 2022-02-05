@@ -31,7 +31,7 @@ MOV [a], EAX
 CMP EAX, EBX
 JG label2
 PUSHA
-fnc StdOut, "Hello friends! Dr.Exposition is here to fuck your mom!\n"
+fnc StdOut, "Amazing!\n"
 POPA
 MOV EAX, [a]
 INC EAX

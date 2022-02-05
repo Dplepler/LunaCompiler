@@ -5,8 +5,8 @@ read_file takes a file and returns it's contents in a string
 Input: File
 Output: Contents of the file
 */
-char* read_file(FILE* file)
-{
+char* read_file(FILE* file) {
+
 	char* contents = NULL;
     char ch = 0;
     size_t i = 0;
@@ -14,8 +14,7 @@ char* read_file(FILE* file)
     contents = calloc(1, sizeof(char));
 
     // While end of file is not reached, advance file string data and put the current char in it
-    while ((ch = fgetc(file)) != EOF)
-    {
+    while ((ch = fgetc(file)) != EOF) {
         contents = realloc(contents, ++i);
         contents[i - 1] = ch;
     } 
@@ -34,25 +33,25 @@ make_new_filename gets a file and changes it's extention to the desired one
 Input: Filename, desired new extention
 Output: The same filename with a the desired extention
 */
-char* make_new_filename(char* name, char* extention)
-{
+char* make_new_filename(char* name, char* extention) {
+
     char* newFilename = calloc(1, sizeof(char));
 
     unsigned int i = 0;
     size_t size = 0;
     size_t length = strlen(name);
 
-    for (i = 0; i < length; i++)
-    {
+    for (i = 0; i < length; i++) {
+
         // For every normal character, we copy it as is
-        if (name[i] != '.')
-        {
+        if (name[i] != '.') {
+
             newFilename = realloc(newFilename, ++size);
             newFilename[size - 1] = name[i];
         }
         // When extention reached we copy the .asm extention instead
-        else
-        {
+        else {
+
             // Before using strcat, we have to terminate the current string
             newFilename = realloc(newFilename, ++size);
             newFilename[size - 1] = '\0';
@@ -73,11 +72,11 @@ numOfDigits returns the amount of digits in a number
 Input: Number
 Output: Amount of digits
 */
-size_t numOfDigits(int num)
-{
+size_t numOfDigits(int num) {
+
     size_t counter = 0;
-    do
-    {
+    do {
+
         num /= 10;
         counter++;
 
@@ -91,25 +90,24 @@ isNum checks if string only contains numbers
 Input: String to check
 Output: True if string only contains digits, otherwise false
 */
-bool isNum(char* value)
-{
-    bool flag = true;
+bool isNum(char* value) {
 
-    unsigned int i = 0;
+    bool flag = true;
     size_t size = strlen(value);
 
     // Loop through the string, if we find 1 character that is not a num we can return false
-    for (i = 0; i < size && flag; i++)
+    for (unsigned int i = 0; i < size && flag; i++)
     {
-        if (!isdigit(value[i]))
+        if (!isdigit(value[i])) {
             flag = false;
+        }  
     }
 
     return flag;
 }
 
-void assemble_file(char* filename)
-{
+void assemble_file(char* filename) {
+
     char* command = NULL;
     char* objectFilename = make_new_filename(filename, ".obj");
     char* exeFilename = make_new_filename(filename, ".exe");
@@ -138,8 +136,8 @@ myFgets will perform the fgets command and also remove the newline
 that might be at the end of the string - a known issue with fgets.
 input: the buffer to read into, the number of chars to read
 */
-void myFgets(char str[], int n)
-{
+void myFgets(char str[], int n) {
+
     fgets(str, n, stdin);
     str[strcspn(str, "\n")] = 0;
 }

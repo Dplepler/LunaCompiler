@@ -5,8 +5,8 @@ init_lexer initializes the lexer with the source code (contents)
 Input: Source code
 Output: Lexer
 */
-lexer_T* init_lexer(char* contents)
-{
+lexer_T* init_lexer(char* contents) {
+
 	lexer_T* lexer = calloc(1, sizeof(lexer_T));
 
 	lexer->contents = contents;
@@ -25,8 +25,7 @@ lexer_advance advances the lexer by 1
 Input: lexer
 Output: None
 */
-void lexer_advance(lexer_T* lexer)
-{	
+void lexer_advance(lexer_T* lexer) {	
 	lexer->c = lexer->index < lexer->contentsLength ? lexer->contents[++lexer->index] : '\0';
 }
 
@@ -35,12 +34,13 @@ lexer_peek returns the file character from the current index position of the lex
 Input: Lexer, offset to add to current index
 Output: File character in the desired position
 */
-char lexer_peek(lexer_T* lexer, size_t offset)
-{
+char lexer_peek(lexer_T* lexer, size_t offset) {
+
 	char lexeme = -1;
 
-	if (lexer->index + 1 < lexer->contentsLength)
+	if (lexer->index + 1 < lexer->contentsLength) {
 		lexeme = lexer->contents[lexer->index + offset];
+	}
 
 	return lexeme;
 }
@@ -50,15 +50,16 @@ lexer_token_peeks returns the next token without advancing
 Input: Lexer
 Output: Next token
 */
-token_T* lexer_token_peek(lexer_T* lexer, unsigned int offset)
-{
+token_T* lexer_token_peek(lexer_T* lexer, unsigned int offset) {
+
 	token_T* token = NULL;
 
 	unsigned int saveLoc = lexer->index;
 	unsigned int saveLine = lexer->lineIndex;
 
-	for (unsigned int i = 0; i < offset; i++)
+	for (unsigned int i = 0; i < offset; i++) {
 		token = lexer_get_next_token(lexer);
+	}
 
 	lexer->index = saveLoc;		// Return previous index
 	lexer->lineIndex = saveLine;
@@ -72,27 +73,25 @@ lexer_advance_current initializes a token with a type and a value
 Input: Lexer, type of token
 Output: Initialized token
 */
-token_T* lexer_advance_current(lexer_T* lexer, int type)
-{
+token_T* lexer_advance_current(lexer_T* lexer, int type) {
+
 	token_T* token = NULL;
 	char* value = malloc(VALUE_SIZE);
 	
 	value[0] = lexer->c;
 
 	// If token is 2 characters long (e.g: <=, ==)
-	if (type == TOKEN_ELESS || type == TOKEN_EMORE || type == TOKEN_DEQUAL || type == TOKEN_NEQUAL)
-	{
+	if (type == TOKEN_ELESS || type == TOKEN_EMORE || type == TOKEN_DEQUAL || type == TOKEN_NEQUAL) {
+		
 		value = realloc(value, VALUE_SIZE + 1);
 		lexer_advance(lexer);
 		value[1] = lexer->c;
 		value[2] = '\0';
 	}
-	else 
-	{
+	else  {
 		value[1] = '\0';
 	}
 		
-	
 	token = init_token(type, value, lexer->lineIndex);
 	lexer_advance(lexer);
 
@@ -104,29 +103,31 @@ lexer_skip_whitespace Skips all the unnecessary spaces and white space
 Input: Lexer
 Output: None
 */
-void lexer_skip_whitespace(lexer_T* lexer)
-{
-	// Skipping Whitespace
-	while (lexer->c == ' ' || lexer->c == '\n' || lexer->c == '\t')
-	{
-		if (lexer->c == '\n')
-			lexer->lineIndex++;
+void lexer_skip_whitespace(lexer_T* lexer) {
 
+	// Skipping Whitespace
+	while (lexer->c == ' ' || lexer->c == '\n' || lexer->c == '\t') {
+		if (lexer->c == '\n') {
+			lexer->lineIndex++;
+		}
+			
 		lexer_advance(lexer);
 	}
 
 	lexer_skip_comments(lexer);
 }
 
-void lexer_skip_comments(lexer_T* lexer)
-{
+void lexer_skip_comments(lexer_T* lexer) {
+
 	// Skipping comments
-	if (lexer->c == '~')
-	{
-		while (lexer->c != '\n')
-		{
-			if (lexer->c == '\0')
+	if (lexer->c == '~') {
+
+		while (lexer->c != '\n') {
+
+			if (lexer->c == '\0') {
 				break;
+			}
+				
 			lexer_advance(lexer);
 		}
 			
@@ -143,21 +144,22 @@ lexer_get_next_token gets the next token and initializes a value and type
 Input: Lexer
 Output: The new token
 */
-token_T* lexer_get_next_token(lexer_T* lexer)
-{
+token_T* lexer_get_next_token(lexer_T* lexer) {
+
 	token_T* token = NULL;
 
 	lexer_skip_whitespace(lexer);
 
-	if (isalpha(lexer->c))
+	if (isalpha(lexer->c)) {
 		token = lexer_collect_id(lexer);
-	else if (isdigit(lexer->c))
+	}
+	else if (isdigit(lexer->c)) {
 		token = lexer_collect_number(lexer);
+	}
+	else {
 
-	else
-	{
-		switch (lexer->c)
-		{
+		switch (lexer->c) {
+
 			case '!': token = lexer_peek(lexer, 1) == '=' ? lexer_advance_current(lexer, TOKEN_NEQUAL)
 				: lexer_advance_current(lexer, TOKEN_NOT); break;
 
@@ -195,14 +197,14 @@ lexer_collect_id collects an identifier token
 Input: Lexer
 Output: Identifier token
 */
-token_T* lexer_collect_id(lexer_T* lexer)
-{
+token_T* lexer_collect_id(lexer_T* lexer) {
+
 	char* id = calloc(1, sizeof(char));
 	size_t size = 0;
 	
 	// An ID has to start with a letter but can contain numbers, letters and underscore
-	while (isalpha(lexer->c) || isdigit(lexer->c) || lexer->c == '_')
-	{
+	while (isalpha(lexer->c) || isdigit(lexer->c) || lexer->c == '_') {
+
 		id = realloc(id, ++size);
 		id[size - 1] = lexer->c;
 		lexer_advance(lexer);
@@ -220,14 +222,14 @@ lexer_collect_number collects a number token
 Input: Lexer
 Output: Number token
 */
-token_T* lexer_collect_number(lexer_T* lexer)
-{
+token_T* lexer_collect_number(lexer_T* lexer) {
+
 	char* num = calloc(1, sizeof(char));
 	size_t size = 0;
 
 	// Collect number
-	while (isdigit(lexer->c))
-	{
+	while (isdigit(lexer->c)) {
+
 		num = realloc(num, ++size);
 		num[size - 1] = lexer->c;
 		lexer_advance(lexer);
@@ -244,8 +246,8 @@ lexer_collect_string collects a string token
 Input: Lexer
 Output: String token
 */
-token_T* lexer_collect_string(lexer_T* lexer)
-{
+token_T* lexer_collect_string(lexer_T* lexer) {
+
 	char* string = calloc(1, sizeof(char));
 	size_t size = 0;
 
@@ -254,11 +256,11 @@ token_T* lexer_collect_string(lexer_T* lexer)
 	lexer_advance(lexer);
 
 	// Collect quote
-	while (lexer->c != '"')
-	{
+	while (lexer->c != '"') {
+
 		// If we reached the end of the file without getting an ending quote, raise error
-		if (lexer->c == '\0')
-		{
+		if (lexer->c == '\0') {
+
 			printf("[Error in line %d]: Start of string was never ended", line);
 			exit(1);
 		}
@@ -281,8 +283,8 @@ lexer_token_list_push pushes a token to the list of tokens so we can free them l
 Input: Lexer, token to push
 Output: None
 */
-void lexer_token_list_push(lexer_T* lexer, token_T* token)
-{
+void lexer_token_list_push(lexer_T* lexer, token_T* token) {
+
 	lexer->tokens = realloc(lexer->tokens, sizeof(token_T*) * ++lexer->tokensSize);
 	lexer->tokens[lexer->tokensSize - 1] = token;
 }
@@ -292,12 +294,10 @@ lexer_free_tokens frees the list of tokens and their values
 Input: Lexer with the list of tokens
 Output: None
 */
-void lexer_free_tokens(lexer_T* lexer)
-{
-	unsigned int i = 0;
+void lexer_free_tokens(lexer_T* lexer) {
 
-	for (i = 0; i < lexer->tokensSize; i++)
-	{
+	for (unsigned int i = 0; i < lexer->tokensSize; i++) {
+
 		free(lexer->tokens[i]->value);
 		free(lexer->tokens[i]);
 	}

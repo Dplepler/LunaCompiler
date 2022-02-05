@@ -1,10 +1,8 @@
-
 #include "codeGen.h"
 #define SIZE 100
 
-int main(int argc, char** argv)
-{
-	
+int main(int argc, char** argv) {
+
 	FILE* file = NULL;
 	lexer_T* lexer = NULL;
 	token_T* token = NULL;
@@ -20,17 +18,14 @@ int main(int argc, char** argv)
 
 
 	// Raise error if user didn't input filename or compile mode
-	if (!argv[1] || !argv[2])
-	{
-		printf("[Error]: Some file input is missing");
-		exit(1);
+	if (!argv[1] || !argv[2]) {
+		printf("[Error]: Some file input is missing"); exit(1);
 	}
 
 	newFilename = make_new_filename(argv[1], ".asm");	// Set output filename to be the code filename with a .asm extention
 	
 	// If user wants to compile in Hebrew, run the translator and replace the file with the translated file
-	if (!strcmp(argv[2], "-h"))
-	{
+	if (!strcmp(argv[2], "-h")) {
 		// Allocate a string to run the python translator file
 		// The translator takes a source code and replaces Hebrew keywords with English keywords
 		// NOTE: Hebrew words that are not reserved get translated to a gibberish English word
@@ -44,20 +39,18 @@ int main(int argc, char** argv)
 		free(command);
 	}
 	// Otherwise, we just want to use the normal filename
-	else
-	{
+	else {
+
 		fileChoice = calloc(1, strlen(argv[1]) + 1);
 		strcpy(fileChoice, argv[1]);
 	}
 
-	if (file = fopen(fileChoice, "r"))		// Read file
-	{
+	if (file = fopen(fileChoice, "r")) {		// Read file
+
 		contents = read_file(file);			// Read contents of file
 
-		if (!contents)
-		{
-			printf("[Error]: Couldn't read file contents");
-			exit(1);
+		if (!contents) {
+			printf("[Error]: Couldn't read file contents"); exit(1);
 		}
 		
 		lexer = init_lexer(contents);		// Initialize lexer
@@ -92,9 +85,9 @@ int main(int argc, char** argv)
 		free(newFilename);
 		free(fileChoice);
 	}
-	else
+	else {
 		printf("File does not exist\n");
-	
-	_CrtDumpMemoryLeaks();
+	}
+		
 	return 0;
 }

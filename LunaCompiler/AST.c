@@ -5,8 +5,8 @@ init_AST initializes the abstract syntax tree
 Input: Type of node
 Output: None
 */
-AST* init_AST(int type)
-{
+AST* init_AST(int type) {
+
 	AST* node = calloc(1, sizeof(AST));
 	node->type = type;
 
@@ -19,8 +19,8 @@ AST_initChildren initializes an AST node of type any type and assigns given chil
 Input: Left node, right node, type of node
 Output: New node
 */
-AST* AST_initChildren(AST* left, AST* right, int type)
-{
+AST* AST_initChildren(AST* left, AST* right, int type) {
+
 	AST* node = init_AST(type);
 	node->leftChild = left;
 	node->rightChild = right;
@@ -34,10 +34,9 @@ typeToString converts an AST node type to string so I can debug with it
 Input: Type
 Output: String value of type
 */
-char* typeToString(int type)
-{
-	switch (type)
-	{
+char* typeToString(int type) {
+
+	switch (type) {
 
 		// TOKEN ENUM
 
@@ -103,93 +102,111 @@ AST_free_AST frees an entire Abstract Syntax Tree
 Input: Root of tree
 Output: None
 */
-void AST_free_AST(AST* node)
-{
-	unsigned int i = 0;
+void AST_free_AST(AST* node) {
 
 	if (node->type == AST_ADD || node->type == AST_SUB || node->type == AST_MUL || node->type == AST_DIV
-		|| node->type == AST_COMPARE || node->type == AST_ASSIGNMENT)
-	{
-		if (node->value)
-		{
+		|| node->type == AST_COMPARE || node->type == AST_ASSIGNMENT) {
+
+		if (node->value) {
+
 			AST_free_AST(node->value);
 		}
-		else
-		{
+		else {
+
 			AST_free_AST(node->leftChild);
 			AST_free_AST(node->rightChild);
 		}
 
 		free(node);
 	}
-	else if (node->type == AST_INT || node->type == AST_VARIABLE || node->type == AST_STRING)
-	{
+	else if (node->type == AST_INT || node->type == AST_VARIABLE || node->type == AST_STRING) {
+
 		free(node);
 	}
-	else if (node->type == AST_IF || node->type == AST_WHILE)
-	{
+	else if (node->type == AST_IF || node->type == AST_WHILE) {
+
 		AST_free_AST(node->if_body);
 		AST_free_AST(node->condition);
-		if (node->else_body)
+
+		if (node->else_body) {
 			AST_free_AST(node->else_body);
+		}
+			
 		free(node);
 	}
-	else if (node->type == AST_VARIABLE_DEC || node->type == AST_RETURN)
-	{
+	else if (node->type == AST_VARIABLE_DEC || node->type == AST_RETURN) {
+
 		AST_free_AST(node->value);
 		free(node);
 	}
-	else
-	{
-		switch (node->type)
-		{
+	else {
+
+		switch (node->type) {
+
 			case AST_PROGRAM:
 				// Freeing Functions
-				for (i = 0; i < node->functionsSize; i++)
+				for (unsigned int i = 0; i < node->functionsSize; i++) {
 					AST_free_AST(node->function_list[i]);
+				}
 				// Freeing global variables
-				for (i = 0; i < node->size; i++)
+				for (unsigned int i = 0; i < node->size; i++) {
 					AST_free_AST(node->children[i]);
-
-				if (node->function_list)
+				}
+					
+				if (node->function_list) {
 					free(node->function_list);
-				if (node->children)
+				}
+					
+				if (node->children) {
 					free(node->children);
+				}
+					
 				free(node);
 				break;
 
 			case AST_FUNCTION:
-				// Freeing Functions
-				for (i = 0; i < node->size; i++)
-					AST_free_AST(node->function_def_args[i]);
 
-				if (node->function_def_args)
-					free(node->function_def_args);
-				if (node->function_body)
-					AST_free_AST(node->function_body);
-				
+				// Freeing Functions
+				for (unsigned int i = 0; i < node->size; i++) {
+					AST_free_AST(node->function_def_args[i]);
+				}
 					
+				if (node->function_def_args) {
+					free(node->function_def_args);
+				}
+					
+				if (node->function_body) {
+					AST_free_AST(node->function_body);
+				}
 
 				free(node);
 				break;
 
 			case AST_COMPOUND:
-				for (i = 0; i < node->size; i++)
+
+				for (unsigned int i = 0; i < node->size; i++) {
 					AST_free_AST(node->children[i]);
-				if (node->children)
+				}
+					
+				if (node->children) {
 					free(node->children);
+				}
+					
 				free(node);
 				break;
 
 			case AST_FUNC_CALL:
-				for (i = 0; i < node->size; i++)
-					AST_free_AST(node->arguments[i]);
-				if (node->arguments)
-					free(node->arguments);
 
+				for (unsigned int i = 0; i < node->size; i++) {
+					AST_free_AST(node->arguments[i]);
+				}
+					
+				if (node->arguments) {
+					free(node->arguments);
+				}
+					
 				free(node);
 				break;
-
 		}
 	}
 }
