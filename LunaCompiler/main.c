@@ -56,15 +56,13 @@ int main(int argc, char** argv) {
 		lexer = init_lexer(contents);		// Initialize lexer
 		parser = init_parser(lexer);		// Initialize Parser
 
-		printf("%s", contents);
-
 		root = parser_parse(parser);		// Parse the tokens into an AST
 
 		instructions = traversal_visit(root);	// Visit the AST and generate an intermidiate representation
 	
 		//table_print_table(parser->table, 0);
 		traversal_print_instructions(instructions);
-			
+		
 		// Write the Assembly code from the given IR
 		write_asm(parser->table, instructions->head, newFilename);
 
@@ -82,7 +80,7 @@ int main(int argc, char** argv) {
 
 		// If we made a new file for the translated version from Hebrew, delete that file
 		if (!strcmp(argv[2], "-h"))
-			//remove(fileChoice);
+			remove(fileChoice);
 
 		free(newFilename);
 		free(fileChoice);
