@@ -56,6 +56,8 @@ int main(int argc, char** argv) {
 		lexer = init_lexer(contents);		// Initialize lexer
 		parser = init_parser(lexer);		// Initialize Parser
 
+		printf("%s", contents);
+
 		root = parser_parse(parser);		// Parse the tokens into an AST
 
 		instructions = traversal_visit(root);	// Visit the AST and generate an intermidiate representation

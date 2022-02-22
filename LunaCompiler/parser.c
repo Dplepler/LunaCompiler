@@ -14,7 +14,7 @@ parser_T* init_parser(lexer_T* lexer) {
 
 	parser->table = init_table(NULL);	// Initialize root table and set parent to NULL
 
-	table_add_builtin_functions();
+	table_add_builtin_functions(parser->table);
 
 	parser->reserved = calloc(1, sizeof(char*) * RESERVED_SIZE);	// Allocate an array for the reserved values
 
@@ -102,13 +102,14 @@ Input: Parser
 Output: Function node
 */
 AST* parser_function(parser_T* parser) {
+
 	AST* node = init_AST(AST_FUNCTION);			// Initialize function node
 	size_t counter = 0;
 
 	switch (parser_check_reserved(parser)) {
 
 		case INT_T: node->var_type = DATA_INT; break;
-		case STRING_T: node->var_type = DATA_STRING; break;
+		//case STRING_T: node->var_type = DATA_STRING; break;  // Currently no string return is allowed :(
 		default: printf("[Error in line %d]: Invalid return value", parser->lexer->lineIndex); 
 			exit(1);
 	}
@@ -196,7 +197,6 @@ AST* parser_statement(parser_T* parser) {
 		if (node = parser_parse_id_reserved_statement(parser, parser_check_reserved(parser))) {
 			return node;
 		}
-			
 		
 		// Variable assignment
 		if (lexer_token_peek(parser->lexer, 1)->type == TOKEN_EQUALS) {
