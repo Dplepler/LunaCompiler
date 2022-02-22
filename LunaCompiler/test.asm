@@ -33,6 +33,10 @@ POPA
 XOR EAX, EAX
 RET
 main ENDP
+func PROC 
+MOV EAX, Hello
+RET
+func ENDP
 main_start:
 CALL main
 invoke ExitProcess, 0

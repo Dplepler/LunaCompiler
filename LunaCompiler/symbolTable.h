@@ -66,6 +66,6 @@ void address_remove_register(entry_T* entry, void* reg);
 void table_add_entry(table_T* table, char* name, int type);
 void table_print_table(table_T* table, int level);
 void table_free_table(table_T* table);
-
+void table_add_builtin_functions();
 
 #endif

@@ -270,4 +270,12 @@ void table_free_table(table_T* table) {
 	free(table->nestedScopes);
 	free(table);
 }
- 
+
+/*
+table_add_builtin_functions adds all built in functions of the compiler to the symbol table
+Input: Table to add to
+Output: None
+*/
+void table_add_builtin_functions(table_T* table) {
+	table_add_entry(table, "print", DATA_INT);		// Adding built in function to symbol table
+}

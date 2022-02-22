@@ -14,7 +14,7 @@ parser_T* init_parser(lexer_T* lexer) {
 
 	parser->table = init_table(NULL);	// Initialize root table and set parent to NULL
 
-	table_add_entry(parser->table, "print", DATA_INT);		// Adding built in function to symbol table
+	table_add_builtin_functions();
 
 	parser->reserved = calloc(1, sizeof(char*) * RESERVED_SIZE);	// Allocate an array for the reserved values
 
