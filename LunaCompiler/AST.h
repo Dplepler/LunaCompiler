@@ -44,7 +44,7 @@ typedef struct AST_STRUCT {
 	int type_c;							// Type of condition (>, ==, <=)
 
 
-	// Variable decleration
+	// Variable declaration
 	dtype var_type;
 
 	// Functions
@@ -70,8 +70,6 @@ typedef struct AST_STRUCT {
 	struct AST_STRUCT* leftChild;
 	struct AST_STRUCT* value;
 	struct AST_STRUCT* rightChild;
-
-		
 
 } AST;
 
