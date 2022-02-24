@@ -3,11 +3,10 @@
 #include "tokens.h"
 #include "symbolTable.h"
 
-typedef struct AST_STRUCT
-{
+typedef struct AST_STRUCT {
 
-	enum
-	{
+	enum {
+
 		AST_PROGRAM = 24,		// Continue enumeration from tokens (tokens.c)
 		AST_FUNCTION,
 		AST_DEF_AMOUNT,
