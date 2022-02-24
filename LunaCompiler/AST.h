@@ -46,7 +46,7 @@ typedef struct AST_STRUCT {
 
 	// Variable declaration
 	dtype var_type;
-
+	
 	// Functions
 	struct AST_STRUCT** function_list;
 	struct AST_STRUCT** function_def_args;
@@ -57,6 +57,7 @@ typedef struct AST_STRUCT {
 
 	// Name used for different types of nodes, (e.g a variable node would have it's node->name be the identifier)
 	char* name;
+
 	// Same for size
 	size_t size;
 

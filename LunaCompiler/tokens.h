@@ -2,11 +2,11 @@
 #define TOKEN_H
 #include "io.h"
 
-typedef struct TOKEN_STRUCT
-{
+typedef struct TOKEN_STRUCT {
+
 	char* value;
-	enum
-	{
+	enum {
+
 		TOKEN_ID,
 		TOKEN_NUMBER,
 		TOKEN_EQUALS,
