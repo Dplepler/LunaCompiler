@@ -27,7 +27,7 @@ typedef struct TOKEN_STRUCT
 		TOKEN_DIV,
 		TOKEN_SUB,
 		TOKEN_LBRACE,
-		TOKEN_RBRACE,
+		TOKEN_RBRACE, 
 		TOKEN_FUNC_END,
 		TOKEN_NOOP,
 		TOKEN_EOF,
@@ -39,4 +39,6 @@ typedef struct TOKEN_STRUCT
 token_T* init_token(int type, char* value);
 
 #endif
+
+
  

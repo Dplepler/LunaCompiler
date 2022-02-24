@@ -8,7 +8,7 @@ typedef struct AST_STRUCT
 
 	enum
 	{
-		AST_PROGRAM = 24,		// Continue enumiration from tokens (tokens.c)
+		AST_PROGRAM = 24,		// Continue enumeration from tokens (tokens.c)
 		AST_FUNCTION,
 		AST_DEF_AMOUNT,
 		AST_COMPOUND,
@@ -74,7 +74,7 @@ typedef struct AST_STRUCT
 
 		
 
-}AST;
+} AST;
 
 AST* init_AST(int type);
 AST* AST_initChildren(AST* left, AST* right, int type);
