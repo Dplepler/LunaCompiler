@@ -79,6 +79,7 @@ void generate_spill(asm_backend* backend, register_T* r);
 void descriptor_reset(asm_backend* backend, register_T* r);
 void descriptor_reset_all_registers(asm_backend* backend);
 void generate_remove_descriptor(register_T* reg, arg_T* desc);
+void restore_save_registers(asm_backend* backend);
 
 register_T* generate_find_register(asm_backend* backend, arg_T* arg);
 register_T* generate_move_to_ax(asm_backend* backend, arg_T* arg);

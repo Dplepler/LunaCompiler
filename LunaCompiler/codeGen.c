@@ -677,8 +677,6 @@ void generate_print(asm_backend* backend) {
 
 	size_t size = atoi(backend->instruction->arg2->value);
 
-	fprintf(backend->targetProg, "PUSHA\n");	// fnc will change register values, save previous values before doing so
-
 	arg_T** regDescListList[GENERAL_REG_AMOUNT];
 
 	// Save the register values we will change because of the macros
@@ -690,9 +688,13 @@ void generate_print(asm_backend* backend) {
 			regDescListList[i][i2] = backend->registers[i]->regDescList[i2];
 		}
 	}
-
+	
+	fprintf(backend->targetProg, "PUSHA\n");	// fnc will change register values, save previous values before doing so
+	
 	// For each pushed param, produce an fnc StdOut instruction
 	for (unsigned int i = 0; i < size; i++) {
+
+		
 
 		backend->instruction = backend->instruction->next;
 
@@ -703,10 +705,16 @@ void generate_print(asm_backend* backend) {
 		// For data literals we just want to print them as is
 		if (backend->instruction->op == AST_PARAM && !entry) {
 
-			!(backend->instruction->arg1->type == TAC_P || backend->instruction->arg1->type == TEMP_P) ?
-				fprintf(backend->targetProg, "fnc StdOut, \"%s\"\n", backend->instruction->arg1->value)
-				: fprintf(backend->targetProg, "fnc StdOut, str$(%s)\n", generate_get_register_name(
+			if (!(backend->instruction->arg1->type == TAC_P || backend->instruction->arg1->type == TEMP_P)) {
+				fprintf(backend->targetProg, "fnc StdOut, \"%s\"\n", backend->instruction->arg1->value);
+			}
+			else {
+				// We need to return registers inside here because they could've changed
+				restore_save_registers(backend);
+				fprintf(backend->targetProg, "fnc StdOut, str$(%s)\n", generate_get_register_name(
 					generate_move_to_register(backend, backend->instruction->arg1)));
+			}
+				 
 				
 		}
 		// For strings being pushed, produce fitting code
@@ -717,7 +725,10 @@ void generate_print(asm_backend* backend) {
 		// For an integer, find or allocate a register to the value and print the value using the str$ macro
 		// also for temporeries
 		else if (backend->instruction->op == AST_PARAM && entry->dtype == DATA_INT) {
-
+			restore_save_registers(backend);
+			// We need to return registers inside here because they could've changed
+			fprintf(backend->targetProg, "POPA\n");
+			fprintf(backend->targetProg, "PUSHA\n");
 			fprintf(backend->targetProg, "fnc StdOut, str$(%s)\n", generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg1)));
 		}
 		else {
@@ -725,9 +736,13 @@ void generate_print(asm_backend* backend) {
 			generate_asm(backend);
 			i--;
 		}
+
+		
 	}
 
 	/* Return back the values before the PUSHA instruction */
+
+	fprintf(backend->targetProg, "POPA\n");		// Return previous values to registers in Assembly code
 
 	descriptor_reset_all_registers(backend);
 
@@ -740,7 +755,7 @@ void generate_print(asm_backend* backend) {
 		free(regDescListList[i]);
 	}
 
-	fprintf(backend->targetProg, "POPA\n");		// Return previous values to registers in Assembly code
+	
 }
 
 /*
@@ -1276,6 +1291,12 @@ void generate_remove_descriptor(register_T* reg, arg_T* desc) {
 	}
 
 	reg->regDescList = realloc(reg->regDescList, --reg->size * sizeof(arg_T*));
+}
+
+void restore_save_registers(asm_backend* backend) {
+
+	fprintf(backend->targetProg, "POPA\n");
+	fprintf(backend->targetProg, "PUSHA\n");
 }
 
 

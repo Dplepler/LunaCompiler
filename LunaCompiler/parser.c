@@ -23,7 +23,6 @@ parser_T* init_parser(lexer_T* lexer) {
 		parser->reserved[i] = reserved_to_string(i);
 	}
 		
-	
 	return parser;
 }
 
@@ -173,6 +172,7 @@ AST* parser_block(parser_T* parser) {
 		node->children = realloc(node->children, sizeof(AST*) * ++counter);
 		node->children[counter - 1] = parser_statement(parser);
 	}
+
 	node->size = counter;
 
 	parser->token = parser_expect(parser, TOKEN_RBRACE);
@@ -200,7 +200,6 @@ AST* parser_statement(parser_T* parser) {
 		
 		// Variable assignment
 		if (lexer_token_peek(parser->lexer, 1)->type == TOKEN_EQUALS) {
-
 			node = parser_assignment(parser);
 			parser->token = parser_expect(parser, TOKEN_SEMI);
 		}

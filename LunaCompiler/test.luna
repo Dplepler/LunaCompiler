@@ -1,16 +1,22 @@
-int main()
-{
-	int x;
-	int y = 10;
-	int z = 20;
-	
-	x = 3 * (y - z);
 
-	print(x);
+int youShallPass(int num) {
+
+	print(num);
+
+	if (num == 42) {
+		print("Correct!\n", "The magic number was: ", num);
+	}
+	else {
+		print("Wrong\n");
+	}
 	
+	return 10;
+}
+
+int main() {
+
+	int magic = 42;     ~ Magic number to pass
+	youShallPass(magic); 			~ Call our special function
 	return 0;
 }
 
-string func() {
-	return "Hello";
-}

@@ -13,30 +13,39 @@ includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\masm32.lib
 .data
 .code
-main PROC 
-LOCAL x:DWORD
-LOCAL y:DWORD
-LOCAL z:DWORD
-XOR EAX, EAX
-MOV [x], EAX
-MOV EBX, 10
-MOV [y], EBX
-MOV ECX, 20
-MOV [z], ECX
-SUB EBX, ECX
-MOV ECX, EAX
-MOV EAX, 3
-MUL EBX
+youShallPass PROC num:DWORD
 PUSHA
+MOV EAX, [num]
 fnc StdOut, str$(EAX)
 POPA
+MOV EAX, [num]
+MOV EBX, 42
+CMP EAX, EBX
+JNE label1
+PUSHA
+fnc StdOut, "Correct!\n"
+fnc StdOut, "The magic number was: "
+fnc StdOut, str$(EAX)
+POPA
+JMP label2
+label1:
+PUSHA
+fnc StdOut, "Wrong\n"
+POPA
+label2:
+MOV EAX, 10
+RET
+youShallPass ENDP
+main PROC 
+LOCAL magic:DWORD
+MOV EAX, 42
+MOV [magic], EAX
+PUSH magic
+CALL youShallPass
+MOV EBX, EAX
 XOR EAX, EAX
 RET
 main ENDP
-func PROC 
-MOV EAX, Hello
-RET
-func ENDP
 main_start:
 CALL main
 invoke ExitProcess, 0
