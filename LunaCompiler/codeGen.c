@@ -464,10 +464,12 @@ void generate_assignment(asm_backend* backend) {
 		fprintf(backend->targetProg, "fnc lstrcpy, ADDR %s, \"%s\"\n", backend->instruction->arg1->value, backend->instruction->arg2->value);
 
 		fprintf(backend->targetProg, "POPA\n");
+
+		return;
 	}
 
 	// If variable equals a function call then the value will return in AX, therefore we know that the register will always be AX
-	else if (backend->instruction->arg2->type == TAC_P && ((TAC*)backend->instruction->arg2->value)->op == AST_FUNC_CALL) {
+	if (backend->instruction->arg2->type == TAC_P && ((TAC*)backend->instruction->arg2->value)->op == AST_FUNC_CALL) {
 		
 		reg1 = backend->registers[REG_AX];
 	}
@@ -477,19 +479,16 @@ void generate_assignment(asm_backend* backend) {
 		reg1 = generate_move_to_register(backend, backend->instruction->arg2);
 	}
 
-	if (entry->dtype != DATA_STRING) {
+	address_reset(entry);
 
-		address_reset(entry);
+	address_push(entry, reg1, ADDRESS_REG);
 
-		address_push(entry, reg1, ADDRESS_REG);
-
-		// Remove variable from all registers that held it's value
-		while ((reg2 = generate_check_variable_in_reg(backend, backend->instruction->arg1))) {
-			generate_remove_descriptor(reg2, backend->instruction->arg1);
-		}
-		
-		descriptor_push(reg1, backend->instruction->arg1);
+	// Remove variable from all registers that held it's value
+	while ((reg2 = generate_check_variable_in_reg(backend, backend->instruction->arg1))) {
+		generate_remove_descriptor(reg2, backend->instruction->arg1);
 	}
+		
+	descriptor_push(reg1, backend->instruction->arg1);	
 }
 
 /*
@@ -1178,7 +1177,7 @@ void register_block_exit(asm_backend* backend, register_T* reg) {
 
 		entry = table_search_entry(backend->table, reg->regDescList[i]->value);
 
-		// Only check variables in registers, because only they can be live on exit
+		// Only check variables in registers, because only they can be alive on exit
 		// Also if there is no entry, we can continue searching
 		if (reg->regDescList[i]->type != CHAR_P || !entry) {
 			continue;

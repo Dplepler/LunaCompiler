@@ -1,47 +1,19 @@
 
-int youShallPass(int num) {
 
-	print(num);
+int youShallPass(int x) {
 
-	if (num == 42) {
-		print("Correct!\n", "The magic number was: ", num);
-	}
-	else {
-		print("Wrong\n");
-	}
-	
+	print("Hello: ", x);
+
 	return 10;
 }
 
 int main() {
 
-	int magic = 42;     ~ Magic number to pass
-	youShallPass(magic); 			~ Call our special function
+	int magic = 42;     											~ Magic number to pass
+	if (youShallPass(magic) == 10) { print("Worked!"); } 			~ Call our special function
+	
+	
 	return 0;
 }
 
 
-int foo() {
-
-	int x;
-	int m;
-
-	{
-		int y;
-		int n;
-		
-		{
-		
-			int z;
-			
-		}
-		
-		}
-		
-			int l;
-		
-		{
-
-	}
-
-}
