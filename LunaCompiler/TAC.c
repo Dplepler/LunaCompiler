@@ -262,7 +262,6 @@ TAC* traversal_function_call(AST* node, TAC_list* list) {
 	instruction->arg2 = init_arg(calloc(1, numOfDigits(node->size) + 1), CHAR_P);
 	_itoa(node->size, instruction->arg2->value, 10);
 
-	// The second argument of the instruction is going to be the amount of arguments passed to the function
 	list_push(list, instruction);
 
 	// Push params for function call

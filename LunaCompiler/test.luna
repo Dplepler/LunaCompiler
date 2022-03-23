@@ -4,7 +4,7 @@ int youShallPass(int x) {
 
 	print("Hello: ", x);
 
-	return 10;
+	return 9;
 }
 
 int main() {

@@ -638,6 +638,8 @@ void generate_func_call(asm_backend* backend) {
 
 	char* name = backend->instruction->arg1->value;
 	size_t size = atoi(backend->instruction->arg2->value);
+
+	descriptor_push_tac(backend, backend->registers[0], backend->instruction);	// Set temporary result to AX
 	
 	// Push all the variables to the stack, from last to first
 	for (unsigned int i = 0; i < size;) {
@@ -656,7 +658,7 @@ void generate_func_call(asm_backend* backend) {
 			fprintf(backend->targetProg, "PUSH %s\n", generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg1)));
 			i++;
 		}
-		// There can be expression operations between parameters, so we need to generate code for them but make the loop longer
+		// There can be expression operations between parameters, so we need to generate code for them
 		else {
 			generate_asm(backend);
 		}
@@ -726,7 +728,6 @@ void generate_print(asm_backend* backend) {
 		// For an integer, find or allocate a register to the value and print the value using the str$ macro
 		// also for temporeries
 		else if (backend->instruction->op == AST_PARAM && entry->dtype == DATA_INT) {
-			restore_save_registers(backend);
 			// We need to return registers inside here because they could've changed
 			if (regsChanged) { restore_save_registers(backend); }
 			
@@ -921,7 +922,7 @@ register_T* generate_move_new_value_to_register(asm_backend* backend, arg_T* arg
 }
 
 /*
-generate_move_to_ax moves a value only to to the AX register
+generate_move_to_ax moves a value only to the AX register
 Input: Backend, argument to move to AX
 Output: AX register
 */
