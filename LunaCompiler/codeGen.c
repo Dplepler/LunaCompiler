@@ -690,10 +690,10 @@ void generate_print(asm_backend* backend) {
 	
 	fprintf(backend->targetProg, "PUSHA\n");	// fnc will change register values, save previous values before doing so
 	
+	bool regsChanged = false;	// Optimization to check if registers could've actually changed
+
 	// For each pushed param, produce an fnc StdOut instruction
 	for (unsigned int i = 0; i < size; i++) {
-
-		
 
 		backend->instruction = backend->instruction->next;
 
@@ -709,26 +709,29 @@ void generate_print(asm_backend* backend) {
 			}
 			else {
 				// We need to return registers inside here because they could've changed
-				restore_save_registers(backend);
+				if (regsChanged) { restore_save_registers(backend); }
+
 				fprintf(backend->targetProg, "fnc StdOut, str$(%s)\n", generate_get_register_name(
 					generate_move_to_register(backend, backend->instruction->arg1)));
 			}
 				 
-				
+			regsChanged = true;
 		}
 		// For strings being pushed, produce fitting code
 		else if (backend->instruction->op == AST_PARAM && entry->dtype == DATA_STRING) {
 
 			fprintf(backend->targetProg, "fnc StdOut, ADDR %s\n", entry->name);
+			regsChanged = true;
 		}
 		// For an integer, find or allocate a register to the value and print the value using the str$ macro
 		// also for temporeries
 		else if (backend->instruction->op == AST_PARAM && entry->dtype == DATA_INT) {
 			restore_save_registers(backend);
 			// We need to return registers inside here because they could've changed
-			fprintf(backend->targetProg, "POPA\n");
-			fprintf(backend->targetProg, "PUSHA\n");
+			if (regsChanged) { restore_save_registers(backend); }
+			
 			fprintf(backend->targetProg, "fnc StdOut, str$(%s)\n", generate_get_register_name(generate_move_to_register(backend, backend->instruction->arg1)));
+			regsChanged = true;
 		}
 		else {
 
