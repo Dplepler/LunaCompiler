@@ -13,7 +13,7 @@ includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\masm32.lib
 .data
 .code
-youShallPass PROC x:DWORD
+youShallPass PROC x:DWORD, y:DWORD, z:DWORD
 PUSHA
 fnc StdOut, "Hello: "
 POPA
