@@ -165,7 +165,7 @@ AST* parser_block(parser_T* parser) {
 	size_t counter = 0;
 
 	parser->token = parser_expect(parser, TOKEN_LBRACE);
-
+	
 	// While block isn't done, parse statements
 	while (parser->token->type != TOKEN_RBRACE) {
 
@@ -462,6 +462,7 @@ AST* parser_term(parser_T* parser) {
 
 	return node;
 }
+
 /*
 parser_factor parses a factor which can be an expression within parenthesis, a number, an identifier or
 a unary operation like -n

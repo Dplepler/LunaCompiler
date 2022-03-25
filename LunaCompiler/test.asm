@@ -21,7 +21,8 @@ PUSHA
 MOV EAX, [x]
 fnc StdOut, str$(EAX)
 POPA
-MOV EAX, 9
+MOV EAX, [x]
+SUB EAX, 32
 RET
 youShallPass ENDP
 main PROC 
