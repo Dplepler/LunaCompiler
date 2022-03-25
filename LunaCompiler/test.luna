@@ -1,6 +1,6 @@
 
 
-int youShallPass(int x, int y, int z) {
+int youShallPass(int x) {
 
 	print("Hello: ", x);
 
