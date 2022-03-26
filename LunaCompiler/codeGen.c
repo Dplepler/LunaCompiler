@@ -739,8 +739,6 @@ void generate_print(asm_backend* backend) {
 			generate_asm(backend);
 			i--;
 		}
-
-		
 	}
 
 	/* Return back the values before the PUSHA instruction */
@@ -1296,12 +1294,16 @@ void generate_remove_descriptor(register_T* reg, arg_T* desc) {
 	reg->regDescList = realloc(reg->regDescList, --reg->size * sizeof(arg_T*));
 }
 
+/*
+restore_save_registers saves registers in Assembly code
+Input: Backend
+Output: None
+*/
 void restore_save_registers(asm_backend* backend) {
 
 	fprintf(backend->targetProg, "POPA\n");
 	fprintf(backend->targetProg, "PUSHA\n");
 }
-
 
 /*
 free_registers frees all the registers and their descriptors
