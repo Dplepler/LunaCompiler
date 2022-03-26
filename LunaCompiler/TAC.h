@@ -2,7 +2,7 @@
 #define TAC_H
 #include "parser.h"
 
-// This is a tagged union to determine if args of TAC will point to a struct or to a string
+/* This is a tagged union to determine if args of TAC will point to a struct or to a string */
 typedef struct ARG_STRUCT
 {
 	void* value;
