@@ -38,6 +38,13 @@ PUSHA
 fnc StdOut, "Worked!"
 POPA
 label1:
+MOV EAX, 1
+CMP EAX, 0
+JE label2
+PUSHA
+fnc StdOut, "0!\n"
+POPA
+label2:
 XOR EAX, EAX
 RET
 main ENDP

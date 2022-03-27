@@ -8,10 +8,11 @@ int youShallPass(int x) {
 }
 
 int main() {
-
+	
 	int magic = 42;     											~ Magic number to pass
 	if (youShallPass(magic) == 10) { print("Worked!"); } 			~ Call our special function
 	
+	if (1) { print("0!\n"); }
 	
 	return 0;
 }
