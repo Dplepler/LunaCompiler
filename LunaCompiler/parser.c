@@ -73,12 +73,12 @@ AST* parser_lib(parser_T* parser) {
 		// Global statements only include functions and global declarations
 		node = parser_statement(parser);
 
-		// For functions, advance function list of the program
+		// For functions, advance the function list of the program
 		if (node->type == AST_FUNCTION) {
 			root->function_list = realloc(root->function_list, sizeof(AST*) * ++funcCounter);
 			root->function_list[funcCounter - 1] = node;
 		}
-		// For anything global that is not a function, advance children component of program
+		// For anything global that is not a function, advance the children component of the program
 		else if (node->type == AST_VARIABLE_DEC) {	
 			root->children = realloc(root->children, sizeof(AST*) * ++globalCounter);
 			root->children[globalCounter - 1] = node;
