@@ -9,4 +9,4 @@ You can download it and compile with Visual Studio, to run the program simply in
 LunaCompiler.exe myCode.luna -e
 
 # Note
-You can check out the IR created by the compiler by using the "traversal_print_instructions" routine
+The compiler contains a Lexer, Parser, Traversal (to create IR), Code Generator with somewhat good register allocation and a Symbol Table.
