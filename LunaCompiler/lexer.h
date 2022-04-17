@@ -3,8 +3,8 @@
 #include "AST.h"
 #define VALUE_SIZE 2
 
-typedef struct LEXER_STRUCT
-{
+typedef struct LEXER_STRUCT {
+
 	token_T** tokens;
 	size_t tokensSize;
 
@@ -15,7 +15,7 @@ typedef struct LEXER_STRUCT
 	char* contents;
 	char c;
 
-}lexer_T;
+} lexer_T;
 
 
 void lexer_advance(lexer_T* lexer);

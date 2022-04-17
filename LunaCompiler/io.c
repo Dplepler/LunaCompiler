@@ -8,24 +8,24 @@ Output: Contents of the file
 char* read_file(FILE* file) {
 
 	char* contents = NULL;
-    char ch = 0;
-    size_t i = 0;
+  char ch = 0;
+  size_t i = 0;
 
-    contents = calloc(1, sizeof(char));
+  contents = calloc(1, sizeof(char));
 
-    // While end of file is not reached, advance file string data and put the current char in it
-    while ((ch = fgetc(file)) != EOF) {
-        contents = realloc(contents, ++i);
-        contents[i - 1] = ch;
-    } 
-
-    // Terminate string with a 0
+  // While end of file is not reached, advance file string data and put the current char in it
+  while ((ch = fgetc(file)) != EOF) {
     contents = realloc(contents, ++i);
-    contents[i - 1] = '\0';       
+    contents[i - 1] = ch;
+  } 
 
-    fclose(file);
+  // Terminate string with a 0
+  contents = realloc(contents, ++i);
+  contents[i - 1] = '\0';       
 
-    return contents;
+  fclose(file);
+
+  return contents;
 }
 
 /*
@@ -35,36 +35,36 @@ Output: The same filename with a the desired extention
 */
 char* make_new_filename(char* name, char* extention) {
 
-    char* newFilename = calloc(1, sizeof(char));
+  char* newFilename = calloc(1, sizeof(char));
 
-    unsigned int i = 0;
-    size_t size = 0;
-    size_t length = strlen(name);
+  unsigned int i = 0;
+  size_t size = 0;
+  size_t length = strlen(name);
 
-    for (i = 0; i < length; i++) {
+  for (i = 0; i < length; i++) {
 
-        // For every normal character, we copy it as is
-        if (name[i] != '.') {
+    // For every normal character, we copy it as is
+    if (name[i] != '.') {
 
-            newFilename = realloc(newFilename, ++size);
-            newFilename[size - 1] = name[i];
-        }
-        // When extention reached we copy the .asm extention instead
-        else {
-
-            // Before using strcat, we have to terminate the current string
-            newFilename = realloc(newFilename, ++size);
-            newFilename[size - 1] = '\0';
-
-            size += strlen(extention) + 1;
-
-            newFilename = realloc(newFilename, size);
-            strcat(newFilename, extention);
-            break;
-        }
+      newFilename = realloc(newFilename, ++size);
+      newFilename[size - 1] = name[i];
     }
+    // When extention reached we copy the .asm extention instead
+    else {
+
+      // Before using strcat, we have to terminate the current string
+      newFilename = realloc(newFilename, ++size);
+      newFilename[size - 1] = '\0';
+
+      size += strlen(extention) + 1;
+
+      newFilename = realloc(newFilename, size);
+      strcat(newFilename, extention);
+      break;
+    }
+  }
         
-    return newFilename;
+  return newFilename;
 }
 
 /*
@@ -74,15 +74,16 @@ Output: Amount of digits
 */
 size_t numOfDigits(int num) {
 
-    size_t counter = 0;
-    do {
+  size_t counter = 0;
 
-        num /= 10;
-        counter++;
+  do {
 
-    } while (num > 0);
+    num /= 10;
+    counter++;
+
+  } while (num > 0);
     
-    return counter;
+  return counter;
 }
 
 /*
@@ -92,42 +93,37 @@ Output: True if string only contains digits, otherwise false
 */
 bool isNum(char* value) {
 
-    bool flag = true;
-    size_t size = strlen(value);
+  bool flag = true;
+  size_t size = strlen(value);
 
-    // Loop through the string, if we find 1 character that is not a num we can return false
-    for (unsigned int i = 0; i < size && flag; i++)
-    {
-        if (!isdigit(value[i])) {
-            flag = false;
-        }  
-    }
+  // Loop through the string, if we find 1 character that is not a num we can return false
+  for (unsigned int i = 0; i < size && (flag = isdigit(value[i])); i++) { }
 
-    return flag;
+  return flag;
 }
 
 void assemble_file(char* filename) {
 
-    char* command = NULL;
-    char* objectFilename = make_new_filename(filename, ".obj");
-    char* exeFilename = make_new_filename(filename, ".exe");
+  char* command = NULL;
+  char* objectFilename = make_new_filename(filename, ".obj");
+  char* exeFilename = make_new_filename(filename, ".exe");
 
-    command = calloc(1, strlen("C:\\masm32\\bin\\ml /c /Zd /coff %s") + strlen(filename) + 1);
-    sprintf(command, "C:\\masm32\\bin\\ml /c /Zd /coff %s", filename);
-    system(command);
+  command = calloc(1, strlen("C:\\masm32\\bin\\ml /c /Zd /coff %s") + strlen(filename) + 1);
+  sprintf(command, "C:\\masm32\\bin\\ml /c /Zd /coff %s", filename);
+  system(command);
 
-    free(command);
+  free(command);
 
-    command = calloc(1, strlen("C:\\masm32\\bin\\Link /SUBSYSTEM:CONSOLE %s") + strlen(objectFilename) + 1);
-    sprintf(command, "C:\\masm32\\bin\\Link /SUBSYSTEM:CONSOLE %s", objectFilename);
-    system(command);
+  command = calloc(1, strlen("C:\\masm32\\bin\\Link /SUBSYSTEM:CONSOLE %s") + strlen(objectFilename) + 1);
+  sprintf(command, "C:\\masm32\\bin\\Link /SUBSYSTEM:CONSOLE %s", objectFilename);
+  system(command);
 
-    free(command);
-    //system("cls");
-    system(exeFilename);
+  free(command);
+  //system("cls");
+  system(exeFilename);
 
-    free(objectFilename);
-    free(exeFilename);
+  free(objectFilename);
+  free(exeFilename);
 }
 
 
@@ -138,7 +134,7 @@ input: the buffer to read into, the number of chars to read
 */
 void myFgets(char str[], int n) {
 
-    fgets(str, n, stdin);
-    str[strcspn(str, "\n")] = 0;
+  fgets(str, n, stdin);
+  str[strcspn(str, "\n")] = 0;
 }
  

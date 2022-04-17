@@ -697,13 +697,13 @@ char* reserved_to_string(int type) {
 
 	switch (type) {
 
-	case OUT_T: return "print";
-	case IF_T: return "if";
-	case ELSE_T: return "else";
-	case WHILE_T: return "while";
-	case INT_T: return "int";
-	case STRING_T: return "string";
-	case RETURN_T: return "return";
+	case OUT_T:		return "print";
+	case IF_T:		return "if";
+	case ELSE_T:	return "else";
+	case WHILE_T:	return "while";
+	case INT_T:		return "int";
+	case STRING_T:	return "string";
+	case RETURN_T:	return "return";
 
 	}
 }

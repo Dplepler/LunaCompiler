@@ -7,10 +7,10 @@
 #define REG_AMOUNT 11
 #define TEMPLATE_SIZE 13
 
-typedef struct REGISTER_STRUCT_STRUCT
-{
-	enum
-	{
+typedef struct REGISTER_STRUCT_STRUCT {
+
+	enum {
+
 		REG_AX,
 		REG_BX,
 		REG_CX,
@@ -32,16 +32,16 @@ typedef struct REGISTER_STRUCT_STRUCT
 
 } register_T;
 
-typedef struct LABEL_LIST_STRUCT
-{
+typedef struct LABEL_LIST_STRUCT {
+
 	TAC** labels;
 	char** names;		// Just so I can free the allocated names later
 	size_t size;
 
 } label_list;
 
-typedef struct ASM_BACKEND_STRUCT
-{
+typedef struct ASM_BACKEND_STRUCT {
+
 	register_T** registers;
 
 	label_list* labelList;

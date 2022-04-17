@@ -42,7 +42,7 @@ MOV EAX, 1
 CMP EAX, 0
 JE label2
 PUSHA
-fnc StdOut, "0!\n"
+fnc StdOut, "\ncool!\n"
 POPA
 label2:
 XOR EAX, EAX
