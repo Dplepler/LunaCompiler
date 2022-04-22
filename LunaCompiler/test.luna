@@ -9,7 +9,7 @@ int youShallPass(int x) {
 
 int main() {
 	
-	int magic = 42;     											~ Magic number to pass
+	int magic = 41;     											~ Magic number to pass
 	if (youShallPass(magic) == 10) { print("Worked!"); } 			~ Call our special function
 	
 	if (1) { print("\ncool!\n"); }

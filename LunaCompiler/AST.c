@@ -108,11 +108,9 @@ void AST_free_AST(AST* node) {
 		|| node->type == AST_COMPARE || node->type == AST_ASSIGNMENT) {
 
 		if (node->value) {
-
 			AST_free_AST(node->value);
 		}
 		else {
-
 			AST_free_AST(node->leftChild);
 			AST_free_AST(node->rightChild);
 		}
@@ -120,11 +118,9 @@ void AST_free_AST(AST* node) {
 		free(node);
 	}
 	else if (node->type == AST_INT || node->type == AST_VARIABLE || node->type == AST_STRING) {
-
 		free(node);
 	}
 	else if (node->type == AST_IF || node->type == AST_WHILE) {
-
 		AST_free_AST(node->if_body);
 		AST_free_AST(node->condition);
 
@@ -135,7 +131,6 @@ void AST_free_AST(AST* node) {
 		free(node);
 	}
 	else if (node->type == AST_VARIABLE_DEC || node->type == AST_RETURN) {
-
 		AST_free_AST(node->value);
 		free(node);
 	}

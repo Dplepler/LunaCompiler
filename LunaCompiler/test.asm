@@ -27,7 +27,7 @@ RET
 youShallPass ENDP
 main PROC 
 LOCAL magic:DWORD
-MOV EAX, 42
+MOV EAX, 41
 MOV [magic], EAX
 PUSH magic
 CALL youShallPass

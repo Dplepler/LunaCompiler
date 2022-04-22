@@ -3,18 +3,18 @@
 
 #include "io.h"
 
-typedef enum data_type
-{
+typedef enum data_type {
+
 	DATA_INT = 48,			// Continuation from AST
 	DATA_STRING,
 
 } dtype;
 
-typedef struct ADDRESS_STRUCT
-{
+typedef struct ADDRESS_STRUCT {
+
 	void* address;
-	enum
-	{
+	enum {
+
 		ADDRESS_REG,
 		ADDRESS_VAR,
 
@@ -22,8 +22,8 @@ typedef struct ADDRESS_STRUCT
 
 } address_T;
 
-typedef struct STRUCT_SYMBOL_ENTRY
-{
+typedef struct STRUCT_SYMBOL_ENTRY {
+
 	char* name;
 	char* value;
 	dtype dtype;
@@ -31,11 +31,10 @@ typedef struct STRUCT_SYMBOL_ENTRY
 	address_T** addressDesc;	// Address descriptor: Keeping track of which addresses keep the current value of entry
 	size_t size;				// Size of addresses in array
 
-
 } entry_T;
 
-typedef struct STRUCT_SYMBOL_TABLE
-{
+typedef struct STRUCT_SYMBOL_TABLE {
+
 	entry_T** entries;
 
 	struct STRUCT_SYMBOL_TABLE** nestedScopes;
@@ -66,6 +65,6 @@ void address_remove_register(entry_T* entry, void* reg);
 void table_add_entry(table_T* table, char* name, int type);
 void table_print_table(table_T* table, int level);
 void table_free_table(table_T* table);
-void table_add_builtin_functions();
+void table_add_builtin_functions(table_T* table);
 
 #endif

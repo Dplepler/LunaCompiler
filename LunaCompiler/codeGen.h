@@ -52,54 +52,54 @@ typedef struct ASM_BACKEND_STRUCT {
 
 	FILE* targetProg;
 
-} asm_backend;
+} asm_frontend;
 
-asm_backend* init_asm_backend(table_T* table, TAC* head, char* targetName);
+asm_frontend* init_asm_frontend(table_T* table, TAC* head, char* targetName);
 
 void write_asm(table_T* table, TAC* head, char* targetName);
-void generate_asm(asm_backend* backend);
-void generate_global_vars(asm_backend* backend, TAC* triple);
+void generate_asm(asm_frontend* frontend);
+void generate_global_vars(asm_frontend* frontend, TAC* triple);
 void descriptor_push(register_T* reg, arg_T* descriptor);
-void descriptor_push_tac(asm_backend* backend, register_T* reg, TAC* instruction);
-void free_registers(asm_backend* registers_list);
-void generate_var_dec(asm_backend* backend);
-void generate_binop(asm_backend* backend);
-void generate_mul_div(asm_backend* backend);
-void generate_condition(asm_backend* backend);
-void generate_if_false(asm_backend* backend);
-void generate_unconditional_jump(asm_backend* backend);
-void generate_assignment(asm_backend* backend);
-void generate_block_exit(asm_backend* backend);
-void generate_main(asm_backend* backend);
-void generate_function(asm_backend* backend);
-void generate_return(asm_backend* backend);
-void generate_func_call(asm_backend* backend);
-void generate_print(asm_backend* backend);
-void generate_spill(asm_backend* backend, register_T* r);
-void descriptor_reset(asm_backend* backend, register_T* r);
-void descriptor_reset_all_registers(asm_backend* backend);
+void descriptor_push_tac(asm_frontend* frontend, register_T* reg, TAC* instruction);
+void free_registers(asm_frontend* registers_list);
+void generate_var_dec(asm_frontend* frontend);
+void generate_binop(asm_frontend* frontend);
+void generate_mul_div(asm_frontend* frontend);
+void generate_condition(asm_frontend* frontend);
+void generate_if_false(asm_frontend* frontend);
+void generate_unconditional_jump(asm_frontend* frontend);
+void generate_assignment(asm_frontend* frontend);
+void generate_block_exit(asm_frontend* frontend);
+void generate_main(asm_frontend* frontend);
+void generate_function(asm_frontend* frontend);
+void generate_return(asm_frontend* frontend);
+void generate_func_call(asm_frontend* frontend);
+void generate_print(asm_frontend* frontend);
+void generate_spill(asm_frontend* frontend, register_T* r);
+void descriptor_reset(asm_frontend* frontend, register_T* r);
+void descriptor_reset_all_registers(asm_frontend* frontend);
 void generate_remove_descriptor(register_T* reg, arg_T* desc);
-void restore_save_registers(asm_backend* backend);
+void restore_save_registers(asm_frontend* frontend);
 
-register_T* generate_find_register(asm_backend* backend, arg_T* arg);
-register_T* generate_move_to_ax(asm_backend* backend, arg_T* arg);
-register_T* generate_move_to_register(asm_backend* backend, arg_T* arg);
-register_T* generate_move_new_value_to_register(asm_backend* backend, arg_T* arg);
-register_T* generate_get_register(asm_backend* backend);
-register_T* generate_check_variable_in_reg(asm_backend* backend, arg_T* var);
-register_T* generate_check_useless_value(asm_backend* backend, register_T* r);
-register_T* generate_find_free_reg(asm_backend* backend);
-register_T* generate_find_lowest_values(asm_backend* backend);
-register_T* generate_find_used_reg(asm_backend* backend);
-register_T* generate_check_register_usability(asm_backend* backend, register_T* r);
-register_T* generate_check_variable_usability(asm_backend* backend, register_T* r, arg_T* arg);
+register_T* generate_find_register(asm_frontend* frontend, arg_T* arg);
+register_T* generate_move_to_ax(asm_frontend* frontend, arg_T* arg);
+register_T* generate_move_to_register(asm_frontend* frontend, arg_T* arg);
+register_T* generate_move_new_value_to_register(asm_frontend* frontend, arg_T* arg);
+register_T* generate_get_register(asm_frontend* frontend);
+register_T* generate_check_variable_in_reg(asm_frontend* frontend, arg_T* var);
+register_T* generate_check_useless_value(asm_frontend* frontend, register_T* r);
+register_T* generate_find_free_reg(asm_frontend* frontend);
+register_T* generate_find_lowest_values(asm_frontend* frontend);
+register_T* generate_find_used_reg(asm_frontend* frontend);
+register_T* generate_check_register_usability(asm_frontend* frontend, register_T* r);
+register_T* generate_check_variable_usability(asm_frontend* frontend, register_T* r, arg_T* arg);
 
-char* generate_get_label(asm_backend* backend, TAC* label);
+char* generate_get_label(asm_frontend* frontend, TAC* label);
 char* generate_get_register_name(register_T* r);
 char* generate_assign_reg(register_T* r, void* argument);
 
 bool generate_compare_arguments(arg_T* arg1, arg_T* arg2);
 
-void register_block_exit(asm_backend* backend, register_T* reg);
+void register_block_exit(asm_frontend* frontend, register_T* reg);
 
 #endif
