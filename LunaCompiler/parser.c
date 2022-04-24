@@ -109,7 +109,7 @@ AST* parser_function(parser_T* parser) {
 
 		case INT_T: node->var_type = DATA_INT; break;
 		//case STRING_T: node->var_type = DATA_STRING; break;  // Currently no string return is allowed :(
-		default: printf("[Error in line %d]: Invalid return value", parser->lexer->lineIndex); 
+		default: printf("[Error in line %lu]: Invalid return value", parser->lexer->lineIndex); 
 			exit(1);
 	}
 		
@@ -124,7 +124,7 @@ AST* parser_function(parser_T* parser) {
 
 	// If function already exists, raise an error since we cannot have two functions with the same name
 	if (table_search_entry(parser->table, node->name)) {
-		printf("[Error in line %d]: Function redecleration", parser->lexer->lineIndex); exit(1);
+		printf("[Error in line %lu]: Function redecleration", parser->lexer->lineIndex); exit(1);
 	}
 
 	table_add_entry(parser->table, node->name, node->var_type);		// Add function to the symbol table
@@ -225,7 +225,7 @@ AST* parser_statement(parser_T* parser) {
 		parser->token = parser_expect(parser, TOKEN_SEMI);
 	}
 	else {
-		printf("[Error in line %d]: Invalid syntax", parser->lexer->lineIndex); exit(1);
+		printf("[Error in line %lu]: Invalid syntax", parser->lexer->lineIndex); exit(1);
 	}
 
 	return node;
@@ -373,7 +373,7 @@ AST* parser_var_dec(parser_T* parser) {
 
 	case INT_T: node->var_type = DATA_INT; break;
 	case STRING_T: node->var_type = DATA_STRING; break;
-	default: printf("[Error in line %d]: Variable decleration missing variable type value", parser->lexer->lineIndex);
+	default: printf("[Error in line %lu]: Variable declaration missing variable type value", parser->lexer->lineIndex);
 		exit(1);
 
 	}
@@ -387,11 +387,11 @@ AST* parser_var_dec(parser_T* parser) {
 	node->value = parser_assignment(parser);
 
 	if (node->var_type == DATA_STRING && node->value->rightChild->type == AST_INT) {
-		printf("[Error in line %d]: Can't assign int value to a string", parser->lexer->lineIndex);
+		printf("[Error in line %lu]: Can't assign integer value to a string", parser->lexer->lineIndex);
 		exit(1);
 	}
 	else if (node->var_type == DATA_INT && node->value->rightChild->type == AST_STRING) {
-		printf("[Error in line %d]: Can't assign string value to an int", parser->lexer->lineIndex);
+		printf("[Error in line %lu]: Can't assign string value to an integer", parser->lexer->lineIndex);
 		exit(1);
 	}
 
@@ -426,7 +426,7 @@ AST* parser_expression(parser_T* parser) {
 		}	
 
 		if (node->rightChild->type == AST_STRING || node->leftChild->type == AST_STRING) {
-			printf("[Error in line %d]: Cannot use strings in arithmetic operations", parser->lexer->lineIndex);
+			printf("[Error in line %lu]: Cannot use strings in arithmetic operations", parser->lexer->lineIndex);
 			exit(1);
 		}
 	}
@@ -455,7 +455,7 @@ AST* parser_term(parser_T* parser) {
 		}
 
 		if (node->rightChild->type == AST_STRING || node->leftChild->type == AST_STRING) {
-			printf("[Error in line %d]: Cannot use strings in binary operations", parser->lexer->lineIndex);
+			printf("[Error in line %lu]: Cannot use strings in binary operations", parser->lexer->lineIndex);
 			exit(1);
 		}
 	}
@@ -489,7 +489,7 @@ AST* parser_factor(parser_T* parser) {
 		// Case for unary operators (e.g: -6, -2 etc)
 		case TOKEN_SUB: parser->token = lexer_get_next_token(parser->lexer);  node = AST_initChildren(0, parser_factor(parser), AST_SUB); break;
 
-		default: printf("[Error in line %d]: Syntax Error!, token type: %s was unexpected", parser->lexer->lineIndex, typeToString(parser->token->type));
+		default: printf("[Error in line %lu]: Syntax Error! token type: %s was unexpected", parser->lexer->lineIndex, typeToString(parser->token->type));
 			exit(1);
 
 	}
@@ -602,7 +602,7 @@ AST* parser_condition(parser_T* parser) {
 		node->if_body = parser_statement(parser);
 	}	
 	else {
-		printf("[Error in line %d]: If statement missing braces", parser->lexer->lineIndex);
+		printf("[Error in line %lu]: If statement missing braces", parser->lexer->lineIndex);
 		exit(1);
 	}
 		
@@ -614,7 +614,7 @@ AST* parser_condition(parser_T* parser) {
 			node->else_body = parser_statement(parser);
 		}	
 		else {
-			printf("[Error in line %d]: Else statement missing braces", parser->lexer->lineIndex);
+			printf("[Error in line %lu]: Else statement missing braces", parser->lexer->lineIndex);
 			exit(1);
 		}	
 	}
@@ -639,7 +639,7 @@ AST* parser_while(parser_T* parser) {
 		node->if_body = parser_statement(parser);
 	}	
 	else {
-		printf("[Error in line %d]: While statement missing braces", parser->lexer->lineIndex);
+		printf("[Error in line %lu]: While statement missing braces", parser->lexer->lineIndex);
 		exit(1);
 	}
 	
@@ -682,7 +682,7 @@ Output: None
 void parser_check_current_scope(parser_T* parser, char* name, char* type) {
 
 	if (!table_search_entry(parser->table, name)) {
-		printf("[Error in line %d]: %s '%s' was not declared in the current scope\n", parser->lexer->lineIndex, type, name);
+		printf("[Error in line %lu]: %s '%s' was not declared in the current scope\n", parser->lexer->lineIndex, type, name);
 		exit(1);
 	}
 }
