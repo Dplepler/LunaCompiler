@@ -1,11 +1,12 @@
 
 int y = 10;
-y = y + 4;
 
 int main() {
 	
 	int x = 10;
-	int x = 40;
+	
+	print(10 * x * y * 10 * 10);
+	
 	
 	return 0;
 }

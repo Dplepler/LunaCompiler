@@ -142,7 +142,7 @@ table_T* table_add_table(table_T* table) {
 /*
 table_search_entry searches which scope does a variable belong to, going from current scope to it's parents until we reach the global scope
 Input: Table, variable to search for
-Output: Entry that contains the variable, 0 if non of them do
+Output: Entry that contains the variable, 0 if none of them do
 */
 entry_T* table_search_entry(table_T* table, char* name) {
 
@@ -164,7 +164,7 @@ entry_T* table_search_entry(table_T* table, char* name) {
 }
 
 /*
-table_search_table searches an entry just like the above function "table_search_entry" but returns the table instead of the entry
+table_search_table searches an entry just like the function "table_search_entry" but returns the table instead of the entry
 Input: Table to start searching in, variable name
 Output: Table that contains the variable
 */

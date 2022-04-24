@@ -39,8 +39,8 @@ token_T* parser_expect(parser_T* parser, int type) {
 	}
 	else {
 		// For ID tokens print the wrong ID token and the one missing and for other tokens just print them as is
-		parser->token->type == TOKEN_ID ? printf("[Error in line %lu]: Missing token %s, got: %s", parser->lexer->lineIndex, typeToString(type), parser->token->value) 
-			: printf("[Error in line %lu]: Missing token %s, got: %s", parser->lexer->lineIndex, typeToString(type), typeToString(parser->token->type));
+		parser->token->type == TOKEN_ID ? printf("[Error in line %zu]: Missing token %s, got: %s", parser->lexer->lineIndex, typeToString(type), parser->token->value) 
+			: printf("[Error in line %zu]: Missing token %s, got: %s", parser->lexer->lineIndex, typeToString(type), typeToString(parser->token->type));
 
 		exit(1);	// Terminate with error
 	}
@@ -84,7 +84,7 @@ AST* parser_lib(parser_T* parser) {
 			root->children[globalCounter - 1] = node;
 		}
 		else {
-			printf("Error in line [%lu]: Statement was found outside of a function", parser->lexer->lineIndex); exit(1);
+			printf("Error in line [%zu]: Statement was found outside of a function", parser->lexer->lineIndex); exit(1);
 		}
 
 	} while (parser->token->type != TOKEN_EOF);
@@ -109,7 +109,7 @@ AST* parser_function(parser_T* parser) {
 
 		case INT_T: node->var_type = DATA_INT; break;
 		//case STRING_T: node->var_type = DATA_STRING; break;  // Currently no string return is allowed :(
-		default: printf("[Error in line %lu]: Invalid return value", parser->lexer->lineIndex); 
+		default: printf("[Error in line %zu]: Invalid return value", parser->lexer->lineIndex); 
 			exit(1);
 	}
 		
@@ -124,7 +124,7 @@ AST* parser_function(parser_T* parser) {
 
 	// If function already exists, raise an error since we cannot have two functions with the same name
 	if (table_search_entry(parser->table, node->name)) {
-		printf("[Error in line %lu]: Function redecleration", parser->lexer->lineIndex); exit(1);
+		printf("[Error in line %zu]: Function redecleration", parser->lexer->lineIndex); exit(1);
 	}
 
 	table_add_entry(parser->table, node->name, node->var_type);		// Add function to the symbol table
@@ -225,7 +225,7 @@ AST* parser_statement(parser_T* parser) {
 		parser->token = parser_expect(parser, TOKEN_SEMI);
 	}
 	else {
-		printf("[Error in line %lu]: Invalid syntax", parser->lexer->lineIndex); exit(1);
+		printf("[Error in line %zu]: Invalid syntax", parser->lexer->lineIndex); exit(1);
 	}
 
 	return node;
@@ -373,12 +373,17 @@ AST* parser_var_dec(parser_T* parser) {
 
 	case INT_T: node->var_type = DATA_INT; break;
 	case STRING_T: node->var_type = DATA_STRING; break;
-	default: printf("[Error in line %lu]: Variable declaration missing variable type value", parser->lexer->lineIndex);
+	default: printf("[Error in line %zu]: Variable declaration missing variable type value", parser->lexer->lineIndex);
 		exit(1);
 
 	}
 	
 	parser->token = parser_expect(parser, TOKEN_ID);
+
+	if (table_search_entry(parser->table, parser->token->value)) {
+		printf("[Error in line %zu]: Variable '%s' contains multiple definitions", parser->lexer->lineIndex, parser->token->value);
+		exit(1);
+	}
 
 	node->name = parser->token->value;
 
@@ -387,11 +392,11 @@ AST* parser_var_dec(parser_T* parser) {
 	node->value = parser_assignment(parser);
 
 	if (node->var_type == DATA_STRING && node->value->rightChild->type == AST_INT) {
-		printf("[Error in line %lu]: Can't assign integer value to a string", parser->lexer->lineIndex);
+		printf("[Error in line %zu]: Can't assign integer value to a string", parser->lexer->lineIndex);
 		exit(1);
 	}
 	else if (node->var_type == DATA_INT && node->value->rightChild->type == AST_STRING) {
-		printf("[Error in line %lu]: Can't assign string value to an integer", parser->lexer->lineIndex);
+		printf("[Error in line %zu]: Can't assign string value to an integer", parser->lexer->lineIndex);
 		exit(1);
 	}
 
@@ -426,7 +431,7 @@ AST* parser_expression(parser_T* parser) {
 		}	
 
 		if (node->rightChild->type == AST_STRING || node->leftChild->type == AST_STRING) {
-			printf("[Error in line %lu]: Cannot use strings in arithmetic operations", parser->lexer->lineIndex);
+			printf("[Error in line %zu]: Cannot use strings in arithmetic operations", parser->lexer->lineIndex);
 			exit(1);
 		}
 	}
@@ -455,7 +460,7 @@ AST* parser_term(parser_T* parser) {
 		}
 
 		if (node->rightChild->type == AST_STRING || node->leftChild->type == AST_STRING) {
-			printf("[Error in line %lu]: Cannot use strings in binary operations", parser->lexer->lineIndex);
+			printf("[Error in line %zu]: Cannot use strings in binary operations", parser->lexer->lineIndex);
 			exit(1);
 		}
 	}
@@ -489,7 +494,7 @@ AST* parser_factor(parser_T* parser) {
 		// Case for unary operators (e.g: -6, -2 etc)
 		case TOKEN_SUB: parser->token = lexer_get_next_token(parser->lexer);  node = AST_initChildren(0, parser_factor(parser), AST_SUB); break;
 
-		default: printf("[Error in line %lu]: Syntax Error! token type: %s was unexpected", parser->lexer->lineIndex, typeToString(parser->token->type));
+		default: printf("[Error in line %zu]: Syntax Error! token type: %s was unexpected", parser->lexer->lineIndex, typeToString(parser->token->type));
 			exit(1);
 
 	}
@@ -602,7 +607,7 @@ AST* parser_condition(parser_T* parser) {
 		node->if_body = parser_statement(parser);
 	}	
 	else {
-		printf("[Error in line %lu]: If statement missing braces", parser->lexer->lineIndex);
+		printf("[Error in line %zu]: If statement missing braces", parser->lexer->lineIndex);
 		exit(1);
 	}
 		
@@ -614,7 +619,7 @@ AST* parser_condition(parser_T* parser) {
 			node->else_body = parser_statement(parser);
 		}	
 		else {
-			printf("[Error in line %lu]: Else statement missing braces", parser->lexer->lineIndex);
+			printf("[Error in line %zu]: Else statement missing braces", parser->lexer->lineIndex);
 			exit(1);
 		}	
 	}
@@ -639,7 +644,7 @@ AST* parser_while(parser_T* parser) {
 		node->if_body = parser_statement(parser);
 	}	
 	else {
-		printf("[Error in line %lu]: While statement missing braces", parser->lexer->lineIndex);
+		printf("[Error in line %zu]: While statement missing braces", parser->lexer->lineIndex);
 		exit(1);
 	}
 	
@@ -682,7 +687,7 @@ Output: None
 void parser_check_current_scope(parser_T* parser, char* name, char* type) {
 
 	if (!table_search_entry(parser->table, name)) {
-		printf("[Error in line %lu]: %s '%s' was not declared in the current scope\n", parser->lexer->lineIndex, type, name);
+		printf("[Error in line %zu]: %s '%s' was not declared in the current scope\n", parser->lexer->lineIndex, type, name);
 		exit(1);
 	}
 }
