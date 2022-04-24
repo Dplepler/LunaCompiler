@@ -5,15 +5,15 @@
 
 typedef struct LEXER_STRUCT {
 
-	token_T** tokens;
-	size_t tokensSize;
+    token_T** tokens;
+    size_t tokensSize;
 
-	size_t index;
-	size_t lineIndex;
-	size_t contentsLength;
+    size_t index;
+    size_t lineIndex;
+    size_t contentsLength;
 
-	char* contents;
-	char c;
+    char* contents;
+    char c;
 
 } lexer_T;
 

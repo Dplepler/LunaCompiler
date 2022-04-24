@@ -5,44 +5,44 @@
 
 typedef enum data_type {
 
-	DATA_INT = 48,			// Continuation from AST
-	DATA_STRING,
+    DATA_INT = 48,            // Continuation from AST
+    DATA_STRING,
 
 } dtype;
 
 typedef struct ADDRESS_STRUCT {
 
-	void* address;
-	enum {
+    void* address;
+    enum {
 
-		ADDRESS_REG,
-		ADDRESS_VAR,
+        ADDRESS_REG,
+        ADDRESS_VAR,
 
-	} type;
+    } type;
 
 } address_T;
 
 typedef struct STRUCT_SYMBOL_ENTRY {
 
-	char* name;
-	char* value;
-	dtype dtype;
+    char* name;
+    char* value;
+    dtype dtype;
 
-	address_T** addressDesc;	// Address descriptor: Keeping track of which addresses keep the current value of entry
-	size_t size;				// Size of addresses in array
+    address_T** addressDesc;    // Address descriptor: Keeping track of which addresses keep the current value of entry
+    size_t size;                // Size of addresses in array
 
 } entry_T;
 
 typedef struct STRUCT_SYMBOL_TABLE {
 
-	entry_T** entries;
+    entry_T** entries;
 
-	struct STRUCT_SYMBOL_TABLE** nestedScopes;
-	struct STRUCT_SYMBOL_TABLE* prev;
-	
-	size_t entrySize;
-	size_t nestedSize;
-	size_t tableIndex;
+    struct STRUCT_SYMBOL_TABLE** nestedScopes;
+    struct STRUCT_SYMBOL_TABLE* prev;
+    
+    size_t entrySize;
+    size_t nestedSize;
+    size_t tableIndex;
 
 } table_T;
 

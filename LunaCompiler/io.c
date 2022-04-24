@@ -7,7 +7,7 @@ Output: Contents of the file
 */
 char* read_file(FILE* file) {
 
-	char* contents = NULL;
+    char* contents = NULL;
   char ch = 0;
   size_t i = 0;
 
