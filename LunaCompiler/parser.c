@@ -39,8 +39,8 @@ token_T* parser_expect(parser_T* parser, int type) {
 	}
 	else {
 		// For ID tokens print the wrong ID token and the one missing and for other tokens just print them as is
-		parser->token->type == TOKEN_ID ? printf("[Error in line %d]: Missing token %s, got: %s", parser->lexer->lineIndex, typeToString(type), parser->token->value) 
-			: printf("[Error in line %d]: Missing token %s, got: %s", parser->lexer->lineIndex, typeToString(type), typeToString(parser->token->type));
+		parser->token->type == TOKEN_ID ? printf("[Error in line %lu]: Missing token %s, got: %s", parser->lexer->lineIndex, typeToString(type), parser->token->value) 
+			: printf("[Error in line %lu]: Missing token %s, got: %s", parser->lexer->lineIndex, typeToString(type), typeToString(parser->token->type));
 
 		exit(1);	// Terminate with error
 	}
@@ -84,7 +84,7 @@ AST* parser_lib(parser_T* parser) {
 			root->children[globalCounter - 1] = node;
 		}
 		else {
-			printf("Error in line [%d]: Statment was found outisde of a function", parser->lexer->lineIndex); exit(1);
+			printf("Error in line [%lu]: Statement was found outside of a function", parser->lexer->lineIndex); exit(1);
 		}
 
 	} while (parser->token->type != TOKEN_EOF);

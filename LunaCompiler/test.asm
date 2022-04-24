@@ -12,39 +12,16 @@ includelib \masm32\lib\user32.lib
 includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\masm32.lib
 .data
+statement DWORD 10
 .code
-youShallPass PROC x:DWORD
-PUSHA
-fnc StdOut, "Hello: "
-POPA
-PUSHA
-MOV EAX, [x]
-fnc StdOut, str$(EAX)
-POPA
-MOV EAX, [x]
-SUB EAX, 32
-RET
-youShallPass ENDP
 main PROC 
-LOCAL magic:DWORD
-MOV EAX, 41
-MOV [magic], EAX
-PUSH magic
-CALL youShallPass
-MOV EBX, 10
-CMP EAX, EBX
-JNE label1
-PUSHA
-fnc StdOut, "Worked!"
-POPA
-label1:
-MOV EAX, 1
-CMP EAX, 0
-JE label2
-PUSHA
-fnc StdOut, "\ncool!\n"
-POPA
-label2:
+LOCAL x:DWORD
+LOCAL x:DWORD
+MOV EAX, 10
+MOV [x], EAX
+MOV EBX, 40
+MOV [x], EBX
+MOV ECX, EAX
 XOR EAX, EAX
 RET
 main ENDP

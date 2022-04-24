@@ -1,18 +1,11 @@
 
-
-int youShallPass(int x) {
-
-	print("Hello: ", x);
-
-	return x - 32;
-}
+int y = 10;
+y = y + 4;
 
 int main() {
 	
-	int magic = 41;     											~ Magic number to pass
-	if (youShallPass(magic) == 10) { print("Worked!"); } 			~ Call our special function
-	
-	if (1) { print("\ncool!\n"); }
+	int x = 10;
+	int x = 40;
 	
 	return 0;
 }
