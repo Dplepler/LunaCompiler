@@ -231,7 +231,7 @@ void table_print_table(table_T* table, int level) {
 		printf("Address descriptors\n");
 
 		for (unsigned int i2 = 0; i2 < table->entries[i]->size; i2++) {
-			printf("%s\n", table->entries[i]->addressDesc[i2]->address);
+			printf("%s\n", (char*)table->entries[i]->addressDesc[i2]->address);
 		}
 	}
 

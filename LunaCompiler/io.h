@@ -14,7 +14,7 @@ char* make_new_filename(char* name, char* extention);
 
 bool isNum(char* value);
 
-size_t numOfDigits(int num);
+size_t numOfDigits(unsigned long num);
 
 void assemble_file(char* filename);
 void myFgets(char str[], int n);

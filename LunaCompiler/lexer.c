@@ -54,8 +54,8 @@ token_T* lexer_token_peek(lexer_T* lexer, unsigned int offset) {
 
 	token_T* token = NULL;
 
-	unsigned int saveLoc = lexer->index;
-	unsigned int saveLine = lexer->lineIndex;
+	size_t saveLoc = lexer->index;
+	size_t saveLine = lexer->lineIndex;
 
 	for (unsigned int i = 0; i < offset; i++) {
 		token = lexer_get_next_token(lexer);
@@ -92,7 +92,7 @@ token_T* lexer_advance_current(lexer_T* lexer, int type) {
 		value[1] = '\0';
 	}
 		
-	token = init_token(type, value, lexer->lineIndex);
+	token = init_token(type, value);
 	lexer_advance(lexer);
 
 	return token;
@@ -184,7 +184,7 @@ token_T* lexer_get_next_token(lexer_T* lexer) {
 			case '{': token = lexer_advance_current(lexer, TOKEN_LBRACE); break;
 			case '}': token = lexer_advance_current(lexer, TOKEN_RBRACE); break;
 			case '\0': token = lexer_advance_current(lexer, TOKEN_EOF);  break;
-			default: printf("[Error in line %d]: Unknown lexeme: '%c'", lexer->lineIndex, lexer->c); exit(1);
+			default: printf("[Error in line %zu]: Unknown lexeme: '%c'", lexer->lineIndex, lexer->c); exit(1);
 		}
 	}
 	
@@ -214,7 +214,7 @@ token_T* lexer_collect_id(lexer_T* lexer) {
 	id = realloc(id, size + 1);
 	id[size] = '\0';
 
-	return init_token(TOKEN_ID, id, lexer->lineIndex);
+	return init_token(TOKEN_ID, id);
 }
  
 /*
@@ -238,7 +238,7 @@ token_T* lexer_collect_number(lexer_T* lexer) {
 	num = realloc(num, size + 1);
 	num[size] = '\0';
 
-	return init_token(TOKEN_NUMBER, num, lexer->lineIndex);
+	return init_token(TOKEN_NUMBER, num);
 }
 
 /*
@@ -251,7 +251,7 @@ token_T* lexer_collect_string(lexer_T* lexer) {
 	char* string = calloc(1, sizeof(char));
 	size_t size = 0;
 
-	unsigned int line = lexer->lineIndex;
+	size_t line = lexer->lineIndex;
 
 	lexer_advance(lexer);
 
@@ -261,7 +261,7 @@ token_T* lexer_collect_string(lexer_T* lexer) {
 		// If we reached the end of the file without getting an ending quote, raise error
 		if (lexer->c == '\0') {
 
-			printf("[Error in line %d]: Start of string was never ended", line);
+			printf("[Error in line %zu]: Start of string was never ended", line);
 			exit(1);
 		}
 
@@ -275,7 +275,7 @@ token_T* lexer_collect_string(lexer_T* lexer) {
 
 	lexer_advance(lexer);
 
-	return init_token(TOKEN_STRING, string, lexer->lineIndex);
+	return init_token(TOKEN_STRING, string);
 }
 
 /*

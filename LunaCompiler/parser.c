@@ -375,7 +375,6 @@ AST* parser_var_dec(parser_T* parser) {
 	case STRING_T: node->var_type = DATA_STRING; break;
 	default: printf("[Error in line %zu]: Variable declaration missing variable type value", parser->lexer->lineIndex);
 		exit(1);
-
 	}
 	
 	parser->token = parser_expect(parser, TOKEN_ID);
@@ -709,6 +708,8 @@ char* reserved_to_string(int type) {
 	case INT_T:		return "int";
 	case STRING_T:	return "string";
 	case RETURN_T:	return "return";
+
+	default:		return NULL;
 
 	}
 }

@@ -109,25 +109,27 @@ void generate_global_vars(asm_frontend* frontend, TAC* triple) {
 		switch (triple->op) {
 
 		case TOKEN_LBRACE:
+
 			table->tableIndex++;
 			table = table->nestedScopes[table->tableIndex - 1];
 			break;
 
 		case TOKEN_RBRACE:
+
 			table->tableIndex = 0;
 			table = table->prev;
 			break;
 
 		case AST_VARIABLE_DEC:
+
 			if (!(table_search_table(table, triple->arg1->value)->prev)) {
 
 				// Declaring and assigning the global var the value of the next operation (which will be an assignment)
-				fprintf(frontend->targetProg, "%s %s %s\n", triple->arg1->value, triple->arg2->value, triple->next->arg2->value);
+				fprintf(frontend->targetProg, "%s %s %s\n", (char*)triple->arg1->value, (char*)triple->arg2->value, (char*)triple->next->arg2->value);
 				triple = triple->next;
 			}
 		
 			break;
-
 		}
 
 		triple = triple->next;
@@ -461,7 +463,7 @@ void generate_assignment(asm_frontend* frontend) {
 		fprintf(frontend->targetProg, "PUSHA\n");
 
 		// MASM macro to copy a string value onto the string array
-		fprintf(frontend->targetProg, "fnc lstrcpy, ADDR %s, \"%s\"\n", frontend->instruction->arg1->value, frontend->instruction->arg2->value);
+		fprintf(frontend->targetProg, "fnc lstrcpy, ADDR %s, \"%s\"\n", (char*)frontend->instruction->arg1->value, (char*)frontend->instruction->arg2->value);
 
 		fprintf(frontend->targetProg, "POPA\n");
 
@@ -507,8 +509,8 @@ void generate_var_dec(asm_frontend* frontend) {
 
 	// If the second argument is a number, that means it's the amount of bytes to put in a string data
 	// For other types, just declare them normally
-	isNum(frontend->instruction->arg2->value) ? fprintf(frontend->targetProg, "LOCAL %s[%s]:BYTE\n", name, frontend->instruction->arg2->value)
-		: fprintf(frontend->targetProg, "LOCAL %s:%s\n", name, frontend->instruction->arg2->value);
+	isNum(frontend->instruction->arg2->value) ? fprintf(frontend->targetProg, "LOCAL %s[%s]:BYTE\n", name, (char*)frontend->instruction->arg2->value)
+		: fprintf(frontend->targetProg, "LOCAL %s:%s\n", name, (char*)frontend->instruction->arg2->value);
 	
 }  
 
@@ -649,7 +651,7 @@ void generate_func_call(asm_frontend* frontend) {
 		// For variables and numbers we can just push them as is
 		if (frontend->instruction->op == AST_PARAM && frontend->instruction->arg1->type == CHAR_P) {
 
-			fprintf(frontend->targetProg, "PUSH %s\n", frontend->instruction->arg1->value);
+			fprintf(frontend->targetProg, "PUSH %s\n", (char*)frontend->instruction->arg1->value);
 			i++;
 		}
 		// For TAC operations we need to allocate a register before pushing
@@ -707,7 +709,7 @@ void generate_print(asm_frontend* frontend) {
 		if (frontend->instruction->op == AST_PARAM && !entry) {
 
 			if (!(frontend->instruction->arg1->type == TAC_P || frontend->instruction->arg1->type == TEMP_P)) {
-				fprintf(frontend->targetProg, "fnc StdOut, \"%s\"\n", frontend->instruction->arg1->value);
+				fprintf(frontend->targetProg, "fnc StdOut, \"%s\"\n", (char*)frontend->instruction->arg1->value);
 			}
 			else {
 				// We need to return registers inside here because they could've changed
@@ -871,14 +873,14 @@ register_T* generate_move_to_register(asm_frontend* frontend, arg_T* arg) {
 	if (entry) {
 
 		address_push(entry, reg, ADDRESS_REG);
-		fprintf(frontend->targetProg, "MOV %s, [%s]\n", name, arg->value);
+		fprintf(frontend->targetProg, "MOV %s, [%s]\n", name, (char*)arg->value);
 	}
 	// Otherwise, if we want to move a number to a register, check if that number is 0, if so generate a XOR
 	// instruction, and if it isn't just load it's value onto the register
 	else if (arg->type == CHAR_P) {
 
 		!strcmp(arg->value, "0") ? fprintf(frontend->targetProg, "XOR %s, %s\n", name, name)
-			: fprintf(frontend->targetProg, "MOV %s, %s\n", name, arg->value);	
+			: fprintf(frontend->targetProg, "MOV %s, %s\n", name, (char*)arg->value);	
 	}
 	
 	return reg;
@@ -908,12 +910,12 @@ register_T* generate_move_new_value_to_register(asm_frontend* frontend, arg_T* a
 	if (entry) {
 
 		address_push(entry, reg, ADDRESS_REG);
-		fprintf(frontend->targetProg, "MOV %s, [%s]\n", name, arg->value);
+		fprintf(frontend->targetProg, "MOV %s, [%s]\n", name, (char*)arg->value);
 	}
 	else {
 
 		!strcmp(arg->value, "0") ? fprintf(frontend->targetProg, "XOR %s %s\n", name, name)
-			: fprintf(frontend->targetProg, "MOV %s, %s\n", name, arg->value);		
+			: fprintf(frontend->targetProg, "MOV %s, %s\n", name, (char*)arg->value);		
 	}
 
 	return reg;
@@ -1074,9 +1076,9 @@ register_T* generate_check_useless_value(asm_frontend* frontend, register_T* r) 
 
 	for (unsigned int i = 0; i < r->size && reg; i++) {
 	
-		if (generate_compare_arguments(frontend->instruction->next->arg1->value, frontend->instruction->arg1->value)
+		if (frontend->instruction->next && (generate_compare_arguments(frontend->instruction->next->arg1->value, frontend->instruction->arg1->value)
 			|| generate_compare_arguments(frontend->instruction->next->arg1->value, frontend->instruction->arg2->value)
-			|| !generate_compare_arguments(frontend->instruction->next->arg1->value, r->regDescList[i]->value)) {
+			|| !generate_compare_arguments(frontend->instruction->next->arg1->value, r->regDescList[i]->value))) {
 			reg = NULL;
 		}
 	}
@@ -1144,7 +1146,7 @@ void generate_spill(asm_frontend* frontend, register_T* r) {
 
 		if ((entry = table_search_entry(frontend->table, r->regDescList[i]->value))) {
 
-			fprintf(frontend->targetProg, "MOV [%s], %s\n", r->regDescList[i]->value, generate_get_register_name(r));
+			fprintf(frontend->targetProg, "MOV [%s], %s\n", (char*)r->regDescList[i]->value, generate_get_register_name(r));
 			address_push(entry, r->regDescList[i]->value, ADDRESS_VAR);
 		}
 	}
@@ -1189,7 +1191,7 @@ void register_block_exit(asm_frontend* frontend, register_T* reg) {
 		if (!table_search_in_specific_table(frontend->table, reg->regDescList[i]->value)
 			&& !entry_search_var(entry, reg->regDescList[i]->value)) {		// Here we check if the variable doesn't hold it's own value 
 
-			fprintf(frontend->targetProg, "MOV [%s], %s\n", reg->regDescList[i]->value, generate_get_register_name(reg));
+			fprintf(frontend->targetProg, "MOV [%s], %s\n", (char*)reg->regDescList[i]->value, generate_get_register_name(reg));
 			address_remove_registers(entry);
 			address_push(entry, reg->regDescList[i]->value, ADDRESS_VAR);
 		}
@@ -1223,7 +1225,7 @@ char* generate_get_label(asm_frontend* frontend, TAC* label) {
 		frontend->labelList->labels[frontend->labelList->size - 1] = label;
 		frontend->labelList->names = realloc(frontend->labelList->names, sizeof(char*) * frontend->labelList->size);
 		name = calloc(1, strlen("label") + numOfDigits(frontend->labelList->size) + 1);
-		sprintf(name, "label%d", frontend->labelList->size);
+		sprintf(name, "label%zu", frontend->labelList->size);
 		frontend->labelList->names[frontend->labelList->size - 1] = name;
 	}
 
@@ -1251,6 +1253,8 @@ char* generate_get_register_name(register_T* r) {
 	case REG_SI: return "ESI";
 	case REG_DI: return "EDI";
 	case REG_BP: return "EBP";
+	
+	default:	 return NULL;
 
 	}
 }

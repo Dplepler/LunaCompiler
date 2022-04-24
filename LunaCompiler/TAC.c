@@ -82,7 +82,7 @@ void* traversal_build_instruction(AST* node, TAC_list* list) {
 
 	// If node is NULL we can exit this function
 	if (!node) {
-		return;
+		return NULL;
 	}
 		
 	
@@ -147,7 +147,7 @@ TAC* traversal_func_dec(AST* node, TAC_list* list) {
 
 	list_push(list, instruction);
 
-	// We also want to push an TAC instruction that tells us how many parameters are there for the function
+	// We also want to push a TAC instruction that tells us how many parameters are there for the function
 	defAmount->op = AST_DEF_AMOUNT;
 	value = _itoa(node->size, (char*)calloc(1, numOfDigits(node->size) + 1), 10);
 	defAmount->arg1 = init_arg(value, CHAR_P);
@@ -192,7 +192,7 @@ TAC* traversal_var_dec(AST* node, TAC_list* list) {
 		}
 
 		buffer = calloc(1, numOfDigits(strlen(node->value->rightChild->name)) + 1);
-		sprintf(buffer, "%d", strlen(node->value->rightChild->name) + 1);
+		sprintf(buffer, "%zu", strlen(node->value->rightChild->name) + 1);
 		instruction->arg2 = init_arg(buffer, CHAR_P);
 	}
 
@@ -443,12 +443,12 @@ void traversal_print_instructions(TAC_list* instructions) {
 			
 		// Check if arg1 is a string or a pointer to another TAC
 		if (triple->arg1) {
-			triple->arg1->type == CHAR_P ? printf("Arg1: %s, ", triple->arg1->value) : printf("Arg1: %p, ", triple->arg1->value);	
+			triple->arg1->type == CHAR_P ? printf("Arg1: %s, ", (char*)triple->arg1->value) : printf("Arg1: %p, ", triple->arg1->value);
 		}
 
 		// Check if arg2 is a string or a pointer to another TAC
 		if (triple->arg2) {
-			triple->arg2->type == CHAR_P ? printf("Arg2: %s, ", triple->arg2->value) : printf("Arg2: %p, ", triple->arg2->value);
+			triple->arg2->type == CHAR_P ? printf("Arg2: %s, ", (char*)triple->arg2->value) : printf("Arg2: %p, ", triple->arg2->value);
 		}
 
 		printf("Address: %p\n", triple);
@@ -468,8 +468,9 @@ char* dataToAsm(int type) {
 
 	case DATA_INT: return "DWORD";
 	//case DATA_STRING: return "BYTE";
-
+	default: return NULL;
 	}
+
 }
 
 /*
@@ -556,7 +557,7 @@ void traversal_free_array(TAC_list* list) {
 	TAC* triple = list->head;
 	TAC* prev = NULL;
 
-	while (triple->next) {
+	while (triple) {
 
 		// Some special cases where we allocate a new string value rather than use already made one
 		if (triple->op == AST_FUNC_CALL || triple->op == AST_PRINT) {
@@ -585,7 +586,6 @@ void traversal_free_array(TAC_list* list) {
 		free(prev);
 	}
 
-	free(list->last);
 	free(list);
 }
  

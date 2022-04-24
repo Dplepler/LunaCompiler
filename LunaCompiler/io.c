@@ -72,7 +72,7 @@ numOfDigits returns the amount of digits in a number
 Input: Number
 Output: Amount of digits
 */
-size_t numOfDigits(int num) {
+size_t numOfDigits(unsigned long num) {
 
   size_t counter = 0;
 
