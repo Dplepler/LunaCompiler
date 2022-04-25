@@ -9,48 +9,48 @@
 
 typedef struct REGISTER_STRUCT_STRUCT {
 
-    enum REG_ENUM {
+  enum REG_ENUM {
 
-        REG_AX,
-        REG_BX,
-        REG_CX,
-        REG_DX,
-        REG_CS,
-        REG_DS,
-        REG_SS,
-        REG_SP,
-        REG_SI,
-        REG_DI,
-        REG_BP,
+    REG_AX,
+    REG_BX,
+    REG_CX,
+    REG_DX,
+    REG_CS,
+    REG_DS,
+    REG_SS,
+    REG_SP,
+    REG_SI,
+    REG_DI,
+    REG_BP,
 
-    } reg;
+  } reg;
 
-    bool regLock;            // regLock will lock the register so that get_register won't be able to use it until it's unlocked
+  bool regLock;      // regLock will lock the register so that get_register won't be able to use it until it's unlocked
 
-    arg_T** regDescList;    // Register descriptors: Stores variables and addresses that have their value in the current register
-    size_t size;            // Size of register descriptors
+  arg_T** regDescList;  // Register descriptors: Stores variables and addresses that have their value in the current register
+  size_t size;      // Size of register descriptors
 
 } register_T;
 
 typedef struct LABEL_LIST_STRUCT {
 
-    TAC** labels;
-    char** names;        // Just so I can free the allocated names later
-    size_t size;
+  TAC** labels;
+  char** names;    // Just so I can free the allocated names later
+  size_t size;
 
 } label_list;
 
 typedef struct ASM_BACKEND_STRUCT {
 
-    register_T** registers;
+  register_T** registers;
 
-    label_list* labelList;
+  label_list* labelList;
 
-    TAC* instruction;
+  TAC* instruction;
 
-    table_T* table;
+  table_T* table;
 
-    FILE* targetProg;
+  FILE* targetProg;
 
 } asm_frontend;
 

@@ -1,17 +1,18 @@
 
-int foo(int x, int y) {
+int fib(int n)
+{
+    if (n <= 1) { return n; }
 	
-	return x * y;
+    return fib(n-1) + fib(n-2);
 }
 
 int main() {
 	
-	int x = 10;
-
+	int x = 9;
 	
-	print(foo(x, x));
+	int ans = fib(x);
 	
-	
+	if (ans == 34) { print("Worked!\n", ans); }
 	return 0;
 }
 

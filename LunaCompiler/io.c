@@ -7,7 +7,7 @@ Output: Contents of the file
 */
 char* read_file(FILE* file) {
 
-    char* contents = NULL;
+  char* contents = NULL;
   char ch = 0;
   size_t i = 0;
 
@@ -15,13 +15,13 @@ char* read_file(FILE* file) {
 
   // While end of file is not reached, advance file string data and put the current char in it
   while ((ch = fgetc(file)) != EOF) {
-    contents = mrealloc(contents, ++i);
-    contents[i - 1] = ch;
+  contents = mrealloc(contents, ++i);
+  contents[i - 1] = ch;
   } 
 
   // Terminate string with a 0
   contents = mrealloc(contents, ++i);
-  contents[i - 1] = '\0';       
+  contents[i - 1] = '\0';     
 
   fclose(file);
 
@@ -43,27 +43,27 @@ char* make_new_filename(char* name, char* extention) {
 
   for (i = 0; i < length; i++) {
 
-    // For every normal character, we copy it as is
-    if (name[i] != '.') {
+  // For every normal character, we copy it as is
+  if (name[i] != '.') {
 
-      newFilename = mrealloc(newFilename, ++size);
-      newFilename[size - 1] = name[i];
-    }
-    // When extention reached we copy the .asm extention instead
-    else {
-
-      // Before using strcat, we have to terminate the current string
-      newFilename = mrealloc(newFilename, ++size);
-      newFilename[size - 1] = '\0';
-
-      size += strlen(extention) + 1;
-
-      newFilename = mrealloc(newFilename, size);
-      strcat(newFilename, extention);
-      break;
-    }
+    newFilename = mrealloc(newFilename, ++size);
+    newFilename[size - 1] = name[i];
   }
-        
+  // When extention reached we copy the .asm extention instead
+  else {
+
+    // Before using strcat, we have to terminate the current string
+    newFilename = mrealloc(newFilename, ++size);
+    newFilename[size - 1] = '\0';
+
+    size += strlen(extention) + 1;
+
+    newFilename = mrealloc(newFilename, size);
+    strcat(newFilename, extention);
+    break;
+  }
+  }
+    
   return newFilename;
 }
 
@@ -78,11 +78,11 @@ size_t numOfDigits(long num) {
 
   do {
 
-    num /= 10;
-    counter++;
+  num /= 10;
+  counter++;
 
   } while (num > 0);
-    
+  
   return counter;
 }
 

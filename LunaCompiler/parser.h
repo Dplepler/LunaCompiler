@@ -6,23 +6,23 @@
 
 typedef struct PARSER_STRUCT
 {
-    lexer_T* lexer;
-    token_T* token;
-    table_T* table;
+  lexer_T* lexer;
+  token_T* token;
+  table_T* table;
 
-    char** reserved;
+  char** reserved;
 
-    enum KEYWORD_ENUM
-    {
-        OUT_T,
-        IF_T,
-        ELSE_T,
-        WHILE_T,
-        INT_T,
-        STRING_T,
-        RETURN_T,
+  enum KEYWORD_ENUM
+  {
+    OUT_T,
+    IF_T,
+    ELSE_T,
+    WHILE_T,
+    INT_T,
+    STRING_T,
+    RETURN_T,
 
-    } reserved_T;
+  } reserved_T;
 
 
 }parser_T;
