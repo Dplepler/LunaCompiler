@@ -13,7 +13,7 @@ typedef enum data_type {
 typedef struct ADDRESS_STRUCT {
 
     void* address;
-    enum {
+    enum ADDRESS_TYPE_ENUM {
 
         ADDRESS_REG,
         ADDRESS_VAR,

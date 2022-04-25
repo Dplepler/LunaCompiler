@@ -7,7 +7,7 @@ Output: Lexer
 */
 lexer_T* init_lexer(char* contents) {
 
-    lexer_T* lexer = calloc(1, sizeof(lexer_T));
+    lexer_T* lexer = mcalloc(1, sizeof(lexer_T));
 
     lexer->contents = contents;
     lexer->contentsLength = strlen(contents);
@@ -15,7 +15,7 @@ lexer_T* init_lexer(char* contents) {
 
     lexer->lineIndex = 1;
 
-    lexer->tokens = calloc(1, sizeof(token_T*));
+    lexer->tokens = mcalloc(1, sizeof(token_T*));
 
     return lexer;
 }
@@ -83,7 +83,7 @@ token_T* lexer_advance_current(lexer_T* lexer, int type) {
     // If token is 2 characters long (e.g: <=, ==)
     if (type == TOKEN_ELESS || type == TOKEN_EMORE || type == TOKEN_DEQUAL || type == TOKEN_NEQUAL) {
         
-        value = realloc(value, VALUE_SIZE + 1);
+        value = mrealloc(value, VALUE_SIZE + 1);
         lexer_advance(lexer);
         value[1] = lexer->c;
         value[2] = '\0';
@@ -199,19 +199,19 @@ Output: Identifier token
 */
 token_T* lexer_collect_id(lexer_T* lexer) {
 
-    char* id = calloc(1, sizeof(char));
+    char* id = mcalloc(1, sizeof(char));
     size_t size = 0;
     
     // An ID has to start with a letter but can contain numbers, letters and underscore
     while (isalpha(lexer->c) || isdigit(lexer->c) || lexer->c == '_') {
 
-        id = realloc(id, ++size);
+        id = mrealloc(id, ++size);
         id[size - 1] = lexer->c;
         lexer_advance(lexer);
     }
 
     // Terminate the string with a 0
-    id = realloc(id, size + 1);
+    id = mrealloc(id, size + 1);
     id[size] = '\0';
 
     return init_token(TOKEN_ID, id);
@@ -224,18 +224,18 @@ Output: Number token
 */
 token_T* lexer_collect_number(lexer_T* lexer) {
 
-    char* num = calloc(1, sizeof(char));
+    char* num = mcalloc(1, sizeof(char));
     size_t size = 0;
 
     // Collect number
     while (isdigit(lexer->c)) {
 
-        num = realloc(num, ++size);
+        num = mrealloc(num, ++size);
         num[size - 1] = lexer->c;
         lexer_advance(lexer);
     }
     // Terminate string with a 0
-    num = realloc(num, size + 1);
+    num = mrealloc(num, size + 1);
     num[size] = '\0';
 
     return init_token(TOKEN_NUMBER, num);
@@ -248,7 +248,7 @@ Output: String token
 */
 token_T* lexer_collect_string(lexer_T* lexer) {
 
-    char* string = calloc(1, sizeof(char));
+    char* string = mcalloc(1, sizeof(char));
     size_t size = 0;
 
     size_t line = lexer->lineIndex;
@@ -265,12 +265,12 @@ token_T* lexer_collect_string(lexer_T* lexer) {
             exit(1);
         }
 
-        string = realloc(string, ++size);
+        string = mrealloc(string, ++size);
         string[size - 1] = lexer->c;  
         lexer_advance(lexer);
     }
     // Terminate string with a 0
-    string = realloc(string, size + 1);
+    string = mrealloc(string, size + 1);
     string[size] = '\0';
 
     lexer_advance(lexer);
@@ -285,7 +285,7 @@ Output: None
 */
 void lexer_token_list_push(lexer_T* lexer, token_T* token) {
 
-    lexer->tokens = realloc(lexer->tokens, sizeof(token_T*) * ++lexer->tokensSize);
+    lexer->tokens = mrealloc(lexer->tokens, sizeof(token_T*) * ++lexer->tokensSize);
     lexer->tokens[lexer->tokensSize - 1] = token;
 }
 

@@ -11,16 +11,16 @@ char* read_file(FILE* file) {
   char ch = 0;
   size_t i = 0;
 
-  contents = calloc(1, sizeof(char));
+  contents = mcalloc(1, sizeof(char));
 
   // While end of file is not reached, advance file string data and put the current char in it
   while ((ch = fgetc(file)) != EOF) {
-    contents = realloc(contents, ++i);
+    contents = mrealloc(contents, ++i);
     contents[i - 1] = ch;
   } 
 
   // Terminate string with a 0
-  contents = realloc(contents, ++i);
+  contents = mrealloc(contents, ++i);
   contents[i - 1] = '\0';       
 
   fclose(file);
@@ -35,7 +35,7 @@ Output: The same filename with a the desired extention
 */
 char* make_new_filename(char* name, char* extention) {
 
-  char* newFilename = calloc(1, sizeof(char));
+  char* newFilename = mcalloc(1, sizeof(char));
 
   unsigned int i = 0;
   size_t size = 0;
@@ -46,19 +46,19 @@ char* make_new_filename(char* name, char* extention) {
     // For every normal character, we copy it as is
     if (name[i] != '.') {
 
-      newFilename = realloc(newFilename, ++size);
+      newFilename = mrealloc(newFilename, ++size);
       newFilename[size - 1] = name[i];
     }
     // When extention reached we copy the .asm extention instead
     else {
 
       // Before using strcat, we have to terminate the current string
-      newFilename = realloc(newFilename, ++size);
+      newFilename = mrealloc(newFilename, ++size);
       newFilename[size - 1] = '\0';
 
       size += strlen(extention) + 1;
 
-      newFilename = realloc(newFilename, size);
+      newFilename = mrealloc(newFilename, size);
       strcat(newFilename, extention);
       break;
     }
@@ -72,7 +72,7 @@ numOfDigits returns the amount of digits in a number
 Input: Number
 Output: Amount of digits
 */
-size_t numOfDigits(unsigned long num) {
+size_t numOfDigits(long num) {
 
   size_t counter = 0;
 
@@ -108,13 +108,13 @@ void assemble_file(char* filename) {
   char* objectFilename = make_new_filename(filename, ".obj");
   char* exeFilename = make_new_filename(filename, ".exe");
 
-  command = calloc(1, strlen("C:\\masm32\\bin\\ml /c /Zd /coff %s") + strlen(filename) + 1);
+  command = mcalloc(1, strlen("C:\\masm32\\bin\\ml /c /Zd /coff %s") + strlen(filename) + 1);
   sprintf(command, "C:\\masm32\\bin\\ml /c /Zd /coff %s", filename);
   system(command);
 
   free(command);
 
-  command = calloc(1, strlen("C:\\masm32\\bin\\Link /SUBSYSTEM:CONSOLE %s") + strlen(objectFilename) + 1);
+  command = mcalloc(1, strlen("C:\\masm32\\bin\\Link /SUBSYSTEM:CONSOLE %s") + strlen(objectFilename) + 1);
   sprintf(command, "C:\\masm32\\bin\\Link /SUBSYSTEM:CONSOLE %s", objectFilename);
   system(command);
 

@@ -26,11 +26,11 @@ int main(int argc, char** argv) {
         The translator takes a source code and replaces Hebrew keywords with English keywords
         NOTE: Hebrew words that are not reserved get translated to a gibberish English word
         */
-        command = calloc(1, strlen("python translator.py ") + strlen(argv[1]) + 1);
+        command = mcalloc(1, strlen("python translator.py ") + strlen(argv[1]) + 1);
         sprintf(command, "python translator.py %s", argv[1]);
         system(command);
 
-        fileChoice = calloc(1, strlen(argv[1]) + strlen("translated_") + 1);
+        fileChoice = mcalloc(1, strlen(argv[1]) + strlen("translated_") + 1);
         sprintf(fileChoice, "translated_%s", argv[1]);
 
         free(command);
@@ -38,7 +38,7 @@ int main(int argc, char** argv) {
     // Otherwise, we just want to use the normal filename
     else {
 
-        fileChoice = calloc(1, strlen(argv[1]) + 1);
+        fileChoice = mcalloc(1, strlen(argv[1]) + 1);
         strcpy(fileChoice, argv[1]);
     }
 

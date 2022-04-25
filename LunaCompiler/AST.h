@@ -5,7 +5,7 @@
 
 typedef struct AST_STRUCT {
 
-    enum {
+    enum AST_TYPE_ENUM {
 
         AST_PROGRAM = 24,        // Continue enumeration from tokens (tokens.c)
         AST_FUNCTION,

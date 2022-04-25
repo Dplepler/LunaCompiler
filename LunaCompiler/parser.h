@@ -12,7 +12,7 @@ typedef struct PARSER_STRUCT
 
     char** reserved;
 
-    enum
+    enum KEYWORD_ENUM
     {
         OUT_T,
         IF_T,

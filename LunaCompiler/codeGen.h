@@ -9,7 +9,7 @@
 
 typedef struct REGISTER_STRUCT_STRUCT {
 
-    enum {
+    enum REG_ENUM {
 
         REG_AX,
         REG_BX,

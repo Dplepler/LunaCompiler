@@ -8,15 +8,15 @@ Output: The asm frontend
 */
 asm_frontend* init_asm_frontend(table_T* table, TAC* head, char* targetName) {
 
-    asm_frontend* frontend = calloc(1, sizeof(asm_frontend));
+    asm_frontend* frontend = mcalloc(1, sizeof(asm_frontend));
 
-    frontend->registers = calloc(REG_AMOUNT, sizeof(register_T*));
-    frontend->labelList = calloc(1, sizeof(label_list));
+    frontend->registers = mcalloc(REG_AMOUNT, sizeof(register_T*));
+    frontend->labelList = mcalloc(1, sizeof(label_list));
     
     // Allocate all registers for the frontend
     for (unsigned int i = 0; i < REG_AMOUNT; i++) {
 
-        frontend->registers[i] = calloc(1, sizeof(register_T));
+        frontend->registers[i] = mcalloc(1, sizeof(register_T));
         frontend->registers[i]->reg = i;        // Assigning each register it's name
     }  
     
@@ -35,7 +35,7 @@ Output: None
 */
 void descriptor_push(register_T* reg, arg_T* descriptor) {
 
-    reg->regDescList = realloc(reg->regDescList, sizeof(arg_T*) * ++reg->size);
+    reg->regDescList = mrealloc(reg->regDescList, sizeof(arg_T*) * ++reg->size);
     reg->regDescList[reg->size - 1] = descriptor;
 }
 
@@ -64,8 +64,8 @@ void descriptor_reset(asm_frontend* frontend, register_T* r) {
 
         if (r->regDescList[i]->type == TEMP_P) {
 
-            free(r->regDescList[i]);
             r->regDescList[i]->value = NULL;
+            free(r->regDescList[i]);
             r->regDescList[i] = NULL;
         }
         else if (r->regDescList[i]->type == CHAR_P && (entry = table_search_entry(frontend->table, r->regDescList[i]->value))) {
@@ -685,7 +685,7 @@ void generate_print(asm_frontend* frontend) {
     // Save the register values we will change because of the macros
     for (unsigned int i = 0; i < GENERAL_REG_AMOUNT; i++) {
 
-        regDescListList[i] = calloc(1, sizeof(arg_T));
+        regDescListList[i] = mcalloc(1, sizeof(arg_T));
 
         for (unsigned int i2 = 0; i2 < frontend->registers[i]->size; i2++) {
             regDescListList[i][i2] = frontend->registers[i]->regDescList[i2];
@@ -1221,10 +1221,10 @@ char* generate_get_label(asm_frontend* frontend, TAC* label) {
     // If label was not found, create a new one
     if (!name) {
 
-        frontend->labelList->labels = realloc(frontend->labelList->labels, sizeof(TAC*) * ++frontend->labelList->size);    // Appending list
+        frontend->labelList->labels = mrealloc(frontend->labelList->labels, sizeof(TAC*) * ++frontend->labelList->size);    // Appending list
         frontend->labelList->labels[frontend->labelList->size - 1] = label;
-        frontend->labelList->names = realloc(frontend->labelList->names, sizeof(char*) * frontend->labelList->size);
-        name = calloc(1, strlen("label") + numOfDigits(frontend->labelList->size) + 1);
+        frontend->labelList->names = mrealloc(frontend->labelList->names, sizeof(char*) * frontend->labelList->size);
+        name = mcalloc(1, strlen("label") + numOfDigits(frontend->labelList->size) + 1);
         sprintf(name, "label%zu", frontend->labelList->size);
         frontend->labelList->names[frontend->labelList->size - 1] = name;
     }
@@ -1295,7 +1295,7 @@ void generate_remove_descriptor(register_T* reg, arg_T* desc) {
         }
     }
 
-    reg->regDescList = realloc(reg->regDescList, --reg->size * sizeof(arg_T*));
+    reg->regDescList = mrealloc(reg->regDescList, --reg->size * sizeof(arg_T*));
 }
 
 /*

@@ -7,7 +7,7 @@ Output: Parser
 */
 parser_T* init_parser(lexer_T* lexer) {
 
-    parser_T* parser = calloc(1, sizeof(parser_T));
+    parser_T* parser = mcalloc(1, sizeof(parser_T));
 
     parser->lexer = lexer;
     parser->token = lexer_get_next_token(parser->lexer);
@@ -16,7 +16,7 @@ parser_T* init_parser(lexer_T* lexer) {
 
     table_add_builtin_functions(parser->table);
 
-    parser->reserved = calloc(1, sizeof(char*) * RESERVED_SIZE);    // Allocate an array for the reserved values
+    parser->reserved = mcalloc(1, sizeof(char*) * RESERVED_SIZE);    // Allocate an array for the reserved values
 
     // For each reserved value, add it to the array
     for (unsigned int i = 0; i < RESERVED_SIZE; i++) {
@@ -75,12 +75,12 @@ AST* parser_lib(parser_T* parser) {
 
         // For functions, advance the function list of the program
         if (node->type == AST_FUNCTION) {
-            root->function_list = realloc(root->function_list, sizeof(AST*) * ++funcCounter);
+            root->function_list = mrealloc(root->function_list, sizeof(AST*) * ++funcCounter);
             root->function_list[funcCounter - 1] = node;
         }
         // For anything global that is not a function, advance the children component of the program
         else if (node->type == AST_VARIABLE_DEC) {    
-            root->children = realloc(root->children, sizeof(AST*) * ++globalCounter);
+            root->children = mrealloc(root->children, sizeof(AST*) * ++globalCounter);
             root->children[globalCounter - 1] = node;
         }
         else {
@@ -135,7 +135,7 @@ AST* parser_function(parser_T* parser) {
     // Parse function arguments
     while (parser->token->type != TOKEN_RPAREN) {
 
-        node->function_def_args = realloc(node->function_def_args, sizeof(AST*) * ++counter);
+        node->function_def_args = mrealloc(node->function_def_args, sizeof(AST*) * ++counter);
         node->function_def_args[counter - 1] = parser_var_dec(parser);
 
         if (parser->token->type != TOKEN_RPAREN) {
@@ -169,7 +169,7 @@ AST* parser_block(parser_T* parser) {
     // While block isn't done, parse statements
     while (parser->token->type != TOKEN_RBRACE) {
 
-        node->children = realloc(node->children, sizeof(AST*) * ++counter);
+        node->children = mrealloc(node->children, sizeof(AST*) * ++counter);
         node->children[counter - 1] = parser_statement(parser);
     }
 
@@ -345,7 +345,7 @@ AST* parser_func_call(parser_T* parser) {
     // Parse the arguments being passed to function
     while (parser->token->type != TOKEN_RPAREN) {
 
-        node->arguments = realloc(node->arguments, sizeof(AST*) * ++counter);
+        node->arguments = mrealloc(node->arguments, sizeof(AST*) * ++counter);
         node->arguments[counter - 1] = parser_expression(parser);
 
         if (parser->token->type != TOKEN_RPAREN) {

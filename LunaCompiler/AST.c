@@ -7,7 +7,7 @@ Output: None
 */
 AST* init_AST(int type) {
 
-    AST* node = calloc(1, sizeof(AST));
+    AST* node = mcalloc(1, sizeof(AST));
     node->type = type;
 
     return node;
@@ -95,6 +95,8 @@ char* typeToString(int type) {
         case DATA_INT: return "Int";
 
     }
+
+    return NULL;
 }
 
 /*

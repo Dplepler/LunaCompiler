@@ -7,7 +7,7 @@ Output: Token
 */
 token_T* init_token(int type, char* value) {
 
-    token_T* token = calloc(1, sizeof(token_T));
+    token_T* token = mcalloc(1, sizeof(token_T));
     token->value = value;
     token->type = type;
 

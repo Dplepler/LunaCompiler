@@ -1,11 +1,15 @@
 
-int y = 10;
+int foo(int x, int y) {
+	
+	return x * y;
+}
 
 int main() {
 	
 	int x = 10;
+
 	
-	print(10 * x * y * 10 * 10);
+	print(foo(x, x));
 	
 	
 	return 0;

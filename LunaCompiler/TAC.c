@@ -6,7 +6,7 @@ Input: None
 Output: Initialized list
 */
 TAC_list* init_tac_list() {
-    return calloc(1, sizeof(TAC_list));
+    return mcalloc(1, sizeof(TAC_list));
 }
 
 /*
@@ -16,7 +16,7 @@ Output: Tagged union of both the argument value and it's type
 */
 arg_T* init_arg(void* arg, int type) {
 
-    arg_T* argument = calloc(1, sizeof(arg_T));
+    arg_T* argument = mcalloc(1, sizeof(arg_T));
     argument->value = arg;
     argument->type = type;
 
@@ -134,9 +134,9 @@ Output: TAC instruction that was made
 */
 TAC* traversal_func_dec(AST* node, TAC_list* list) {
 
-    TAC* instruction = calloc(1, sizeof(TAC));
-    TAC* defAmount = calloc(1, sizeof(TAC));
-    TAC* endFunc = calloc(1, sizeof(TAC));
+    TAC* instruction = mcalloc(1, sizeof(TAC));
+    TAC* defAmount = mcalloc(1, sizeof(TAC));
+    TAC* endFunc = mcalloc(1, sizeof(TAC));
     char* value = NULL;
 
     // In this triple, arg1 will be the function name and arg2 will be the function return type
@@ -149,7 +149,7 @@ TAC* traversal_func_dec(AST* node, TAC_list* list) {
 
     // We also want to push a TAC instruction that tells us how many parameters are there for the function
     defAmount->op = AST_DEF_AMOUNT;
-    value = _itoa(node->size, (char*)calloc(1, numOfDigits(node->size) + 1), 10);
+    value = _itoa((int)node->size, (char*)mcalloc(1, numOfDigits(node->size) + 1), 10);
     defAmount->arg1 = init_arg(value, CHAR_P);
 
     list_push(list, defAmount);
@@ -170,7 +170,7 @@ Output: TAC instruction that was made
 */
 TAC* traversal_var_dec(AST* node, TAC_list* list) {
 
-    TAC* instruction = calloc(1, sizeof(TAC));
+    TAC* instruction = mcalloc(1, sizeof(TAC));
     char* buffer = NULL;
 
     instruction->op = AST_VARIABLE_DEC;
@@ -191,7 +191,7 @@ TAC* traversal_var_dec(AST* node, TAC_list* list) {
             exit(1);
         }
 
-        buffer = calloc(1, numOfDigits(strlen(node->value->rightChild->name)) + 1);
+        buffer = mcalloc(1, numOfDigits(strlen(node->value->rightChild->name)) + 1);
         sprintf(buffer, "%zu", strlen(node->value->rightChild->name) + 1);
         instruction->arg2 = init_arg(buffer, CHAR_P);
     }
@@ -208,7 +208,7 @@ Output: A triple
 */
 TAC* traversal_binop(AST* node, TAC_list* list) {
 
-    TAC* instruction = calloc(1, sizeof(TAC));
+    TAC* instruction = mcalloc(1, sizeof(TAC));
 
     instruction->op = node->type == AST_COMPARE ? node->type_c : node->type;
 
@@ -227,7 +227,7 @@ Output: TAC instruction that was made
 */
 TAC* traversal_assignment(AST* node, TAC_list* list) {
 
-    TAC* instruction = calloc(1, sizeof(TAC));
+    TAC* instruction = mcalloc(1, sizeof(TAC));
 
     instruction->op = node->type;
     instruction->arg1 = init_arg(node->leftChild->name, CHAR_P);
@@ -251,7 +251,7 @@ TAC* traversal_function_call(AST* node, TAC_list* list) {
     size_t counter = 0;
     size_t size = 0;
     
-    instruction = calloc(1, sizeof(TAC));
+    instruction = mcalloc(1, sizeof(TAC));
 
     instruction->arg1 = init_arg(node->name, CHAR_P);
 
@@ -259,7 +259,7 @@ TAC* traversal_function_call(AST* node, TAC_list* list) {
     instruction->op = !strcmp(node->name, "print") ? AST_PRINT : node->type;
 
     // Arg2 will be the number of arguments passing into the function
-    instruction->arg2 = init_arg(calloc(1, numOfDigits(node->size) + 1), CHAR_P);
+    instruction->arg2 = init_arg(mcalloc(1, numOfDigits(node->size) + 1), CHAR_P);
     _itoa(node->size, instruction->arg2->value, 10);
 
     list_push(list, instruction);
@@ -270,15 +270,15 @@ TAC* traversal_function_call(AST* node, TAC_list* list) {
     
     for (unsigned int i = 0; instruction->op == AST_PRINT && i < node->size; i++) {
 
-        param = calloc(1, sizeof(TAC));
+        param = mcalloc(1, sizeof(TAC));
         param->arg1 = init_arg(traversal_build_instruction(node->arguments[i], list), traversal_check_arg(node->arguments[i]));
         param->op = AST_PARAM;
         list_push(list, param);
     }
 
-    for (int i = node->size - 1; instruction->op != AST_PRINT && i >= 0; i--) {
+    for (long i = node->size - 1; instruction->op != AST_PRINT && i >= 0; i--) {
 
-        param = calloc(1, sizeof(TAC));
+        param = mcalloc(1, sizeof(TAC));
         param->arg1 = init_arg(traversal_build_instruction(node->arguments[i], list), traversal_check_arg(node->arguments[i]));
         param->op = AST_PARAM;
         list_push(list, param);
@@ -294,7 +294,7 @@ Output: Instruction that was made
 */
 TAC* traversal_condition(AST* node, TAC_list* list) {
 
-    TAC* instruction = calloc(1, sizeof(TAC));
+    TAC* instruction = mcalloc(1, sizeof(TAC));
 
     // For conditions we actually want to check if they are false rather than true to later generate
     // a jump Assembly instruction if condition was not met
@@ -318,7 +318,7 @@ void traversal_if(AST* node, TAC_list* list) {
     TAC* instruction = traversal_condition(node->condition, list);        // First push the condition of the statement
 
     TAC* label1 = NULL;
-    TAC* label2 = calloc(1, sizeof(TAC));
+    TAC* label2 = mcalloc(1, sizeof(TAC));
     TAC* gotoInstruction = NULL;
 
     unsigned int i = 0;
@@ -329,8 +329,8 @@ void traversal_if(AST* node, TAC_list* list) {
 
     if (node->else_body) {
 
-        gotoInstruction = calloc(1, sizeof(TAC));
-        label1 = calloc(1, sizeof(TAC));
+        gotoInstruction = mcalloc(1, sizeof(TAC));
+        label1 = mcalloc(1, sizeof(TAC));
         label1->op = AST_LABEL;
 
         gotoInstruction->op = AST_GOTO;
@@ -363,9 +363,9 @@ Output: None
 void traversal_while(AST* node, TAC_list* list) {
 
     TAC* condition = NULL;
-    TAC* gotoInstruction = calloc(1, sizeof(TAC));
-    TAC* label1 = calloc(1, sizeof(TAC));
-    TAC* label2 = calloc(1, sizeof(TAC));
+    TAC* gotoInstruction = mcalloc(1, sizeof(TAC));
+    TAC* label1 = mcalloc(1, sizeof(TAC));
+    TAC* label2 = mcalloc(1, sizeof(TAC));
 
     label1->op = AST_LOOP_LABEL;
     list_push(list, label1);
@@ -393,7 +393,7 @@ Output: Instruction that was made
 */
 TAC* traversal_return(AST* node, TAC_list* list) {
 
-    TAC* instruction = calloc(1, sizeof(TAC));
+    TAC* instruction = mcalloc(1, sizeof(TAC));
 
     instruction->op = AST_RETURN;
     instruction->arg1 = init_arg(traversal_build_instruction(node->value, list), traversal_check_arg(node->value));
@@ -411,8 +411,8 @@ Output: None
 void traversal_statements(AST* node, TAC_list* list) {
 
     // These instructions are used to pass the information of when a block begins and ends
-    TAC* start = calloc(1, sizeof(TAC));
-    TAC* end = calloc(1, sizeof(TAC));
+    TAC* start = mcalloc(1, sizeof(TAC));
+    TAC* end = mcalloc(1, sizeof(TAC));
 
     start->op = TOKEN_LBRACE;
     list_push(list, start);

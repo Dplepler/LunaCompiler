@@ -12,19 +12,21 @@ includelib \masm32\lib\user32.lib
 includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\masm32.lib
 .data
-y DWORD 10
 .code
+foo PROC x:DWORD, y:DWORD
+MOV EAX, [x]
+MOV EBX, [y]
+MUL EBX
+RET
+foo ENDP
 main PROC 
 LOCAL x:DWORD
 MOV EAX, 10
 MOV [x], EAX
 PUSHA
-MUL EAX
-MOV EBX, [y]
-MUL EBX
-MOV ECX, 10
-MUL ECX
-MUL ECX
+PUSH x
+PUSH x
+CALL foo
 fnc StdOut, str$(EAX)
 POPA
 XOR EAX, EAX

@@ -7,11 +7,11 @@ Output: Entry
 */
 entry_T* init_entry(char* name, int type) {
 
-    entry_T* entry = calloc(1, sizeof(entry_T));
+    entry_T* entry = mcalloc(1, sizeof(entry_T));
     entry->name = name;
     entry->dtype = type;
 
-    entry->addressDesc = calloc(1, sizeof(void*));
+    entry->addressDesc = mcalloc(1, sizeof(void*));
 
     address_push(entry, entry->name, ADDRESS_VAR);
 
@@ -25,8 +25,8 @@ Output: None
 */
 void address_push(entry_T* entry, void* location, int type) {
 
-    entry->addressDesc = realloc(entry->addressDesc, sizeof(address_T*) * ++entry->size);
-    entry->addressDesc[entry->size - 1] = calloc(1, sizeof(address_T)); 
+    entry->addressDesc = mrealloc(entry->addressDesc, sizeof(address_T*) * ++entry->size);
+    entry->addressDesc[entry->size - 1] = mcalloc(1, sizeof(address_T)); 
     entry->addressDesc[entry->size - 1]->address = location;
     entry->addressDesc[entry->size - 1]->type = type;
 }
@@ -107,11 +107,11 @@ Output: Initialized table
 */
 table_T* init_table(table_T* prev) {
 
-    table_T* table = calloc(1, sizeof(table_T));
+    table_T* table = mcalloc(1, sizeof(table_T));
     table->prev = prev;
 
-    table->entries = calloc(1, sizeof(entry_T*));
-    table->nestedScopes = calloc(1, sizeof(table_T*));
+    table->entries = mcalloc(1, sizeof(entry_T*));
+    table->nestedScopes = mcalloc(1, sizeof(table_T*));
 
     return table;
 }
@@ -122,7 +122,7 @@ Input: Table to add entry to, entry name and type
 */
 void table_add_entry(table_T* table, char* name, int type) {
 
-    table->entries = realloc(table->entries, sizeof(entry_T*) * ++table->entrySize);
+    table->entries = mrealloc(table->entries, sizeof(entry_T*) * ++table->entrySize);
     table->entries[table->entrySize - 1] = init_entry(name, type);
 }
 
@@ -133,7 +133,7 @@ Input: New table
 */
 table_T* table_add_table(table_T* table) {    
 
-    table->nestedScopes = realloc(table->nestedScopes, sizeof(table_T*) * ++table->nestedSize);
+    table->nestedScopes = mrealloc(table->nestedScopes, sizeof(table_T*) * ++table->nestedSize);
     table->nestedScopes[table->nestedSize - 1] = init_table(table);
 
     return table->nestedScopes[table->nestedSize - 1];
