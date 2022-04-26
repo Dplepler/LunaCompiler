@@ -1,6 +1,7 @@
 #include "codeGen.h"
 #define SIZE 100
 
+
 int main(int argc, char** argv) {
 
   FILE* file = NULL;
@@ -53,14 +54,14 @@ int main(int argc, char** argv) {
     printf("[Error]: Couldn't read file contents"); exit(1);
   }
   
-  lexer_T* const lexer = init_lexer(contents);      // Initialize lexer
-  parser_T* const parser = init_parser(lexer);      // Initialize Parser
-  AST* const root = parser_parse(parser);          // Parse the tokens into an AST
+  lexer_T* const lexer = init_lexer(contents);           // Initialize lexer
+  parser_T* const parser = init_parser(lexer);           // Initialize Parser
+  AST* const root = parser_parse(parser);                // Parse the tokens into an AST
   TAC_list* const instructions = traversal_visit(root);  // Visit the AST and generate an intermidiate representation
 
   //table_print_table(parser->table, 0);
   traversal_print_instructions(instructions);
-
+  
   // Write the Assembly code from the given IR
   write_asm(parser->table, instructions->head, newFilename);
 

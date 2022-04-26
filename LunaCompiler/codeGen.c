@@ -626,7 +626,6 @@ Input: Backend
 Output: None
 */
 void generate_return(asm_frontend* frontend) {
-
   register_T* reg = generate_move_to_ax(frontend, frontend->instruction->arg1);    // Always return a value in AX
   fprintf(frontend->targetProg, "RET\n");
 }
@@ -641,12 +640,20 @@ void generate_func_call(asm_frontend* frontend) {
   char* name = frontend->instruction->arg1->value;
   size_t size = atoi(frontend->instruction->arg2->value);
 
-  // After function call AX will change, so we need to save it before pushing any params
-  if (frontend->registers[REG_AX]->size) { 
+  if (frontend->registers[REG_AX]->size) {
     frontend->registers[REG_AX]->regLock = true;
-    // TODO: Move AX value to some other register (or spill)
+    generate_free_ax(frontend, generate_get_register(frontend));
     frontend->registers[REG_AX]->regLock = false;
-  }   
+  }
+
+  register_T* savedRegs[GENERAL_REG_AMOUNT - 1] = { NULL };
+  
+  for (uint8_t i = REG_BX; i < GENERAL_REG_AMOUNT; i++) {
+    if (!generate_check_register_usability(frontend, frontend->registers[i])) {
+      fprintf(frontend->targetProg, "PUSH %s\n", generate_get_register_name(frontend->registers[i]));
+      savedRegs[i - 1] = frontend->registers[i];
+    }
+  }
 
   descriptor_push_tac(frontend, frontend->registers[REG_AX], frontend->instruction);  // Set temporary result to AX
   
@@ -657,13 +664,11 @@ void generate_func_call(asm_frontend* frontend) {
 
     // For variables and numbers we can just push them as is
     if (frontend->instruction->op == AST_PARAM && frontend->instruction->arg1->type == CHAR_P) {
-
       fprintf(frontend->targetProg, "PUSH %s\n", (char*)frontend->instruction->arg1->value);
       i++;
     }
     // For TAC operations we need to allocate a register before pushing
     else if (frontend->instruction->op == AST_PARAM && (frontend->instruction->arg1->type == TAC_P || frontend->instruction->arg1->type == TEMP_P)) {
-
       fprintf(frontend->targetProg, "PUSH %s\n", generate_get_register_name(generate_move_to_register(frontend, frontend->instruction->arg1)));
       i++;
     }
@@ -674,6 +679,12 @@ void generate_func_call(asm_frontend* frontend) {
   }
 
   fprintf(frontend->targetProg, "CALL %s\n", name);
+
+  for (uint8_t i = 0; i < GENERAL_REG_AMOUNT - 1; i++) {
+    if (savedRegs[i]) {
+      fprintf(frontend->targetProg, "POP %s\n", generate_get_register_name(frontend->registers[i + 1]));
+    }
+  }
 }
 
 /*
@@ -784,21 +795,13 @@ Output: First register to contain the variable, NULL if none of them do
 */
 register_T* generate_check_variable_in_reg(asm_frontend* frontend, arg_T* var) {
 
-  register_T* reg = NULL;
-
-  for (unsigned int i = 0; i < GENERAL_REG_AMOUNT && !reg; i++) {
-
+  for (unsigned int i = 0; i < GENERAL_REG_AMOUNT; i++) {
     for (unsigned int i2 = 0; i2 < frontend->registers[i]->size; i2++) {
-
-      if (generate_compare_arguments(var, frontend->registers[i]->regDescList[i2])) {
-
-        reg = frontend->registers[i];
-        break;
-      }
+      if (generate_compare_arguments(var, frontend->registers[i]->regDescList[i2])) { return frontend->registers[i]; }
     }
   }
 
-  return reg;
+  return NULL;
 }
 
 /*
@@ -808,16 +811,14 @@ Output: Free register if it exists, 0 if it doesn't
 */
 register_T* generate_find_free_reg(asm_frontend* frontend) {
 
-  register_T* reg = NULL;
+  for (unsigned int i = 0; i < GENERAL_REG_AMOUNT; i++) {
 
-  for (unsigned int i = 0; i < GENERAL_REG_AMOUNT && !reg; i++) {
-
-    if (!frontend->registers[i]->size && !frontend->registers[i]->regLock) {
-      reg = frontend->registers[i];
+    if (generate_check_free_register(frontend->registers[i])) {
+      return frontend->registers[i];
     }
   }
 
-  return reg;
+  return NULL;
 }
 
 /*
@@ -942,17 +943,7 @@ register_T* generate_move_to_ax(asm_frontend* frontend, arg_T* arg) {
 
     // If the register found was not AX, copy AX's contents to it so we can free AX
     if ((reg = generate_get_register(frontend))->reg != REG_AX) {
-
-      for (unsigned int i = 0; i < frontend->registers[REG_AX]->size; i++) {
-        descriptor_push(reg, frontend->registers[REG_AX]->regDescList[i]);
-      }
-      
-      fprintf(frontend->targetProg, "MOV %s, EAX\n", generate_get_register_name(reg));    // Move the value of AX to a different register
-
-      // Reset AX
-      frontend->registers[REG_AX]->size = 0;
-      free(frontend->registers[REG_AX]->regDescList);
-      frontend->registers[REG_AX]->regDescList = NULL;
+      generate_free_ax(frontend, reg);
     }
 
     reg = generate_move_to_register(frontend, arg);
@@ -969,6 +960,24 @@ register_T* generate_move_to_ax(asm_frontend* frontend, arg_T* arg) {
   }
 
   return reg;
+}
+
+/*
+generate_free_ax copies all of AX's contents to a differet register so we can free AX
+Input: Frontend, Register to copy contents to (should be a free register)
+*/
+void generate_free_ax(asm_frontend* frontend, register_T* reg) {
+  
+  for (unsigned int i = 0; i < frontend->registers[REG_AX]->size; i++) {
+    descriptor_push(reg, frontend->registers[REG_AX]->regDescList[i]);
+  }
+
+  fprintf(frontend->targetProg, "MOV %s, EAX\n", generate_get_register_name(reg));    // Move the value of AX to a different register
+
+  // Reset AX
+  frontend->registers[REG_AX]->size = 0;
+  free(frontend->registers[REG_AX]->regDescList);
+  frontend->registers[REG_AX]->regDescList = NULL;
 }
 
 /*
@@ -1032,6 +1041,7 @@ register_T* generate_find_used_reg(asm_frontend* frontend) {
       }
     }
   }
+
   // Check that the variable the program is assigning to doesn't equal both operands
   // and if it doesn't, we can use a register that contains the variable
   for (unsigned int i = 0; i < GENERAL_REG_AMOUNT && !reg; i++) {
@@ -1100,7 +1110,7 @@ Output: Returns the register if it contains unused values, NULL if not
 */
 register_T* generate_check_register_usability(asm_frontend* frontend, register_T* r) {
 
-  register_T* reg = NULL;
+  register_T* reg = r;
 
   for (unsigned int i = 0; i < r->size; i++) {
     reg = generate_check_variable_usability(frontend, r, r->regDescList[i]);
@@ -1281,6 +1291,11 @@ bool generate_compare_arguments(arg_T* arg1, arg_T* arg2) {
     
   return flag;
 }
+
+bool generate_check_free_register(register_T* reg) {
+  return !reg->size && !reg->regLock;
+}
+
 
 /*
 generate_remove_descriptor removes a specific address from the register descriptor

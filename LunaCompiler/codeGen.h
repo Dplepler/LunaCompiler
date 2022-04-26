@@ -2,6 +2,7 @@
 #define CODEGEN_H
 
 #include "TAC.h"
+#include <stdint.h>
 
 #define GENERAL_REG_AMOUNT 4
 #define REG_AMOUNT 11
@@ -80,6 +81,7 @@ void descriptor_reset(asm_frontend* frontend, register_T* r);
 void descriptor_reset_all_registers(asm_frontend* frontend);
 void generate_remove_descriptor(register_T* reg, arg_T* desc);
 void restore_save_registers(asm_frontend* frontend);
+void generate_free_ax(asm_frontend* frontend, register_T* reg);
 
 register_T* generate_find_register(asm_frontend* frontend, arg_T* arg);
 register_T* generate_move_to_ax(asm_frontend* frontend, arg_T* arg);
@@ -98,6 +100,7 @@ char* generate_get_label(asm_frontend* frontend, TAC* label);
 char* generate_get_register_name(register_T* r);
 char* generate_assign_reg(register_T* r, void* argument);
 
+bool generate_check_free_register(register_T* reg);
 bool generate_compare_arguments(arg_T* arg1, arg_T* arg2);
 
 void register_block_exit(asm_frontend* frontend, register_T* reg);

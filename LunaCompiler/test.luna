@@ -1,19 +1,15 @@
 
-int fib(int n)
-{
-    if (n <= 1) { return n; }
+
+int fib(int n) {
 	
+	~print(n, "\n");
+    if (n <= 1) { return n; }
     return fib(n-1) + fib(n-2);
 }
 
-int main() {
-	
-	int x = 9;
-	
-	int ans = fib(x);
-	
-	if (ans == 34) { print("Worked!\n", ans); }
-	return 0;
+int main ()
+{
+    print(fib(9));
+    return 0;
 }
-
 
