@@ -1,14 +1,12 @@
 
 
 int fib(int n) {
-	
-	~print(n, "\n");
+
     if (n <= 1) { return n; }
-    return fib(n-1) + fib(n-2);
+    return fib(n-1) + fib(n-2); 	
 }
 
-int main ()
-{
+int main () {
     print(fib(9));
     return 0;
 }

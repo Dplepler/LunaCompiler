@@ -741,7 +741,6 @@ void generate_print(asm_frontend* frontend) {
     }
     // For strings being pushed, produce fitting code
     else if (frontend->instruction->op == AST_PARAM && entry->dtype == DATA_STRING) {
-
       fprintf(frontend->targetProg, "fnc StdOut, ADDR %s\n", entry->name);
       regsChanged = true;
     }
@@ -755,7 +754,6 @@ void generate_print(asm_frontend* frontend) {
       regsChanged = true;
     }
     else {
-
       generate_asm(frontend);
       i--;
     }
@@ -1176,7 +1174,6 @@ Input: Backend
 Output: None
 */
 void generate_block_exit(asm_frontend* frontend) {
-
   for (unsigned int i = 0; i < GENERAL_REG_AMOUNT; i++) {
     register_block_exit(frontend, frontend->registers[i]);
   }
@@ -1237,7 +1234,6 @@ char* generate_get_label(asm_frontend* frontend, TAC* label) {
   }
   // If label was not found, create a new one
   if (!name) {
-
     frontend->labelList->labels = mrealloc(frontend->labelList->labels, sizeof(TAC*) * ++frontend->labelList->size);  // Appending list
     frontend->labelList->labels[frontend->labelList->size - 1] = label;
     frontend->labelList->names = mrealloc(frontend->labelList->names, sizeof(char*) * frontend->labelList->size);
@@ -1271,7 +1267,7 @@ char* generate_get_register_name(register_T* r) {
   case REG_DI: return "EDI";
   case REG_BP: return "EBP";
   
-  default:   return NULL;
+  default:     return NULL;
 
   }
 }
@@ -1295,7 +1291,6 @@ bool generate_compare_arguments(arg_T* arg1, arg_T* arg2) {
 bool generate_check_free_register(register_T* reg) {
   return !reg->size && !reg->regLock;
 }
-
 
 /*
 generate_remove_descriptor removes a specific address from the register descriptor
@@ -1326,7 +1321,6 @@ Input: Backend
 Output: None
 */
 void restore_save_registers(asm_frontend* frontend) {
-
   fprintf(frontend->targetProg, "POPA\n");
   fprintf(frontend->targetProg, "PUSHA\n");
 }
@@ -1339,7 +1333,6 @@ Output: None
 void free_registers(asm_frontend* frontend) {
 
   for (unsigned int i = 0; i < REG_AMOUNT; i++) {
-
     descriptor_reset(frontend, frontend->registers[i]);
     free(frontend->registers[i]);
   }
@@ -1347,11 +1340,10 @@ void free_registers(asm_frontend* frontend) {
   free(frontend->registers);
 
   if (frontend->labelList) {
-
     for (unsigned int i = 0; i < frontend->labelList->size; i++) {
       free(frontend->labelList->names[i]);
     }
-      
+
     free(frontend->labelList->names);
     free(frontend->labelList->labels);
     free(frontend->labelList);

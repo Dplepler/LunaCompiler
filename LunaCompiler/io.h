@@ -24,7 +24,8 @@ static inline void* mrealloc(void* ptr, size_t size) {
 }
 
 char* read_file(FILE* file);
-char* make_new_filename(char* name, char* extention);
+const char* get_filename_ext(const char* name);
+char* make_new_filename(const char* name, const char* extention);
 
 bool isNum(char* value);
 

@@ -29,7 +29,7 @@ typedef struct STRUCT_SYMBOL_ENTRY {
   dtype dtype;
 
   address_T** addressDesc;  // Address descriptor: Keeping track of which addresses keep the current value of entry
-  size_t size;        // Size of addresses in array
+  size_t size;              // Size of addresses in array
 
 } entry_T;
 

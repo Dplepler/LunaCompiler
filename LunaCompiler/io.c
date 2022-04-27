@@ -28,12 +28,18 @@ char* read_file(FILE* file) {
   return contents;
 }
 
+const char* get_filename_ext(const char* name) {
+  const char* dot = strrchr(name, '.');
+  if (!dot || dot == name) return "";
+  return dot + 1;
+}
+
 /*
 make_new_filename gets a file and changes it's extention to the desired one
 Input: Filename, desired new extention
 Output: The same filename with a the desired extention
 */
-char* make_new_filename(char* name, char* extention) {
+char* make_new_filename(const char* name, const char* extention) {
 
   char* newFilename = mcalloc(1, sizeof(char));
 
@@ -43,25 +49,23 @@ char* make_new_filename(char* name, char* extention) {
 
   for (i = 0; i < length; i++) {
 
-  // For every normal character, we copy it as is
-  if (name[i] != '.') {
+    // For every normal character, we copy it as is
+    if (name[i] != '.') {
+      newFilename = mrealloc(newFilename, ++size);
+      newFilename[size - 1] = name[i];
+    }
+    // When extention reached we copy the .asm extention instead
+    else {
+      // Before using strcat, we have to terminate the current string
+      newFilename = mrealloc(newFilename, ++size);
+      newFilename[size - 1] = '\0';
 
-    newFilename = mrealloc(newFilename, ++size);
-    newFilename[size - 1] = name[i];
-  }
-  // When extention reached we copy the .asm extention instead
-  else {
+      size += strlen(extention) + 1;
 
-    // Before using strcat, we have to terminate the current string
-    newFilename = mrealloc(newFilename, ++size);
-    newFilename[size - 1] = '\0';
-
-    size += strlen(extention) + 1;
-
-    newFilename = mrealloc(newFilename, size);
-    strcat(newFilename, extention);
-    break;
-  }
+      newFilename = mrealloc(newFilename, size);
+      strcat(newFilename, extention);
+      break;
+    }
   }
     
   return newFilename;

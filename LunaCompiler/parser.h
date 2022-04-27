@@ -4,16 +4,16 @@
 
 #define RESERVED_SIZE 7
 
-typedef struct PARSER_STRUCT
-{
+typedef struct PARSER_STRUCT {
+
   lexer_T* lexer;
   token_T* token;
   table_T* table;
 
   char** reserved;
 
-  enum KEYWORD_ENUM
-  {
+  enum KEYWORD_ENUM {
+
     OUT_T,
     IF_T,
     ELSE_T,
@@ -24,8 +24,7 @@ typedef struct PARSER_STRUCT
 
   } reserved_T;
 
-
-}parser_T;
+} parser_T;
 
 parser_T* init_parser(lexer_T* lexer);
 
@@ -62,7 +61,6 @@ bool parser_check_comparsion_operators(parser_T* parser);
 char* reserved_to_string(int type);
 
 int parser_check_reserved(parser_T* parser);
-
 
 #endif
  

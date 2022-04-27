@@ -7,14 +7,14 @@ int main(int argc, char** argv) {
   FILE* file = NULL;
 
   char* command = NULL;
-  char* fileChoice = NULL;
+  char* filename = NULL;
   char* newFilename = NULL;
 
   char* contents = NULL;
 
   // Raise error if user didn't input filename or compile mode
   if (!argv[1] || !argv[2]) {
-    printf("[Error]: Some file input is missing"); exit(1);
+    printf("[ERROR]: Some file input is missing"); exit(1);
   }
 
   newFilename = make_new_filename(argv[1], ".asm");  // Set output filename to be the code filename with a .asm extention
@@ -31,27 +31,29 @@ int main(int argc, char** argv) {
     sprintf(command, "python translator.py %s", argv[1]);
     system(command);
 
-    fileChoice = mcalloc(1, strlen(argv[1]) + strlen("translated_") + 1);
-    sprintf(fileChoice, "translated_%s", argv[1]);
+    filename = mcalloc(1, strlen(argv[1]) + strlen("translated_") + 1);
+    sprintf(filename, "translated_%s", argv[1]);
 
     free(command);
   }
   // Otherwise, we just want to use the normal filename
   else {
-
-    fileChoice = mcalloc(1, strlen(argv[1]) + 1);
-    strcpy(fileChoice, argv[1]);
+    filename = mcalloc(1, strlen(argv[1]) + 1);
+    strcpy(filename, argv[1]);
   }
 
-  if (!(file = fopen(fileChoice, "r"))) {    // Read file
-    printf("File does not exist\n");  
-    return 1;
+  if (strcmp(get_filename_ext(filename), "luna")) {
+    printf("[ERROR]: Unrecognized file extention\n"); exit(1);
+  }
+
+  if (!(file = fopen(filename, "r"))) {    // Read file
+    printf("[ERROR]: File does not exist\n"); exit(1);
   }
   
-  contents = read_file(file);      // Read contents of file
+  contents = read_file(file);             // Read contents of file
 
   if (!contents) {
-    printf("[Error]: Couldn't read file contents"); exit(1);
+    printf("[ERROR]: Couldn't read file contents"); exit(1);
   }
   
   lexer_T* const lexer = init_lexer(contents);           // Initialize lexer
@@ -79,11 +81,11 @@ int main(int argc, char** argv) {
 
   // If we made a new file for the translated version from Hebrew, delete that file
   if (!strcmp(argv[2], "-h")) {
-    remove(fileChoice);
+    remove(filename);
   }
     
   free(newFilename);
-  free(fileChoice);
+  free(filename);
     
   return 0;
 }
