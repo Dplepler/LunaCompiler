@@ -34,6 +34,7 @@ AST* parser_lib(parser_T* parser);
 AST* parser_parse(parser_T* parser);
 AST* parser_function(parser_T* parser);
 AST* parser_block(parser_T* parser);
+AST* pasrer_asm(parser_T* parser);
 AST* parser_var_dec(parser_T* parser);
 AST* parser_statement(parser_T* parser);
 AST* parser_assignment(parser_T* parser);

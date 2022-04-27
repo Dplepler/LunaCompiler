@@ -46,6 +46,7 @@ TAC* traversal_var_dec(AST* node, TAC_list* list);
 TAC* traversal_binop(AST* node, TAC_list* list);
 TAC* traversal_function_call(AST* node, TAC_list* list);
 TAC* traversal_assignment(AST* node, TAC_list* list);
+TAC* traversal_asm(AST* node, TAC_list* list);
 TAC* traversal_return(AST* node, TAC_list* list);
 
 int traversal_check_arg(AST* node);

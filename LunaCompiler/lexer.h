@@ -30,6 +30,7 @@ token_T* lexer_get_next_token(lexer_T* lexer);
 token_T* lexer_collect_id(lexer_T* lexer);
 token_T* lexer_collect_number(lexer_T* lexer);
 token_T* lexer_collect_string(lexer_T* lexer);
+token_T* lexer_asm(lexer_T* lexer);
 
 char lexer_peek(lexer_T* lexer, size_t offset);
 

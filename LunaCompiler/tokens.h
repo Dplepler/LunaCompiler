@@ -28,9 +28,11 @@ typedef struct TOKEN_STRUCT {
     TOKEN_SUB,
     TOKEN_LBRACE,
     TOKEN_RBRACE, 
+    TOKEN_ASM,
     TOKEN_FUNC_END,
     TOKEN_NOOP,
     TOKEN_EOF,
+    TOKEN_END
     
   } type;
 

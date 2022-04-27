@@ -205,7 +205,6 @@ void generate_asm(asm_frontend* frontend) {
   // We do not want to generate code for statements made outside of a function
   if (frontend->instruction->op != AST_VARIABLE_DEC && frontend->instruction->op != TOKEN_LBRACE
     && frontend->instruction->op != TOKEN_RBRACE && frontend->instruction->op != AST_FUNCTION && !frontend->table->prev) {
-
     return;
   }
     
@@ -246,18 +245,18 @@ void generate_asm(asm_frontend* frontend) {
       break;
 
     // For each of the operation cases, generate fitting Assembly instructions
-    case AST_FUNCTION: generate_function(frontend); break;
-    case AST_ASSIGNMENT: generate_assignment(frontend); break;
-    case AST_VARIABLE_DEC: generate_var_dec(frontend); break;
-    case AST_IFZ: generate_if_false(frontend); break;
-    case AST_GOTO: generate_unconditional_jump(frontend); break;
-    case AST_LABEL: fprintf(frontend->targetProg, "%s:\n", generate_get_label(frontend, frontend->instruction)); descriptor_reset_all_registers(frontend); break;
-    case AST_LOOP_LABEL: fprintf(frontend->targetProg, "%s:\n", generate_get_label(frontend, frontend->instruction)); descriptor_reset_all_registers(frontend); break;
-    case AST_FUNC_CALL: generate_func_call(frontend); break;
-    case AST_PRINT: generate_print(frontend); break;
-    case AST_RETURN: generate_return(frontend); break;
+    case AST_FUNCTION:      generate_function(frontend); break;
+    case AST_ASSIGNMENT:    generate_assignment(frontend); break;
+    case AST_VARIABLE_DEC:  generate_var_dec(frontend); break;
+    case AST_IFZ:           generate_if_false(frontend); break;
+    case AST_GOTO:          generate_unconditional_jump(frontend); break;
+    case AST_LABEL:         fprintf(frontend->targetProg, "%s:\n", generate_get_label(frontend, frontend->instruction)); descriptor_reset_all_registers(frontend); break;
+    case AST_LOOP_LABEL:    fprintf(frontend->targetProg, "%s:\n", generate_get_label(frontend, frontend->instruction)); descriptor_reset_all_registers(frontend); break;
+    case AST_ASM:           generate_asm_block(frontend); break;
+    case AST_FUNC_CALL:     generate_func_call(frontend); break;
+    case AST_PRINT:         generate_print(frontend); break;
+    case AST_RETURN:        generate_return(frontend); break;
   
-    
     }
   }
 }
@@ -321,7 +320,6 @@ void generate_binop(asm_frontend* frontend) {
   // If the value of the second argument is a number, we can treat it as a const instead of putting it
   // in a new register
   else {
-
     arg2 = frontend->instruction->arg2->value;
   }
 
@@ -344,12 +342,10 @@ void generate_mul_div(asm_frontend* frontend) {
   // If one of the operands is 1 and the operation is multiplication then do nothing as multiplication by 1 means nothing
   // Also if the second argument is 1 and the operation is division we can do nothing as well for the same reason
   if (frontend->instruction->arg2->type == CHAR_P && !strcmp(frontend->instruction->arg2->value, "1")) {
-
     descriptor_push_tac(frontend, generate_move_to_register(frontend, frontend->instruction->arg1), frontend->instruction);  
     return;
   }
   if (frontend->instruction->op == AST_MUL && frontend->instruction->arg1->type == CHAR_P && !strcmp(frontend->instruction->arg1->value, "1")) {
-
     descriptor_push_tac(frontend, generate_move_to_register(frontend, frontend->instruction->arg2), frontend->instruction);  
     return;
   }
@@ -443,8 +439,14 @@ Input: Backend
 Outut: None
 */
 void generate_unconditional_jump(asm_frontend* frontend) {
-
   fprintf(frontend->targetProg, "JMP %s\n", generate_get_label(frontend, frontend->instruction->arg1->value));
+}
+
+/*
+generate_asm_block copies the user's Assembly instructions into generated code
+*/
+void generate_asm_block(asm_frontend* frontend) {
+  fprintf(frontend->targetProg, "PUSHA\n%s\nPOPA\n", (char*)frontend->instruction->arg1->value);
 }
 
 /*
@@ -503,7 +505,6 @@ void generate_var_dec(asm_frontend* frontend) {
   char* name = NULL;
 
   if (!table_search_table(frontend->table, frontend->instruction->arg1->value)->prev) { return; }
-    
 
   name = frontend->instruction->arg1->value;
 
@@ -773,8 +774,6 @@ void generate_print(asm_frontend* frontend) {
       
     free(regDescListList[i]);
   }
-
-  
 }
 
 /*
@@ -810,7 +809,6 @@ Output: Free register if it exists, 0 if it doesn't
 register_T* generate_find_free_reg(asm_frontend* frontend) {
 
   for (unsigned int i = 0; i < GENERAL_REG_AMOUNT; i++) {
-
     if (generate_check_free_register(frontend->registers[i])) {
       return frontend->registers[i];
     }
@@ -884,7 +882,6 @@ register_T* generate_move_to_register(asm_frontend* frontend, arg_T* arg) {
   // Otherwise, if we want to move a number to a register, check if that number is 0, if so generate a XOR
   // instruction, and if it isn't just load it's value onto the register
   else if (arg->type == CHAR_P) {
-
     !strcmp(arg->value, "0") ? fprintf(frontend->targetProg, "XOR %s, %s\n", name, name)
       : fprintf(frontend->targetProg, "MOV %s, %s\n", name, (char*)arg->value);  
   }
@@ -992,7 +989,6 @@ register_T* generate_find_lowest_values(asm_frontend* frontend) {
 
   // Start comparing all registers to find the lowest value
   for (unsigned int i = 1; i < GENERAL_REG_AMOUNT; i++) {
-
     if (frontend->registers[i]->size < frontend->registers[loc]->size
       && !frontend->registers[i]->regLock) {
 
@@ -1134,7 +1130,6 @@ register_T* generate_check_variable_usability(asm_frontend* frontend, register_T
   // Loop through instructions until the end of the block to see if we can use a register that holds
   // a value that will not be used
   while (triple->op != TOKEN_RBRACE && reg) {
-
     // For the first argument, if we are assigning to the variable, then we are okay to use register
     if ((triple->op != AST_ASSIGNMENT && triple->arg1 && generate_compare_arguments(triple->arg1, arg))
       || (triple->arg2 && generate_compare_arguments(triple->arg2, arg)) || reg->regLock) {

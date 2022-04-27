@@ -110,17 +110,18 @@ void* traversal_build_instruction(AST* node, TAC_list* list) {
 
     break;
     
-  case AST_FUNCTION: instruction = traversal_func_dec(node, list); break;
-  case AST_COMPOUND: traversal_statements(node, list); break;
-  case AST_ASSIGNMENT: instruction = traversal_assignment(node, list); break;
-  case AST_VARIABLE_DEC: instruction = traversal_var_dec(node, list); break;  // Variable declerations will become normal assignments
-  case AST_FUNC_CALL: instruction = traversal_function_call(node, list); break;
-  case AST_INT: instruction = (char*)node->int_value; break;
-  case AST_STRING: instruction = (char*)node->name; break;
-  case AST_VARIABLE: instruction = (char*)node->name; break;
-  case AST_IF: traversal_if(node, list); break;
-  case AST_WHILE: traversal_while(node, list); break;
-  case AST_RETURN: traversal_return(node, list); break;
+  case AST_FUNCTION:      instruction = traversal_func_dec(node, list); break;
+  case AST_ASSIGNMENT:    instruction = traversal_assignment(node, list); break;
+  case AST_VARIABLE_DEC:  instruction = traversal_var_dec(node, list); break;  // Variable declerations will become normal assignments
+  case AST_FUNC_CALL:     instruction = traversal_function_call(node, list); break;
+  case AST_ASM:           instruction = traversal_asm(node, list); break;
+  case AST_INT:           instruction = (char*)node->int_value; break;
+  case AST_STRING:                   
+  case AST_VARIABLE:      instruction = (char*)node->name; break;
+  case AST_IF:            traversal_if(node, list); break;
+  case AST_COMPOUND:      traversal_statements(node, list); break;
+  case AST_WHILE:         traversal_while(node, list); break;
+  case AST_RETURN:        traversal_return(node, list); break;
           
   }
   
@@ -187,7 +188,7 @@ TAC* traversal_var_dec(AST* node, TAC_list* list) {
 
     if (!node->value) {
 
-      printf("[Error]: String must be initialized with a value");
+      printf("[ERROR]: String must be initialized with a value");
       exit(1);
     }
 
@@ -233,6 +234,23 @@ TAC* traversal_assignment(AST* node, TAC_list* list) {
   instruction->arg1 = init_arg(node->leftChild->name, CHAR_P);
 
   instruction->arg2 = init_arg(traversal_build_instruction(node->rightChild, list), traversal_check_arg(node->rightChild));
+
+  list_push(list, instruction);
+
+  return instruction;
+}
+
+/*
+traversal_asm builds a TAC instruction for Assembly code
+Input: Assignment node, list to push to
+Output: TAC instruction that was made
+*/
+TAC* traversal_asm(AST* node, TAC_list* list) {
+
+  TAC* instruction = mcalloc(1, sizeof(TAC));
+
+  instruction->op = node->type;
+  instruction->arg1 = init_arg(node->name, CHAR_P);
 
   list_push(list, instruction);
 

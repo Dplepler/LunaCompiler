@@ -1,13 +1,13 @@
 
 
-int fib(int n) {
-
-    if (n <= 1) { return n; }
-    return fib(n-1) + fib(n-2); 	
-}
 
 int main () {
-    print(fib(9));
+    print("Hello, World!\n");
+	
+	#MOV ESI, 10#
+	
+		
+	
     return 0;
 }
 

@@ -76,7 +76,7 @@ Output: Initialized token
 token_T* lexer_advance_current(lexer_T* lexer, int type) {
 
   token_T* token = NULL;
-  char* value = malloc(VALUE_SIZE);
+  char* value = mcalloc(1, VALUE_SIZE);
   
   value[0] = lexer->c;
 
@@ -150,12 +150,9 @@ token_T* lexer_get_next_token(lexer_T* lexer) {
 
   lexer_skip_whitespace(lexer);
 
-  if (isalpha(lexer->c)) {
-    token = lexer_collect_id(lexer);
-  }
-  else if (isdigit(lexer->c)) {
-    token = lexer_collect_number(lexer);
-  }
+  if (isalpha(lexer->c))      { token = lexer_collect_id(lexer); }
+  else if (isdigit(lexer->c)) { token = lexer_collect_number(lexer); }
+  else if (lexer->c == '#')   { token = lexer_asm(lexer); }
   else {
 
     switch (lexer->c) {
@@ -172,18 +169,18 @@ token_T* lexer_get_next_token(lexer_T* lexer) {
       case '>': token = lexer_peek(lexer, 1) == '=' ? lexer_advance_current(lexer, TOKEN_EMORE)
         : lexer_advance_current(lexer, TOKEN_MORE); break;
 
-      case '"': token = lexer_collect_string(lexer); break;
-      case ';': token = lexer_advance_current(lexer, TOKEN_SEMI); break;
+      case '"': token = lexer_collect_string(lexer);                break;
+      case ';': token = lexer_advance_current(lexer, TOKEN_SEMI);   break;
       case '(': token = lexer_advance_current(lexer, TOKEN_LPAREN); break;
       case ')': token = lexer_advance_current(lexer, TOKEN_RPAREN); break;
-      case '*': token = lexer_advance_current(lexer, TOKEN_MUL); break;
-      case '+': token = lexer_advance_current(lexer, TOKEN_ADD); break;
-      case '/': token = lexer_advance_current(lexer, TOKEN_DIV); break;
-      case '-': token = lexer_advance_current(lexer, TOKEN_SUB); break;
-      case ',': token = lexer_advance_current(lexer, TOKEN_COMMA); break;
+      case '*': token = lexer_advance_current(lexer, TOKEN_MUL);    break;
+      case '+': token = lexer_advance_current(lexer, TOKEN_ADD);    break;
+      case '/': token = lexer_advance_current(lexer, TOKEN_DIV);    break;
+      case '-': token = lexer_advance_current(lexer, TOKEN_SUB);    break;
+      case ',': token = lexer_advance_current(lexer, TOKEN_COMMA);  break;
       case '{': token = lexer_advance_current(lexer, TOKEN_LBRACE); break;
       case '}': token = lexer_advance_current(lexer, TOKEN_RBRACE); break;
-      case '\0': token = lexer_advance_current(lexer, TOKEN_EOF);  break;
+      case '\0': token = lexer_advance_current(lexer, TOKEN_EOF);   break;
       default: printf("[Error in line %zu]: Unknown lexeme: '%c'", lexer->lineIndex, lexer->c); exit(1);
     }
   }
@@ -202,7 +199,7 @@ token_T* lexer_collect_id(lexer_T* lexer) {
   char* id = mcalloc(1, sizeof(char));
   size_t size = 0;
   
-  // An ID has to start with a letter but can contain numbers, letters and underscore
+  /* An ID has to start with a letter but can contain numbers, letters and underscore */
   while (isalpha(lexer->c) || isdigit(lexer->c) || lexer->c == '_') {
 
     id = mrealloc(id, ++size);
@@ -224,21 +221,44 @@ Output: Number token
 */
 token_T* lexer_collect_number(lexer_T* lexer) {
 
-  char* num = mcalloc(1, sizeof(char));
+  char* num = NULL;
   size_t size = 0;
 
-  // Collect number
+  /* Collect number */
   while (isdigit(lexer->c)) {
-
     num = mrealloc(num, ++size);
     num[size - 1] = lexer->c;
     lexer_advance(lexer);
   }
-  // Terminate string with a 0
+  /* Terminate string with a 0 */
   num = mrealloc(num, size + 1);
   num[size] = '\0';
 
   return init_token(TOKEN_NUMBER, num);
+}
+
+token_T* lexer_asm(lexer_T* lexer) {
+
+  char* code = NULL;
+  size_t size = 0;
+
+  lexer_advance(lexer);
+  while (lexer->c == '\t') { lexer_advance(lexer); }
+  
+  while (lexer->c != '#') {
+    code = mrealloc(code, ++size);
+    code[size - 1] = lexer->c;
+    lexer_advance(lexer);
+    while (lexer->c == '\t') { lexer_advance(lexer); }
+  }
+
+  lexer_advance(lexer);
+
+  /* Terminate string with a 0 */
+  code = mrealloc(code, size + 1);
+  code[size] = '\0';
+
+  return init_token(TOKEN_ASM, code);
 }
 
 /*
@@ -255,7 +275,7 @@ token_T* lexer_collect_string(lexer_T* lexer) {
 
   lexer_advance(lexer);
 
-  // Collect quote
+  /* Collect string */
   while (lexer->c != '"') {
 
     // If we reached the end of the file without getting an ending quote, raise error
@@ -297,7 +317,6 @@ Output: None
 void lexer_free_tokens(lexer_T* lexer) {
 
   for (unsigned int i = 0; i < lexer->tokensSize; i++) {
-
     free(lexer->tokens[i]->value);
     free(lexer->tokens[i]);
   }

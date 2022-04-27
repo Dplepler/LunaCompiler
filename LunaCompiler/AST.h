@@ -7,7 +7,7 @@ typedef struct AST_STRUCT {
 
   enum AST_TYPE_ENUM {
 
-    AST_PROGRAM = 24,    // Continue enumeration from tokens (tokens.c)
+    AST_PROGRAM = TOKEN_END,    // Continue enumeration from tokens (tokens.c)
     AST_FUNCTION,
     AST_DEF_AMOUNT,
     AST_COMPOUND,
@@ -31,6 +31,8 @@ typedef struct AST_STRUCT {
     AST_COMPARE,
     AST_PRINT,
     AST_RETURN,
+    AST_ASM,
+    AST_END,
 
   } type;
 
@@ -66,7 +68,6 @@ typedef struct AST_STRUCT {
 
   // Function call
   struct AST_STRUCT** arguments;
-
 
   struct AST_STRUCT* leftChild;
   struct AST_STRUCT* value;

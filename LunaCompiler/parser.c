@@ -84,7 +84,7 @@ AST* parser_lib(parser_T* parser) {
       root->children[globalCounter - 1] = node;
     }
     else {
-      printf("Error in line [%zu]: Statement was found outside of a function", parser->lexer->lineIndex); exit(1);
+      printf("[Error in line %zu]: Statement was found outside of a function", parser->lexer->lineIndex); exit(1);
     }
 
   } while (parser->token->type != TOKEN_EOF);
@@ -168,7 +168,6 @@ AST* parser_block(parser_T* parser) {
   
   // While block isn't done, parse statements
   while (parser->token->type != TOKEN_RBRACE) {
-
     node->children = mrealloc(node->children, sizeof(AST*) * ++counter);
     node->children[counter - 1] = parser_statement(parser);
   }
@@ -176,6 +175,15 @@ AST* parser_block(parser_T* parser) {
   node->size = counter;
 
   parser->token = parser_expect(parser, TOKEN_RBRACE);
+
+  return node;
+}
+
+AST* parser_asm(parser_T* parser) {
+
+  AST* node = init_AST(AST_ASM);
+  node->name = parser->token->value;
+  parser->token = parser_expect(parser, TOKEN_ASM);
 
   return node;
 }
@@ -223,6 +231,9 @@ AST* parser_statement(parser_T* parser) {
   else if (parser->token->type == TOKEN_NUMBER || parser->token->type == TOKEN_ID) {
     node = parser_expression(parser);
     parser->token = parser_expect(parser, TOKEN_SEMI);
+  }
+  else if (parser->token->type == TOKEN_ASM) {
+    node = parser_asm(parser);
   }
   else {
     printf("[Error in line %zu]: Invalid syntax", parser->lexer->lineIndex); exit(1);
@@ -283,7 +294,6 @@ void parser_skip_code(parser_T* parser, AST* node) {
   while (node->type == AST_RETURN && parser->token->type != TOKEN_RBRACE) {
     parser->token = lexer_get_next_token(parser->lexer);
   }
-    
 }
 
 /*
@@ -316,7 +326,6 @@ AST* parser_assignment(parser_T* parser) {
   }
   // If variable was written without an assignment, reset it
   else {
-
     reset = init_AST(AST_INT);
     reset->int_value = "0";
     node = AST_initChildren(node, reset, AST_ASSIGNMENT);    

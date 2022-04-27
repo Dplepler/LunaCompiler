@@ -69,6 +69,7 @@ void generate_mul_div(asm_frontend* frontend);
 void generate_condition(asm_frontend* frontend);
 void generate_if_false(asm_frontend* frontend);
 void generate_unconditional_jump(asm_frontend* frontend);
+void generate_asm_block(asm_frontend* frontend);
 void generate_assignment(asm_frontend* frontend);
 void generate_block_exit(asm_frontend* frontend);
 void generate_main(asm_frontend* frontend);
