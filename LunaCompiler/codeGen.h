@@ -70,6 +70,8 @@ void generate_condition(asm_frontend* frontend);
 void generate_if_false(asm_frontend* frontend);
 void generate_unconditional_jump(asm_frontend* frontend);
 void generate_asm_block(asm_frontend* frontend);
+void generate_save_relevant(asm_frontend* frontend, register_T** saveRegs);
+void generate_restore_relevant(asm_frontend* frontend, register_T** saveRegs);
 void generate_assignment(asm_frontend* frontend);
 void generate_block_exit(asm_frontend* frontend);
 void generate_main(asm_frontend* frontend);

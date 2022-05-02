@@ -446,7 +446,14 @@ void generate_unconditional_jump(asm_frontend* frontend) {
 generate_asm_block copies the user's Assembly instructions into generated code
 */
 void generate_asm_block(asm_frontend* frontend) {
-  fprintf(frontend->targetProg, "PUSHA\n%s\nPOPA\n", (char*)frontend->instruction->arg1->value);
+  
+  register_T* saveRegs[GENERAL_REG_AMOUNT] = { NULL };
+
+  generate_save_relevant(frontend, saveRegs);
+
+  fprintf(frontend->targetProg, "%s\n", (char*)frontend->instruction->arg1->value);
+
+  generate_restore_relevant(frontend, saveRegs);
 }
 
 /*
@@ -631,6 +638,23 @@ void generate_return(asm_frontend* frontend) {
   fprintf(frontend->targetProg, "RET\n");
 }
 
+void generate_save_relevant(asm_frontend* frontend, register_T** saveRegs) {
+  for (uint8_t i = REG_AX; i < GENERAL_REG_AMOUNT; i++) {
+    if (!generate_check_register_usability(frontend, frontend->registers[i])) {
+      fprintf(frontend->targetProg, "PUSH %s\n", generate_get_register_name(frontend->registers[i]));
+      saveRegs[i] = frontend->registers[i];
+    }
+  }
+}
+
+void generate_restore_relevant(asm_frontend* frontend, register_T** saveRegs) {
+  for (uint8_t i = REG_AX; i < GENERAL_REG_AMOUNT; i++) {
+    if (saveRegs[i]) {
+      fprintf(frontend->targetProg, "POP %s\n", generate_get_register_name(frontend->registers[i]));
+    }
+  }
+}
+
 /*
 generate_func_call generates Assembly code for function calls
 Input: Backend
@@ -647,14 +671,11 @@ void generate_func_call(asm_frontend* frontend) {
     frontend->registers[REG_AX]->regLock = false;
   }
 
-  register_T* savedRegs[GENERAL_REG_AMOUNT - 1] = { NULL };
+  register_T* savedRegs[GENERAL_REG_AMOUNT] = { NULL };
   
-  for (uint8_t i = REG_BX; i < GENERAL_REG_AMOUNT; i++) {
-    if (!generate_check_register_usability(frontend, frontend->registers[i])) {
-      fprintf(frontend->targetProg, "PUSH %s\n", generate_get_register_name(frontend->registers[i]));
-      savedRegs[i - 1] = frontend->registers[i];
-    }
-  }
+  frontend->registers[REG_AX]->regLock = true;
+  generate_save_relevant(frontend, savedRegs);
+  frontend->registers[REG_AX]->regLock = false;
 
   descriptor_push_tac(frontend, frontend->registers[REG_AX], frontend->instruction);  // Set temporary result to AX
   
@@ -681,11 +702,7 @@ void generate_func_call(asm_frontend* frontend) {
 
   fprintf(frontend->targetProg, "CALL %s\n", name);
 
-  for (uint8_t i = 0; i < GENERAL_REG_AMOUNT - 1; i++) {
-    if (savedRegs[i]) {
-      fprintf(frontend->targetProg, "POP %s\n", generate_get_register_name(frontend->registers[i + 1]));
-    }
-  }
+  generate_restore_relevant(frontend, savedRegs);
 }
 
 /*
@@ -711,7 +728,9 @@ void generate_print(asm_frontend* frontend) {
     }
   }
   
-  fprintf(frontend->targetProg, "PUSHA\n");  // fnc will change register values, save previous values before doing so
+  register_T* saveRegs[GENERAL_REG_AMOUNT] = { NULL };
+
+  generate_save_relevant(frontend, saveRegs);
   
   bool regsChanged = false;  // Optimization to check if registers could've actually changed
 
@@ -762,7 +781,7 @@ void generate_print(asm_frontend* frontend) {
 
   /* Return back the values before the PUSHA instruction */
 
-  fprintf(frontend->targetProg, "POPA\n");    // Return previous values to registers in Assembly code
+  generate_restore_relevant(frontend, saveRegs);
 
   descriptor_reset_all_registers(frontend);
 
@@ -911,12 +930,10 @@ register_T* generate_move_new_value_to_register(asm_frontend* frontend, arg_T* a
   descriptor_push(reg, arg);
 
   if (entry) {
-
     address_push(entry, reg, ADDRESS_REG);
     fprintf(frontend->targetProg, "MOV %s, [%s]\n", name, (char*)arg->value);
   }
   else {
-
     !strcmp(arg->value, "0") ? fprintf(frontend->targetProg, "XOR %s %s\n", name, name)
       : fprintf(frontend->targetProg, "MOV %s, %s\n", name, (char*)arg->value);    
   }
