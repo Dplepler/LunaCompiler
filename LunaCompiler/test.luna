@@ -1,17 +1,13 @@
 
 
-int fib(int n) {
-	
-	if (n < 2) { return n; }
-	
-	return fib(n - 1) + fib(n - 2);
-	
-}
 int main() {
 
-	print(545);
-    print(fib(9));
-	
+    int x = 10 * 5 - (3 + 2) / 3;
+	int y = 50;
+	string hello = "Hi";
+	print(x);
+	print(y);
+	print(hello);
     return 0;
 }
 

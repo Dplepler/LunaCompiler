@@ -69,7 +69,6 @@ void descriptor_reset(asm_frontend* frontend, register_T* r) {
       r->regDescList[i] = NULL;
     }
     else if (r->regDescList[i]->type == CHAR_P && (entry = table_search_entry(frontend->table, r->regDescList[i]->value))) {
-
       address_remove_register(entry, r);
     }
   }
@@ -212,12 +211,10 @@ void generate_asm(asm_frontend* frontend) {
 
   // Binary operations
   if (frontend->instruction->op == AST_ADD || frontend->instruction->op == AST_SUB) {
-
     generate_binop(frontend);
   }
   // Multiplications and divisions are different in Assembly 8086 sadly
   else if (frontend->instruction->op == AST_MUL || frontend->instruction->op == AST_DIV) {
-
     generate_mul_div(frontend);
   }
   else if (frontend->instruction->op == TOKEN_LESS || frontend->instruction->op == TOKEN_MORE
@@ -250,7 +247,7 @@ void generate_asm(asm_frontend* frontend) {
     case AST_VARIABLE_DEC:  generate_var_dec(frontend); break;
     case AST_IFZ:           generate_if_false(frontend); break;
     case AST_GOTO:          generate_unconditional_jump(frontend); break;
-    case AST_LABEL:         fprintf(frontend->targetProg, "%s:\n", generate_get_label(frontend, frontend->instruction)); descriptor_reset_all_registers(frontend); break;
+    case AST_LABEL:         
     case AST_LOOP_LABEL:    fprintf(frontend->targetProg, "%s:\n", generate_get_label(frontend, frontend->instruction)); descriptor_reset_all_registers(frontend); break;
     case AST_ASM:           generate_asm_block(frontend); break;
     case AST_FUNC_CALL:     generate_func_call(frontend); break;
@@ -276,12 +273,10 @@ void generate_binop(asm_frontend* frontend) {
 
   // If the operation is add or sub by 0 then we can do nothing 
   if (frontend->instruction->arg2->type == CHAR_P && !strcmp(frontend->instruction->arg2->value, "0")) {
-
     descriptor_push_tac(frontend, generate_move_to_register(frontend, frontend->instruction->arg1), frontend->instruction);
     return;
   }
   if (frontend->instruction->op == AST_ADD && frontend->instruction->arg1->type == CHAR_P && !strcmp(frontend->instruction->arg1->value, "0")) {
-
     descriptor_push_tac(frontend, generate_move_to_register(frontend, frontend->instruction->arg2), frontend->instruction);
     return;
   }
@@ -359,7 +354,6 @@ void generate_mul_div(asm_frontend* frontend) {
   reg1->regLock = false;
 
   if (frontend->instruction->op == AST_MUL) {
-
     fprintf(frontend->targetProg, "MUL %s\n", generate_get_register_name(reg2));
   }
   else {
@@ -479,19 +473,16 @@ void generate_assignment(asm_frontend* frontend) {
     return;
   }
 
-  // If variable equals a function call then the value will return in AX, therefore we know that the register will always be AX
+  // If the variable equals a function call then the value will return in AX, therefore we know that the register will always be AX
   if (frontend->instruction->arg2->type == TAC_P && ((TAC*)frontend->instruction->arg2->value)->op == AST_FUNC_CALL) {
-    
     reg1 = frontend->registers[REG_AX];
   }
   // Otherwise, without a function call, we can use any register
   else {
-    
     reg1 = generate_move_to_register(frontend, frontend->instruction->arg2);
   }
 
   address_reset(entry);
-
   address_push(entry, reg1, ADDRESS_REG);
 
   // Remove variable from all registers that held it's value
@@ -595,8 +586,10 @@ void generate_function(asm_frontend* frontend) {
 
   frontend->instruction = triple;
 
+  // TODO: REMOVE THIS
+
   // Go and assign a starting value to each declared variable
-  for (unsigned int i = 0; i < variables;)  {
+  /*for (unsigned int i = 0; i < variables;)  {
 
     if (frontend->instruction->op == AST_ASSIGNMENT 
       && table_search_entry(frontend->table, frontend->instruction->arg1->value)->dtype != DATA_STRING) {
@@ -611,7 +604,7 @@ void generate_function(asm_frontend* frontend) {
     }
         
     frontend->instruction = frontend->instruction->next;
-  }
+  }*/
   
   frontend->instruction = triple;
 
@@ -648,9 +641,10 @@ void generate_save_relevant(asm_frontend* frontend, register_T** saveRegs) {
 }
 
 void generate_restore_relevant(asm_frontend* frontend, register_T** saveRegs) {
-  for (uint8_t i = REG_AX; i < GENERAL_REG_AMOUNT; i++) {
-    if (saveRegs[i]) {
-      fprintf(frontend->targetProg, "POP %s\n", generate_get_register_name(frontend->registers[i]));
+  for (uint8_t i = GENERAL_REG_AMOUNT; i > 0; i--) {
+    if (saveRegs[i - 1]) {
+      fprintf(frontend->targetProg, "POP %s\n", generate_get_register_name(frontend->registers[i - 1]));
+      saveRegs[i - 1] = NULL;
     }
   }
 }
@@ -712,25 +706,11 @@ Output: None
 */
 void generate_print(asm_frontend* frontend) {
 
-  entry_T* entry = NULL;;
+  entry_T* entry = NULL;
 
   size_t size = atoi(frontend->instruction->arg2->value);
-
-  arg_T** regDescListList[GENERAL_REG_AMOUNT];
-
-  // Save the register values we will change because of the macros
-  for (unsigned int i = 0; i < GENERAL_REG_AMOUNT; i++) {
-
-    regDescListList[i] = mcalloc(1, sizeof(arg_T));
-
-    for (unsigned int i2 = 0; i2 < frontend->registers[i]->size; i2++) {
-      regDescListList[i][i2] = frontend->registers[i]->regDescList[i2];
-    }
-  }
   
   register_T* saveRegs[GENERAL_REG_AMOUNT] = { NULL };
-
-  generate_save_relevant(frontend, saveRegs);
   
   bool regsChanged = false;  // Optimization to check if registers could've actually changed
 
@@ -751,7 +731,7 @@ void generate_print(asm_frontend* frontend) {
       }
       else {
         // We need to return registers inside here because they could've changed
-        if (regsChanged) { restore_save_registers(frontend); }
+        if (regsChanged) { generate_restore_relevant(frontend, saveRegs); generate_save_relevant(frontend, saveRegs); }
 
         fprintf(frontend->targetProg, "fnc StdOut, str$(%s)\n", generate_get_register_name(
           generate_move_to_register(frontend, frontend->instruction->arg1)));
@@ -779,20 +759,7 @@ void generate_print(asm_frontend* frontend) {
     }
   }
 
-  /* Return back the values before the PUSHA instruction */
-
-  generate_restore_relevant(frontend, saveRegs);
-
   descriptor_reset_all_registers(frontend);
-
-  for (unsigned int i = 0; i < GENERAL_REG_AMOUNT; i++) {
-
-    for (unsigned int i2 = 0; i2 < frontend->registers[i]->size; i2++) {
-      descriptor_push(frontend->registers[i], regDescListList[i][i2]);
-    }
-      
-    free(regDescListList[i]);
-  }
 }
 
 /*
@@ -1045,7 +1012,6 @@ register_T* generate_find_used_reg(asm_frontend* frontend) {
         reg = NULL;
       }
       else if (entry = table_search_entry(frontend->table, frontend->registers[i]->regDescList[i2]->value)) {
-
         if (entry->size <= 1) {
           reg = NULL;
         }  
@@ -1074,13 +1040,11 @@ register_T* generate_find_used_reg(asm_frontend* frontend) {
   }
   // If there are no usable registers, we need to spill the values of one of the registers
   if (!reg) {
-
     reg = generate_find_lowest_values(frontend);
     generate_spill(frontend, reg);
   }
   // Now that the variable is saved somewhere else, we need to free the previous values stored in it and reset the size
   if (reg->regDescList) {
-
     descriptor_reset(frontend, reg);
   }
   

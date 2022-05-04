@@ -11,9 +11,8 @@ entry_T* init_entry(char* name, int type) {
   entry->name = name;
   entry->dtype = type;
 
-  entry->addressDesc = mcalloc(1, sizeof(void*));
-
-  address_push(entry, entry->name, ADDRESS_VAR);
+  entry->addressDesc = mcalloc(1, sizeof(address_T*));
+  //address_push(entry, entry->name, ADDRESS_VAR);
 
   return entry;
 }
