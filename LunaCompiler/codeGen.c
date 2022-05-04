@@ -89,7 +89,7 @@ Output: None
 */
 void descriptor_reset_all_registers(asm_frontend* frontend) {
 
-  for (unsigned int i = 0; i < GENERAL_REG_AMOUNT; i++) {
+  for (uint8_t i = 0; i < GENERAL_REG_AMOUNT; i++) {
     descriptor_reset(frontend, frontend->registers[i]);
   }  
 }
@@ -184,7 +184,7 @@ void write_asm(table_T* table, TAC* head, char* targetName) {
   }
     
   fclose(frontend->targetProg);
-  free_registers(frontend);
+  free_frontend(frontend);
 }
 
 /*
@@ -632,20 +632,36 @@ void generate_return(asm_frontend* frontend) {
 }
 
 void generate_save_relevant(asm_frontend* frontend, register_T** saveRegs) {
+
   for (uint8_t i = REG_AX; i < GENERAL_REG_AMOUNT; i++) {
-    if (!generate_check_register_usability(frontend, frontend->registers[i])) {
-      fprintf(frontend->targetProg, "PUSH %s\n", generate_get_register_name(frontend->registers[i]));
-      saveRegs[i] = frontend->registers[i];
+
+    if (generate_check_register_usability(frontend, frontend->registers[i])) { continue; }
+
+    fprintf(frontend->targetProg, "PUSH %s\n", generate_get_register_name(frontend->registers[i]));
+      
+    saveRegs[i] = mcalloc(1, sizeof(register_T));
+    saveRegs[i]->reg = frontend->registers[i]->reg;
+    saveRegs[i]->size = frontend->registers[i]->size;
+    saveRegs[i]->regLock = frontend->registers[i]->regLock;
+    saveRegs[i]->regDescList = mcalloc(1, sizeof(arg_T*) * frontend->registers[i]->size);
+
+    for (unsigned int i2 = 0; i2 < frontend->registers[i]->size; i2++) {
+      void* arg = mcalloc(1, sizeof(frontend->registers[i]->regDescList[i2]->value));
+      memcpy(arg, frontend->registers[i]->regDescList[i2]->value, sizeof(frontend->registers[i]->regDescList[i2]->value));
+      saveRegs[i]->regDescList[i2] = init_arg(arg, frontend->registers[i]->regDescList[i2]->type);
     }
   }
 }
 
 void generate_restore_relevant(asm_frontend* frontend, register_T** saveRegs) {
   for (uint8_t i = GENERAL_REG_AMOUNT; i > 0; i--) {
-    if (saveRegs[i - 1]) {
-      fprintf(frontend->targetProg, "POP %s\n", generate_get_register_name(frontend->registers[i - 1]));
-      saveRegs[i - 1] = NULL;
-    }
+    if (!saveRegs[i - 1]) { continue; }
+
+    fprintf(frontend->targetProg, "POP %s\n", generate_get_register_name(frontend->registers[i - 1]));
+    descriptor_reset(frontend, frontend->registers[i - 1]);
+    free(frontend->registers[i - 1]);
+    frontend->registers[i - 1] = saveRegs[i - 1];
+    saveRegs[i - 1] = NULL;
   }
 }
 
@@ -711,6 +727,8 @@ void generate_print(asm_frontend* frontend) {
   size_t size = atoi(frontend->instruction->arg2->value);
   
   register_T* saveRegs[GENERAL_REG_AMOUNT] = { NULL };
+
+  generate_save_relevant(frontend, saveRegs);
   
   bool regsChanged = false;  // Optimization to check if registers could've actually changed
 
@@ -760,6 +778,7 @@ void generate_print(asm_frontend* frontend) {
   }
 
   descriptor_reset_all_registers(frontend);
+  generate_restore_relevant(frontend, saveRegs);
 }
 
 /*
@@ -1302,16 +1321,13 @@ void restore_save_registers(asm_frontend* frontend) {
 }
 
 /*
-free_registers frees all the registers and their descriptors
-Input: Backend
+free_frontend frees all the registers and their descriptors
+Input: Frontend
 Output: None
 */
-void free_registers(asm_frontend* frontend) {
+void free_frontend(asm_frontend* frontend) {
 
-  for (unsigned int i = 0; i < REG_AMOUNT; i++) {
-    descriptor_reset(frontend, frontend->registers[i]);
-    free(frontend->registers[i]);
-  }
+  free_registers(frontend);
 
   free(frontend->registers);
 
@@ -1326,4 +1342,11 @@ void free_registers(asm_frontend* frontend) {
   }
   
   free(frontend);
+}
+
+void free_registers(asm_frontend* frontend) {
+  for (unsigned int i = 0; i < REG_AMOUNT; i++) {
+    descriptor_reset(frontend, frontend->registers[i]);
+    free(frontend->registers[i]);
+  }
 }
