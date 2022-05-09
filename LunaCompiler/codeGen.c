@@ -583,28 +583,6 @@ void generate_function(asm_frontend* frontend) {
 
     frontend->instruction = frontend->instruction->next;
   }
-
-  frontend->instruction = triple;
-
-  // TODO: REMOVE THIS
-
-  // Go and assign a starting value to each declared variable
-  /*for (unsigned int i = 0; i < variables;)  {
-
-    if (frontend->instruction->op == AST_ASSIGNMENT 
-      && table_search_entry(frontend->table, frontend->instruction->arg1->value)->dtype != DATA_STRING) {
-
-      varName = frontend->instruction->arg1->value;
-      initValue = frontend->instruction->arg2;
-
-      generate_asm(frontend);
-      fprintf(frontend->targetProg, "MOV [%s], %s\n", varName, generate_get_register_name(generate_find_register(frontend, initValue)));
-      
-      i++;
-    }
-        
-    frontend->instruction = frontend->instruction->next;
-  }*/
   
   frontend->instruction = triple;
 

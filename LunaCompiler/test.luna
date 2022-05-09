@@ -4,9 +4,9 @@ int main() {
 
     int x = 10 * 5 - (3 + 2) / 3;
 	int y = 50;
-	string hello = "Hi";
-	print(x);
-	print(y);
+	string hello = "Hi\n";
+	print(x, "\n");
+	print(y, "\n");
 	print(hello);
     return 0;
 }
