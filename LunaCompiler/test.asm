@@ -13,37 +13,33 @@ includelib \masm32\lib\kernel32.lib
 includelib \masm32\lib\masm32.lib
 .data
 .code
-main PROC 
-LOCAL x:DWORD
-LOCAL y:DWORD
-LOCAL hello[5]:BYTE
-MOV EAX, 10
-MOV EBX, 5
-MUL EBX
-MOV ECX, 3
-ADD ECX, 2
-XCHG EAX, ECX
-MOV EBX, 3
-PUSH EDX
-XOR EDX, EDX
-DIV EBX
-POP EDX
-SUB ECX, EAX
-MOV EDX, 50
-PUSHA
-fnc lstrcpy, ADDR hello, "Hi\n"
-POPA
+fib PROC n:DWORD
+MOV EAX, [n]
+MOV EBX, 1
+MOV [n], EAX
+CMP EAX, EBX
+JG label1
+RET
+label1:
+MOV EBX, [n]
+DEC EBX
+PUSH EBX
+CALL fib
+MOV ECX, EAX
 PUSH ECX
+MOV EDX, [n]
+SUB EDX, 2
 PUSH EDX
-fnc StdOut, str$(ECX)
-fnc StdOut, "\n"
-POP EDX
+CALL fib
 POP ECX
-PUSH EDX
-fnc StdOut, str$(EDX)
-fnc StdOut, "\n"
-POP EDX
-fnc StdOut, ADDR hello
+ADD ECX, EAX
+XCHG EAX, ECX
+RET
+fib ENDP
+main PROC 
+PUSH 9
+CALL fib
+fnc StdOut, str$(EAX)
 XOR EAX, EAX
 RET
 main ENDP

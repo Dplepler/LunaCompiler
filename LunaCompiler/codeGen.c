@@ -611,6 +611,8 @@ void generate_return(asm_frontend* frontend) {
 
 void generate_save_relevant(asm_frontend* frontend, register_T** saveRegs) {
 
+  void* arg = NULL;
+
   for (uint8_t i = REG_AX; i < GENERAL_REG_AMOUNT; i++) {
 
     if (generate_check_register_usability(frontend, frontend->registers[i])) { continue; }
@@ -624,8 +626,14 @@ void generate_save_relevant(asm_frontend* frontend, register_T** saveRegs) {
     saveRegs[i]->regDescList = mcalloc(1, sizeof(arg_T*) * frontend->registers[i]->size);
 
     for (unsigned int i2 = 0; i2 < frontend->registers[i]->size; i2++) {
-      void* arg = mcalloc(1, sizeof(frontend->registers[i]->regDescList[i2]->value));
-      memcpy(arg, frontend->registers[i]->regDescList[i2]->value, sizeof(frontend->registers[i]->regDescList[i2]->value));
+      if (frontend->registers[i]->regDescList[i2]->type == CHAR_P) {
+        arg = mcalloc(1, strlen(frontend->registers[i]->regDescList[i2]->value));
+        memcpy(arg, frontend->registers[i]->regDescList[i2]->value, sizeof(frontend->registers[i]->regDescList[i2]->value));
+      }
+      else {
+        arg = frontend->registers[i]->regDescList[i2]->value;
+      }
+      
       saveRegs[i]->regDescList[i2] = init_arg(arg, frontend->registers[i]->regDescList[i2]->type);
     }
   }
@@ -858,7 +866,6 @@ register_T* generate_move_to_register(asm_frontend* frontend, arg_T* arg) {
 
   // If entry exists and value was not found in any register previously, store it in the found available register
   if (entry) {
-
     address_push(entry, reg, ADDRESS_REG);
     fprintf(frontend->targetProg, "MOV %s, [%s]\n", name, (char*)arg->value);
   }

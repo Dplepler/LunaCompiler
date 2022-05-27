@@ -17,30 +17,27 @@ main PROC
 LOCAL btfk_pflm[14]:BYTE
 LOCAL a:DWORD
 LOCAL b:DWORD
-XOR EAX, EAX
-MOV [a], EAX
-MOV EBX, 5
-MOV [b], EBX
 PUSHA
 fnc lstrcpy, ADDR btfk_pflm, "Hello, World!"
 POPA
+XOR EAX, EAX
+MOV EBX, 5
 label1:
 MOV EAX, [a]
 MOV EBX, 10
 MOV [a], EAX
 CMP EAX, EBX
 JG label2
-PUSHA
+PUSH EAX
 fnc StdOut, "Amazing!\n"
-POPA
-MOV EAX, [a]
+POP EAX
 INC EAX
 MOV [a], EAX
 JMP label1
 label2:
-PUSHA
+MOV EAX, [a]
+fnc StdOut, str$(EAX)
 fnc StdOut, ADDR btfk_pflm
-POPA
 XOR EAX, EAX
 RET
 main ENDP
