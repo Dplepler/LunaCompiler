@@ -628,7 +628,7 @@ void generate_save_relevant(asm_frontend* frontend, register_T** saveRegs) {
     for (unsigned int i2 = 0; i2 < frontend->registers[i]->size; i2++) {
       if (frontend->registers[i]->regDescList[i2]->type == CHAR_P) {
         arg = mcalloc(1, strlen(frontend->registers[i]->regDescList[i2]->value));
-        memcpy(arg, frontend->registers[i]->regDescList[i2]->value, sizeof(frontend->registers[i]->regDescList[i2]->value));
+        memcpy(arg, frontend->registers[i]->regDescList[i2]->value, strlen(frontend->registers[i]->regDescList[i2]->value));
       }
       else {
         arg = frontend->registers[i]->regDescList[i2]->value;
