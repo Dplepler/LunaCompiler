@@ -752,7 +752,7 @@ void generate_print(asm_frontend* frontend) {
     // also for temporeries
     else if (frontend->instruction->op == AST_PARAM && entry->dtype == DATA_INT) {
       // We need to return registers inside here because they could've changed
-      if (regsChanged) { restore_save_registers(frontend); }
+      if (regsChanged) { generate_restore_relevant(frontend, saveRegs); generate_save_relevant(frontend, saveRegs); }
       
       fprintf(frontend->targetProg, "fnc StdOut, str$(%s)\n", generate_get_register_name(generate_move_to_register(frontend, frontend->instruction->arg1)));
       regsChanged = true;
