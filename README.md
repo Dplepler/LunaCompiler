@@ -1,5 +1,5 @@
 # LunaCompiler
-LunaCompiler is a very simple compiler that can understand both English and Hebrew, translating from a C like programming language to Assembly x86 using the MASM compiler! 
+LunaCompiler is a very simple compiler that can understand both English and Hebrew, translating from a C like programming language to Assembly x86 (MASM syntax)! 
 
 # To run this program
 You can download it and compile with Visual Studio, to run the program simply input the .luna file you want to compile and a parameter indicating if the file is in Hebrew or English
